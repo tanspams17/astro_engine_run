@@ -1,0 +1,43 @@
+# Arvelos — Nginx server block for arvelos.cloud (root domain)
+# Place at /etc/nginx/sites-available/arvelos.cloud, symlink to sites-enabled,
+# then: sudo certbot --nginx -d arvelos.cloud -d www.arvelos.cloud
+
+server {
+    listen 80;
+    server_name arvelos.cloud www.arvelos.cloud;
+    # certbot will add the 443 block + redirect
+
+    root /var/www/arvelos/frontend;
+    index index.html;
+
+    gzip on;
+    gzip_types text/html text/css application/json application/javascript;
+
+    # static frontend
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API + webhooks + downloads -> FastAPI container
+    location /api/ {
+        proxy_pass http://127.0.0.1:8801;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /webhooks/ {
+        proxy_pass http://127.0.0.1:8801;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /download/ {
+        proxy_pass http://127.0.0.1:8801;
+        proxy_set_header Host $host;
+    }
+
+    # basic hardening
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+    add_header Referrer-Policy strict-origin-when-cross-origin;
+    client_max_body_size 64k;
+}

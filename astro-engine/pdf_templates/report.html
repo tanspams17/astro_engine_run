@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    background: #fbf9f4;
+    @bottom-center {
+      content: "✦  Arvelos · arvelos.cloud · page " counter(page) "  ✦";
+      font-family: Georgia, serif; font-size: 8.5pt; color: #8b84a8;
+    }
+  }
+  @page cover { margin: 0; background: #130a40; @bottom-center { content: none; } }
+  @page toc   { background: #fbf9f4; }
+
+  body { font-family: Georgia, 'Times New Roman', serif; color: #2b2440;
+         font-size: 11.5pt; line-height: 1.72; }
+
+  /* ------------------------------------------------ cover */
+  /* navy field matched to the uploaded cover artwork so the emblem melts in */
+  .cover { page: cover; width: 210mm; height: 297mm; position: relative;
+           background: radial-gradient(ellipse at 50% 34%, #241a5e 0%, #1a1150 45%, #130a40 100%);
+           color: #f3eefe; }
+  .cover-frame { position: absolute; top: 8mm; left: 8mm; right: 8mm; bottom: 8mm;
+                 border: 2px solid #c9b458; }
+  .cover-frame2 { position: absolute; top: 11mm; left: 11mm; right: 11mm; bottom: 11mm;
+                  border: 0.7px solid #c9b458; }
+  .cover-inner { position: absolute; top: 20mm; left: 0; right: 0; text-align: center; }
+  .cover .brand { font-size: 12pt; letter-spacing: 8px; color: #c9b458; }
+  .cover .om { font-size: 10pt; color: #9d90c4; margin-top: 4mm; letter-spacing: 2px;}
+  .cover h1 { font-size: 34pt; font-weight: normal; color: #f8f5ff;
+              margin: 10mm 0 2mm; line-height: 1.1; }
+  .cover .sub { font-size: 13pt; letter-spacing: 4px; color: #c9b458;
+                text-transform: uppercase; }
+  .ring { margin: 2mm auto 1mm; width: 140mm; }
+  .plaque { display: inline-block; border: 1.6px solid #c9b458; border-radius: 20px;
+            padding: 4mm 16mm; margin-top: 2mm; }
+  .plaque .name { font-size: 19pt; color: #ffffff; }
+  .plaque .birth { font-size: 10.5pt; color: #cfc4ec; margin-top: 1.5mm; }
+  .cover .bigthree { margin-top: 7mm; font-size: 11.5pt; color: #c9b458; }
+  .cover .foot { position: absolute; bottom: 15mm; left: 0; right: 0;
+                 text-align: center; font-size: 9.5pt; color: #9d90c4; }
+
+  /* ------------------------------------------------ toc */
+  .toc { page: toc; page-break-before: always; }
+  .toc h1 { text-align: center; }
+  .toc-row { display: flex; margin: 4.5mm 0; page-break-inside: avoid; }
+  .toc-num { font-size: 20pt; color: #c9b458; font-weight: bold; width: 16mm;
+             flex-shrink: 0; }
+  .toc-body b { color: #2d1b52; font-size: 12.5pt; font-weight: normal; }
+  .toc-body span { display: block; font-size: 9.5pt; color: #8b84a8; }
+
+  /* ------------------------------------------------ common */
+  h1 { font-size: 17.5pt; color: #43277a; font-weight: normal;
+       border-bottom: 2px solid #c9b458; padding-bottom: 2mm;
+       margin: 10mm 0 5mm; page-break-after: avoid; }
+  h1 .no { color: #c9b458; font-weight: bold; margin-right: 3mm; }
+  h2 { font-size: 13.5pt; color: #2d1b52; margin: 8mm 0 2.5mm;
+       page-break-after: avoid; }
+  p { margin: 0 0 4mm; text-align: justify; }
+  .section { page-break-inside: avoid; }
+  .intro-box { background: #f5f2fb; border-left: 3px solid #c9b458;
+               padding: 4mm 5mm; margin: 5mm 0; }
+  table { width: 100%; border-collapse: collapse; margin: 4mm 0 6mm;
+          font-size: 10pt; }
+  th { background: #2d1b52; color: #f3eefe; text-align: left; padding: 2mm 2.5mm;
+       font-weight: normal; letter-spacing: 0.5px; }
+  td { padding: 2mm 2.5mm; border-bottom: 0.5pt solid #d9d2ea; }
+  tr:nth-child(even) td { background: #f7f5fc; }
+  td.k { color: #43277a; width: 42%; }
+  .chartbox { text-align: center; margin: 5mm 0; page-break-inside: avoid; }
+  .chartbox .cap { font-size: 9.5pt; color: #8b84a8; margin-top: 2mm; }
+  .lucky-card { background: linear-gradient(135deg, #2d1b52, #43277a); color: #f3eefe;
+                border-radius: 3mm; padding: 5mm 6mm; margin: 5mm 0;
+                page-break-inside: avoid; }
+  .lucky-card h2 { color: #c9b458; margin: 0 0 2mm; }
+  .lucky-card td { border-bottom: 0.5pt solid #5a4a8a; color: #efe9fc; }
+  .lucky-card td.k { color: #c9b458; }
+  .lucky-card tr:nth-child(even) td { background: none; }
+
+  /* ------------------------------------------------ monthly cards */
+  .month-card { border: 1.2px solid #d9d2ea; border-left: 4px solid #c9b458;
+                border-radius: 2mm; padding: 4mm 5mm; margin: 4mm 0;
+                page-break-inside: avoid; background: #fff; }
+  .month-card h2 { margin: 0 0 1mm; }
+  .month-card .theme { color: #c9b458; font-size: 10.5pt; letter-spacing: 1px;
+                       text-transform: uppercase; }
+  .month-card .pn { font-size: 10.5pt; margin: 2mm 0; }
+  .month-card .pn b { font-weight: normal; color: #2d6a3f; }
+  .month-card .pn i { font-style: normal; color: #8a4a3a; }
+  .month-card .tip { background: #f5f2fb; padding: 2.5mm 3.5mm; border-radius: 1.5mm;
+                     font-size: 10.5pt; margin-top: 2mm; }
+  .month-card .transit { font-size: 9.8pt; color: #5a5276; margin-top: 2mm;
+                         border-top: 0.5pt dashed #d9d2ea; padding-top: 2mm; }
+
+  .closing { background: #1a1333; color: #efe9fc; padding: 6mm 7mm; margin-top: 8mm;
+             border-radius: 2mm; }
+  .closing h2 { color: #c9b458; margin-top: 0; }
+  pre.timeline { font-family: Georgia, serif; white-space: pre-wrap;
+                 background: #f5f2fb; padding: 3mm 4mm; font-size: 9.5pt; }
+  .disclaimer { font-size: 9.5pt; color: #8b84a8; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<div class="cover">
+  <div class="cover-frame"></div><div class="cover-frame2"></div>
+  <div class="cover-inner">
+    <div class="brand">A R V E L O S</div>
+    <div class="om">॥ Your Sky · Your Numbers · Your Year Ahead ॥</div>
+    <h1>Fortune &amp; Birth Chart<br>Report</h1>
+    <div class="sub">{{ tier_name }}</div>
+    <img class="ring" src="cover_emblem.png">
+    <div class="plaque">
+      <div class="name">{{ name }}</div>
+      <div class="birth">{{ birth_line }}</div>
+    </div>
+    <div class="bigthree">
+      {% if asc_sign %}{{ asc_sign }} Rising · {% endif %}{{ sun_sign }} Sun · {{ moon_sign }} Moon · Mulank {{ num.mulank }} · Bhagyank {{ num.bhagyank }}
+    </div>
+  </div>
+  <div class="foot">Individually calculated · Prepared {{ generated }} · arvelos.cloud<br>
+  One report, one payment — no subscription.</div>
+</div>
+
+<!-- ============================================================ TOC -->
+<div class="toc">
+  <h1>What's Inside</h1>
+  {% for t in toc %}
+  <div class="toc-row">
+    <div class="toc-num">{{ "%02d" % loop.index }}</div>
+    <div class="toc-body"><b>{{ t.title }}</b><span>{{ t.desc }}</span></div>
+  </div>
+  {% endfor %}
+  <p class="disclaimer" style="margin-top:8mm">This report is for reflection,
+  self-exploration and entertainment. It describes tendencies drawn from
+  astrological and numerological tradition applied to real calculations of
+  your birth details — never certainties, and never a substitute for
+  professional advice. Your birth data is used only to generate this report.</p>
+</div>
+
+<!-- ============================================================ BODY -->
+{% for s in sections %}
+  {% if s.h1 is defined %}
+    <h1><span class="no">{{ s.no }}</span>{{ s.h1 }}</h1>
+  {% elif s.chart is defined %}
+    <div class="chartbox">{{ s.chart | safe }}
+      <div class="cap">{{ s.cap }}</div></div>
+  {% elif s.kv is defined %}
+    <div class="section {{ 'lucky-card' if s.gold is defined else '' }}">
+      {% if s.title %}<h2>{{ s.title }}</h2>{% endif %}
+      <table>{% for k, v in s.kv %}<tr><td class="k">{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}</table>
+    </div>
+  {% elif s.table is defined %}
+    <div class="section">
+      <h2>{{ s.title }}</h2>
+      <table>
+        <tr><th>Planet</th><th>Sign</th><th>Degree</th>{% if s.houses %}<th>House</th>{% endif %}
+        {% if s.table[0].nakshatra %}<th>Nakshatra</th>{% endif %}<th></th></tr>
+        {% for r in s.table %}
+        <tr><td>{{ r.planet }}</td><td>{{ r.sign }}</td><td>{{ r.degree }}</td>
+            {% if s.houses %}<td>{{ r.house }}</td>{% endif %}
+            {% if s.table[0].nakshatra %}<td>{{ r.nakshatra }}</td>{% endif %}
+            <td>{{ r.retro }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% elif s.month is defined %}
+    <div class="month-card">
+      <h2>{{ s.month.label }} <span class="theme">· {{ s.month.theme }} (Personal Month {{ s.month.pm }})</span></h2>
+      <div class="pn"><b>Favours:</b> {{ s.month.positive }}.<br>
+      <i>Resists:</i> {{ s.month.negative }}.</div>
+      <div class="tip">✦ {{ s.month.tips }}</div>
+      <div class="transit">{{ s.month.transit }}</div>
+    </div>
+  {% else %}
+    <div class="section">
+      {% if s.title %}<h2>{{ s.title }}</h2>{% endif %}
+      {% for para in s.body.split('\n\n') %}
+        {% if '▶' in para %}<pre class="timeline">{{ para }}</pre>
+        {% else %}<p>{{ para | replace('\n', '<br>') | safe }}</p>{% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endfor %}
+
+<div class="closing">
+  <h2>A Closing Word</h2>
+  <p>{{ closing }}</p>
+  <p style="margin-top:4mm; font-size:9pt; color:#b9aede;">
+    Generated by Arvelos (arvelos.cloud) from Swiss Ephemeris calculations and
+    Chaldean numerology of your exact birth details. For reflection and
+    entertainment — tendencies, not certainties.</p>
+</div>
+
+</body>
+</html>
