@@ -1,0 +1,20 @@
+# Render.com Blueprint — one-click deploy.
+# In Render: New + → Blueprint → connect this GitHub repo → Apply.
+services:
+  - type: web
+    name: arvelos
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: PAYMENT_PROVIDER
+        value: mock          # change to "mollie" + add MOLLIE_API_KEY when live
+      - key: BASE_URL
+        value: https://arvelos.cloud
+      - key: ARVELOS_FRONTEND
+        value: /app/frontend
+    disk:
+      name: arvelos-data
+      mountPath: /data        # SQLite DB + generated reports persist here
+      sizeGB: 1

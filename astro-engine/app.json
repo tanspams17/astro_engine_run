@@ -1,0 +1,10 @@
+{
+  "name": "Arvelos",
+  "description": "Personalized astrology + numerology PDF report engine (FastAPI + static frontend).",
+  "keywords": ["astrology", "fastapi", "pdf", "weasyprint"],
+  "stack": "container",
+  "env": {
+    "PAYMENT_PROVIDER": { "value": "mock", "description": "mock | mollie" },
+    "BASE_URL": { "value": "https://arvelos.cloud" }
+  }
+}

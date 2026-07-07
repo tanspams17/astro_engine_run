@@ -1,0 +1,26 @@
+services:
+  arvelos-api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: arvelos-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8801:8000"   # localhost only; Nginx fronts it
+    volumes:
+      - arvelos_data:/data
+    environment:
+      - ARVELOS_DB=/data/arvelos.db
+      - BASE_URL=https://arvelos.cloud
+      - SUPPORT_EMAIL=support@arvelos.cloud
+      - PAYMENT_PROVIDER=mock      # switch to 'mollie' when keys arrive
+      # - MOLLIE_API_KEY=test_xxxxxxxxxxxx
+      # SMTP — set these when the mail provider is chosen:
+      # - SMTP_HOST=smtp.postmarkapp.com
+      # - SMTP_PORT=587
+      # - SMTP_USER=...
+      # - SMTP_PASS=...
+      # - SMTP_FROM=Arvelos <reports@arvelos.cloud>
+
+volumes:
+  arvelos_data:
