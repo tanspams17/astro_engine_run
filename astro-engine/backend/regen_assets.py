@@ -11,7 +11,7 @@ countries = {c['iso']: c['name'] for c in gc.get_countries().values()}
 out, seen = [], set()
 rows = sorted(gc.get_cities().values(), key=lambda c: -c['population'])
 for c in rows:
-    if c['population'] < 80000:
+    if c['population'] < 15000:
         continue
     n = f"{c['name']}, {countries.get(c['countrycode'], c['countrycode'])}"
     if n in seen:
