@@ -106,6 +106,16 @@
     transition:border-color .15s; }
   input:focus,select:focus { outline:none; border-color:var(--violet); }
   .row { display:flex; gap:12px; } .row > div { flex:1; }
+  .phone-row { display:flex; gap:8px; }
+  .phone-row select { flex:0 0 96px; }
+  .phone-row input { flex:1; }
+  .summary { background:#fff; border:1.5px solid var(--line); border-radius:12px;
+             padding:6px 20px; margin:18px 0; font-size:14.5px; }
+  .summary div { display:flex; justify-content:space-between; gap:12px;
+                 padding:12px 0; border-bottom:1px solid var(--line); }
+  .summary div:last-child { border-bottom:none; }
+  .summary span:first-child { color:var(--muted); }
+  .summary span:last-child { text-align:right; font-family:var(--mono); font-size:13.5px; }
   .chips { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
   .chip { padding:11px 20px; border:1.5px solid var(--line); border-radius:24px;
           background:#fff; cursor:pointer; font-size:15px; color:var(--text); transition:.15s; }
@@ -280,12 +290,34 @@
     <!-- STEP 1: birth details -->
     <div class="step on" id="s1">
       <h2>Your birth details</h2>
-      <p class="hint">We need your time and place of birth to calculate an accurate chart.</p>
+      <p class="hint">We need your date and place of birth to calculate an accurate chart. Time is optional but sharpens the reading.</p>
       <label>Your first name</label>
       <input type="text" id="name" placeholder="So the report can address you" maxlength="60">
       <div class="row">
-        <div><label>Date of birth</label><input type="date" id="bdate"></div>
-        <div><label>Time of birth</label><input type="time" id="btime"></div>
+        <div><label>Email <span class="hint" style="display:inline">(required)</span></label>
+        <input type="email" id="email" placeholder="you@example.com"></div>
+        <div><label>Phone <span class="hint" style="display:inline">(required)</span></label>
+        <div class="phone-row">
+          <select id="cc" aria-label="Country code">
+            <option value="+91">+91</option>
+            <option value="+1">+1</option>
+            <option value="+44">+44</option>
+            <option value="+61">+61</option>
+            <option value="+971">+971</option>
+            <option value="+65">+65</option>
+            <option value="+49">+49</option>
+            <option value="+33">+33</option>
+            <option value="+81">+81</option>
+            <option value="+86">+86</option>
+            <option value="+27">+27</option>
+            <option value="+55">+55</option>
+          </select>
+          <input type="tel" id="phone" placeholder="98765 43210" inputmode="tel">
+        </div></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Date of birth <span class="hint" style="display:inline">(required)</span></label><input type="date" id="bdate"></div>
+        <div><label>Time of birth <span class="hint" style="display:inline">(optional)</span></label><input type="time" id="btime"></div>
       </div>
       <div class="optin" style="margin:8px 0 0">
         <input type="checkbox" id="notime" onchange="document.getElementById('btime').disabled=this.checked">
@@ -297,7 +329,7 @@
         <select id="gender"><option value="unspecified">Prefer not to say</option>
         <option value="male">Male</option><option value="female">Female</option></select></div>
       </div>
-      <label>Place of birth</label>
+      <label>Place of birth <span class="hint" style="display:inline">(required)</span></label>
       <input type="text" id="bplace" placeholder="City, Country (e.g. Mumbai, India)" list="cities" autocomplete="off">
       <datalist id="cities"></datalist>
       <p class="hint" id="placehint">Start typing and pick your city from the list.</p>
@@ -342,24 +374,12 @@
         <button class="btn primary" onclick="next(3)">Continue</button></div>
     </div>
 
-    <!-- STEP 4: checkout -->
+    <!-- STEP 4: confirm and request -->
     <div class="step" id="s4">
-      <h2>Checkout</h2>
+      <h2>Confirm your request</h2>
       <div class="total" id="total"></div>
-      <label>Email (your report is delivered here)</label>
-      <input type="email" id="email" placeholder="you@example.com">
-      <div id="cardfields">
-      <label>Card number</label>
-      <input type="text" id="card" placeholder="4242 4242 4242 4242" inputmode="numeric">
-      <div class="row">
-        <div><label>Expiry</label><input type="text" id="exp" placeholder="MM/YY"></div>
-        <div><label>CVC</label><input type="text" id="cvc" placeholder="123" inputmode="numeric"></div>
-      </div>
-      </div>
-      <p class="hint" id="hostednote" style="display:none">You'll be taken to our
-      payment provider to pay, then brought straight back here for your report.</p>
-      <p class="legal">One-time payment. No subscription, no recurring charge.
-        By purchasing you agree to the <a href="/terms.html" target="_blank">Terms &amp;
+      <div class="summary" id="summary"></div>
+      <p class="legal">By submitting you agree to the <a href="/terms.html" target="_blank">Terms &amp;
         Refund Policy</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>.
         We use your birth details only to calculate your report.</p>
       <div class="optin">
@@ -369,7 +389,7 @@
       </div>
       <div class="err" id="e4"></div>
       <div class="nav"><button class="btn ghost" onclick="back(4)">Back</button>
-        <button class="btn primary" id="paybtn" onclick="pay()">Pay &amp; get my report</button></div>
+        <button class="btn primary" id="paybtn" onclick="requestReport()">Request my report</button></div>
     </div>
 
     <!-- STEP 5: processing -->
@@ -406,17 +426,9 @@
 <script>
 const API = "";   // same origin; Nginx proxies /api to the backend
 let quizSession = null, tier = null, step = 1, chosenPlace = null;
-let PROVIDER = "mock";
-fetch(API+"/api/config").then(r=>r.json()).then(c=>{
-  PROVIDER = c.payment_provider;
-  if (PROVIDER !== "mock") {
-    document.getElementById("cardfields").style.display = "none";
-    document.getElementById("hostednote").style.display = "block";
-    document.getElementById("paybtn").textContent = "Continue to secure payment";
-  }
-}).catch(()=>{});
 
-// returning from hosted checkout (?order=...)
+// returning from hosted checkout (?order=...) — kept for when a payment
+// gateway is wired back in; unused while requestReport() is the only path
 const returnOrder = new URLSearchParams(location.search).get("order");
 if (returnOrder) window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("landing").style.display = "none";
@@ -473,13 +485,21 @@ function back(n){ show(n-1); }
 function next(n) {
   if (n === 1) {
     const name = document.getElementById("name").value.trim();
-    const noTime = document.getElementById("notime").checked;
+    const email = document.getElementById("email").value.trim();
+    const phone = document.getElementById("phone").value.trim();
     const d = document.getElementById("bdate").value,
-          t = document.getElementById("btime").value,
           p = document.getElementById("bplace").value.trim();
-    if (!name || !d || (!t && !noTime) || !p) {
+    if (!name || !email || !phone || !d || !p) {
       document.getElementById("e1").textContent =
-        "Please fill in your name, date and place, plus either a birth time or the box below if you don't know it.";
+        "Please fill in your name, email, phone, date and place of birth.";
+      return;
+    }
+    if (!/.+@.+\..+/.test(email)) {
+      document.getElementById("e1").textContent = "Please enter a valid email.";
+      return;
+    }
+    if (phone.replace(/\D/g,"").length < 5) {
+      document.getElementById("e1").textContent = "Please enter a valid phone number.";
       return;
     }
     if (!chosenPlace) {
@@ -499,9 +519,35 @@ function next(n) {
   if (n === 3) {
     if (!tier) { document.getElementById("e3").textContent = "Choose a system."; return; }
     paintTotal();
+    populateSummary();
     if (quizSession) fetch(API+"/api/quiz/complete/"+quizSession, {method:"POST"});
   }
   show(n+1);
+}
+
+function populateSummary() {
+  const dateVal = document.getElementById("bdate").value;
+  const timeVal = document.getElementById("btime").value;
+  const born = dateVal
+    ? new Date(dateVal+"T00:00:00").toLocaleDateString("en-US",
+        {day:"numeric", month:"long", year:"numeric"}) +
+      (timeVal ? " · "+timeVal : " · time not given") +
+      " · " + (chosenPlace ? chosenPlace.n : "")
+    : "";
+  const rows = [
+    ["Name", document.getElementById("name").value.trim()],
+    ["Email", document.getElementById("email").value.trim()],
+    ["Phone", document.getElementById("cc").value+" "+document.getElementById("phone").value.trim()],
+    ["Born", born]];
+  const box = document.getElementById("summary");
+  box.innerHTML = "";
+  for (const [label, value] of rows) {
+    const row = document.createElement("div");
+    const l = document.createElement("span"); l.textContent = label;
+    const v = document.createElement("span"); v.textContent = value;
+    row.append(l, v);
+    box.appendChild(row);
+  }
 }
 
 document.querySelectorAll("#focus .chip").forEach(c =>
@@ -534,13 +580,7 @@ document.addEventListener("DOMContentLoaded", ()=> {
     if (el) el.classList.add("sel"); }
 });
 
-async function pay() {
-  const email = document.getElementById("email").value.trim();
-  const card = document.getElementById("card").value.replace(/\s/g,"");
-  if (!/.+@.+\..+/.test(email)) {
-    document.getElementById("e4").textContent = "Please enter a valid email. Your report is delivered there."; return; }
-  if (PROVIDER === "mock" && card.length < 12) {
-    document.getElementById("e4").textContent = "Please enter a valid card number."; return; }
+async function requestReport() {
   document.getElementById("paybtn").disabled = true;
   document.getElementById("e4").textContent = "";
 
@@ -550,7 +590,9 @@ async function pay() {
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         quiz_session_id: quizSession,
-        email, name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("cc").value+" "+document.getElementById("phone").value.trim(),
+        name: document.getElementById("name").value.trim(),
         tier, currency: document.getElementById("currency").value,
         birth_date: document.getElementById("bdate").value,
         birth_time: document.getElementById("notime").checked ? null
@@ -560,19 +602,12 @@ async function pay() {
         lat: chosenPlace.a, lon: chosenPlace.o, tz: chosenPlace.z,
         focus_areas: focus,
         marketing_opt_in: document.getElementById("optin").checked })});
-    if (!or.ok) throw new Error((await or.json()).detail || "order failed");
+    if (!or.ok) throw new Error((await or.json()).detail || "we couldn't save your request");
     const order = await or.json();
 
-    if (order.checkout_url) {           // hosted checkout (Mollie)
-      window.location.href = order.checkout_url;
-      return;
-    }
-
-    const pr = await fetch(API+"/api/pay", {method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({order_id: order.order_id,
-        payment_details:{card_number: card}})});
-    if (!pr.ok) throw new Error((await pr.json()).detail || "payment failed");
+    // no payment gateway wired up yet — generation starts immediately
+    const gr = await fetch(API+`/api/orders/${order.order_id}/generate`, {method:"POST"});
+    if (!gr.ok) throw new Error((await gr.json()).detail || "we couldn't start your report");
 
     show(5);
     poll(order.order_id, 0);

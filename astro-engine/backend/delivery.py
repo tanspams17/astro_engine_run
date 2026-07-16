@@ -30,7 +30,7 @@ Download it here (link is private to you — keep it safe):
 
 A few notes:
 - The report was calculated individually from your exact birth details.
-- This was a one-time payment. No subscription, no renewals, nothing to cancel.
+- There's no subscription attached to this: nothing recurring, nothing to cancel.
 - If anything looks wrong (a typo in your birth details, a broken link),
   just reply to this email and we'll fix it: {SUPPORT_EMAIL}
 

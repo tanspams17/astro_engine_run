@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS orders (
     quiz_session_id TEXT REFERENCES quiz_sessions(id),
     created_at TEXT NOT NULL,
     email TEXT NOT NULL,
+    phone TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL,
     tier TEXT NOT NULL,
     currency TEXT NOT NULL,
@@ -77,6 +78,10 @@ def _conn():
 def init_db():
     with _conn() as c:
         c.executescript(SCHEMA)
+        try:  # migration for DBs created before the phone column existed
+            c.execute("ALTER TABLE orders ADD COLUMN phone TEXT NOT NULL DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
 
 
 def _now() -> str:
@@ -111,7 +116,7 @@ def complete_quiz(session_id: str):
 # ------------------------------------------------------------ orders
 
 
-def create_order(quiz_session_id: str | None, email: str, name: str,
+def create_order(quiz_session_id: str | None, email: str, phone: str, name: str,
                  tier: str, currency: str, birth_date: str, birth_time: str,
                  birth_place: str, lat: float, lon: float, tz: str,
                  focus_areas: list[str], marketing_opt_in: bool,
@@ -124,11 +129,11 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
     amount = PRICES[tier][currency]  # fixed now, per spec §6
     with _conn() as c:
         c.execute(
-            "INSERT INTO orders (id, quiz_session_id, created_at, email, name,"
-            " tier, currency, amount_minor, birth_date, birth_time, gender,"
+            "INSERT INTO orders (id, quiz_session_id, created_at, email, phone,"
+            " name, tier, currency, amount_minor, birth_date, birth_time, gender,"
             " birth_place, lat, lon, tz, focus_areas, marketing_opt_in)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (oid, quiz_session_id, _now(), email, name, tier, currency,
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (oid, quiz_session_id, _now(), email, phone, name, tier, currency,
              amount, birth_date, birth_time, gender, birth_place, lat, lon,
              tz, ",".join(focus_areas), int(marketing_opt_in)))
     return get_order(oid)

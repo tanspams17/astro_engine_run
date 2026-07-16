@@ -47,6 +47,7 @@ class QuizStart(BaseModel):
 class OrderIn(BaseModel):
     quiz_session_id: str | None = None
     email: EmailStr
+    phone: str = Field(min_length=5, max_length=24)
     name: str = Field(min_length=1, max_length=80)
     tier: str = Field(pattern="^(western|vedic|mixed)$")
     currency: str = Field(pattern="^(USD|INR)$")
@@ -112,7 +113,7 @@ def create_order(o: OrderIn):
     focus = [f for f in o.focus_areas
              if f in ("personality", "love", "career", "growth")]
     order = orders.create_order(
-        o.quiz_session_id, o.email, o.name, o.tier, o.currency,
+        o.quiz_session_id, o.email, o.phone, o.name, o.tier, o.currency,
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
         o.tz, focus, o.marketing_opt_in, o.gender)
     kwargs = {}
@@ -146,6 +147,27 @@ def _fulfil(order_id: str):
     token = orders.mark_delivered(order_id, pdf_path)
     send_report_email(order["email"], order["name"],
                       TIER_NAMES[order["tier"]], token)
+
+
+@app.post("/api/orders/{order_id}/generate")
+def generate_without_payment(order_id: str, background: BackgroundTasks):
+    """Start report generation without collecting payment.
+
+    Temporary stand-in while no payment gateway is wired up: skips straight
+    from "pending" to "paid" so the existing paid -> delivered pipeline runs
+    unchanged. Swap this out (or gate it behind PROVIDER) once a real
+    gateway is connected — see /api/pay for the version that charges.
+    """
+    order = orders.get_order(order_id)
+    if not order:
+        raise HTTPException(404, "order not found")
+    if order["status"] in ("paid", "delivered"):
+        return {"ok": True, "order_id": order_id, "status": order["status"]}
+    if order["status"] != "pending":
+        raise HTTPException(409, f"order is {order['status']}")
+    orders.mark_paid(order_id, "no_payment_gateway", "no_payment_gateway")
+    background.add_task(_fulfil, order_id)
+    return {"ok": True, "order_id": order_id, "status": "paid"}
 
 
 @app.post("/api/pay")
