@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#120c27">
 <title>Arvelos — Your Real Birth Chart. One Payment. No Subscription.</title>
-<meta name="description" content="A personalized astrology report calculated from your exact birth details. Western, Vedic, or both. One honest payment — no subscription, no app, no auto-renewal.">
+<meta name="description" content="A birth chart report calculated from your exact date, time and place. Western, Vedic, or both — one payment, nothing recurring.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -185,18 +185,18 @@
       <header><div class="brand">Arvelos</div></header>
       <div class="stars">&#10022; &#9789; &#10023;</div>
       <h1>Your real birth chart.<br><em>One payment.</em> No subscription.</h1>
-      <p class="sub">A personalized astrology report, individually calculated from your
-      exact birth date, time and place — Western, Vedic, or both compared.
-      Delivered as a beautiful PDF within minutes.</p>
+      <p class="sub">Your chart, calculated from your exact birth date, time and
+      place — Western, Vedic, or both, side by side. You'll have the PDF in
+      your inbox within minutes.</p>
       <button class="cta" onclick="startQuiz()">Get your report</button>
-      <div class="honest">No app. No account. No auto-renewal. Nothing to cancel.</div>
+      <div class="honest">No app, no account to set up, nothing that renews on its own.</div>
     </div>
   </div>
 
   <section class="band">
     <div class="wrap">
       <h2>Choose your lens</h2>
-      <p>Two great traditions read the same sky differently. Pick one — or see both, side by side.</p>
+      <p>Western and Vedic astrology read the same sky differently. Pick one, or get both side by side.</p>
       <div class="tiers">
         <div class="tier" onclick="startQuiz('western')">
           <h3>Western</h3><div class="price">$19 <span style="font-size:13px">/ ₹999</span></div>
@@ -204,12 +204,12 @@
         </div>
         <div class="tier" onclick="startQuiz('vedic')">
           <h3>Vedic</h3><div class="price">$19 <span style="font-size:13px">/ ₹999</span></div>
-          <p>Authentic Jyotish: sidereal zodiac, your nakshatra, dasha periods. 20–25 pages.</p>
+          <p>Jyotish: sidereal zodiac, your nakshatra, dasha periods. 20–25 pages.</p>
         </div>
         <div class="tier" onclick="startQuiz('mixed')">
           <h3>Mixed<span class="badge">Most complete</span></h3>
           <div class="price">$29 <span style="font-size:13px">/ ₹1,499</span></div>
-          <p>Both systems fully calculated, plus a synthesis comparing what each says about you. 32+ pages.</p>
+          <p>Both systems calculated in full, plus a section comparing what each says about you. 32+ pages.</p>
         </div>
       </div>
     </div>
@@ -217,21 +217,21 @@
 
   <section class="band" style="background:#fff">
     <div class="wrap faq">
-      <h2 style="font-style:italic">Honest answers</h2>
+      <h2 style="font-style:italic">Questions people actually ask</h2>
       <h3>Is this a real calculation or a template?</h3>
-      <p>Real. Your chart is computed with the Swiss Ephemeris — the same astronomical
-      data professional astrologers use — from your exact birth moment and coordinates.
-      No two reports are the same.</p>
+      <p>Real. We compute your chart with the Swiss Ephemeris, the same astronomical
+      data professional astrologers use, from your exact birth moment and coordinates.
+      No two reports come out the same.</p>
       <h3>Will you charge me again?</h3>
-      <p>No. One payment, one report. There is no subscription, no trial that converts,
-      no account to cancel. That's the whole point of Arvelos.</p>
+      <p>No. You pay once and get one report — there's no subscription running
+      in the background and nothing to remember to cancel.</p>
       <h3>What if my birth time is approximate?</h3>
       <p>Use your best estimate. Sun, Moon and planet signs are usually unaffected;
       your rising sign may shift if the time is off by more than an hour or two.</p>
       <h3>Refunds?</h3>
-      <p>If the report is wrong because of an error on our side, we'll fix it or refund
-      you — reply to your delivery email. Because the report is generated individually
-      and delivered instantly, we can't refund change-of-mind after delivery.
+      <p>If something's wrong on our end, we'll fix it or refund you — just reply
+      to your delivery email. Because each report is generated for you individually
+      and delivered right away, we can't offer change-of-mind refunds after that.
       Full policy: <a href="/terms.html">terms &amp; refunds</a>.</p>
     </div>
   </section>
@@ -245,7 +245,7 @@
     <!-- STEP 1: birth details -->
     <div class="step on" id="s1">
       <h2>Your birth details</h2>
-      <p class="hint">Time and place are needed for an accurate chart — this is what makes the report yours.</p>
+      <p class="hint">We need your time and place of birth to calculate an accurate chart.</p>
       <label>Your first name</label>
       <input type="text" id="name" placeholder="So the report can address you" maxlength="60">
       <div class="row">
@@ -274,7 +274,7 @@
     <!-- STEP 2: focus areas -->
     <div class="step" id="s2">
       <h2>What should your report focus on?</h2>
-      <p class="hint">Pick as many as you like — each adds a dedicated section.</p>
+      <p class="hint">Pick as many as you like — each one adds a section to your report.</p>
       <div class="chips" id="focus">
         <div class="chip" data-v="personality">Personality</div>
         <div class="chip" data-v="love">Love &amp; relationships</div>
@@ -295,7 +295,7 @@
         <div class="tier" data-tier="vedic"><h3>Vedic</h3>
           <div class="price" data-p>$19</div><p>Sidereal · nakshatra · dasha periods</p></div>
         <div class="tier" data-tier="mixed"><h3>Mixed</h3>
-          <div class="price" data-p>$29</div><p>Both systems + synthesis</p></div>
+          <div class="price" data-p>$29</div><p>Both systems + comparison</p></div>
       </div>
       <label style="margin-top:20px">Currency</label>
       <select id="currency" onchange="paintPrices()">
@@ -322,12 +322,11 @@
       </div>
       </div>
       <p class="hint" id="hostednote" style="display:none">You'll be taken to our
-      payment provider's secure page to complete the payment, then brought
-      straight back here for your report.</p>
-      <p class="legal">One-time payment. No subscription or recurring charge of any kind.
+      payment provider to pay, then brought straight back here for your report.</p>
+      <p class="legal">One-time payment — no subscription, no recurring charge.
         By purchasing you agree to the <a href="/terms.html" target="_blank">Terms &amp;
         Refund Policy</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>.
-        Your birth details are used only to calculate your report.</p>
+        We use your birth details only to calculate your report.</p>
       <div class="optin">
         <input type="checkbox" id="optin">
         <span>Want occasional updates or future tools? Tick here. (Optional — we'll
@@ -364,8 +363,8 @@
   <div class="wrap">
     Arvelos · arvelos.cloud · <a href="/terms.html">Terms &amp; Refunds</a> ·
     <a href="/privacy.html">Privacy</a> · support@arvelos.cloud<br>
-    For reflection and entertainment. Reports describe tendencies, not certainties,
-    and make no predictions about your future.
+    For reflection and entertainment only. Nothing here predicts what will
+    actually happen to you.
   </div>
 </footer>
 
