@@ -3,102 +3,188 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#120c27">
 <title>Arvelos — Your Real Birth Chart. One Payment. No Subscription.</title>
 <meta name="description" content="A personalized astrology report calculated from your exact birth details. Western, Vedic, or both. One honest payment — no subscription, no app, no auto-renewal.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink:#1a1333; --deep:#2d1b52; --violet:#43277a; --gold:#c9b458;
-    --paper:#f6f3fc; --text:#2b2440; --muted:#8b84a8;
+    --ink:#120c27; --deep:#241443; --violet:#4a2f88; --violet-soft:#6c48b8;
+    --gold:#c6a15b; --gold-bright:#e6c988;
+    --paper:#f5f2fb; --text:#241c3d; --muted:#7d75a0; --line:#ded6ef;
+    --display:'Fraunces',Georgia,serif;
+    --body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
   }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:Georgia,'Times New Roman',serif; background:var(--ink);
-         color:#efe9fc; line-height:1.65; }
-  .wrap { max-width:680px; margin:0 auto; padding:0 20px; }
+  html { -webkit-text-size-adjust:100%; }
+  body { font-family:var(--body); background:var(--ink); color:#efe9fc;
+         line-height:1.6; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+  .wrap { max-width:680px; margin:0 auto; padding:0 22px; }
+  a { color:inherit; }
+  :focus-visible { outline:2px solid var(--gold-bright); outline-offset:3px; }
 
-  header { padding:22px 0; }
-  .brand { letter-spacing:6px; font-size:15px; color:var(--gold);
-           text-transform:uppercase; }
+  header { padding:24px 0; }
+  .brand { font-family:var(--display); letter-spacing:.14em; font-size:15px;
+           color:var(--gold-bright); text-transform:uppercase; font-weight:500; }
 
-  .hero { padding:48px 0 40px; text-align:center;
-          background:linear-gradient(170deg,var(--ink),var(--deep) 70%,var(--violet)); }
-  .hero h1 { font-size:clamp(28px,5vw,42px); font-weight:normal; line-height:1.2; }
-  .hero .sub { color:#cfc4ec; margin:18px auto 0; max-width:520px; font-size:17px; }
-  .hero .stars { color:var(--gold); letter-spacing:12px; font-size:22px; margin:26px 0 6px; }
-  .cta { display:inline-block; margin-top:30px; background:var(--gold); color:var(--ink);
-         padding:14px 38px; border-radius:6px; font-size:17px; text-decoration:none;
-         border:none; cursor:pointer; font-family:inherit; }
-  .cta:hover { filter:brightness(1.08); }
-  .honest { margin-top:16px; font-size:13.5px; color:var(--muted); }
+  .hero { position:relative; padding:56px 0 46px; text-align:center; overflow:hidden;
+          background:radial-gradient(120% 90% at 50% -10%,var(--violet) 0%,var(--deep) 45%,var(--ink) 85%); }
+  .wheel { position:absolute; top:50%; left:50%; width:min(640px,150vw); height:min(640px,150vw);
+           transform:translate(-50%,-50%); opacity:.32; pointer-events:none; }
+  .wheel .ring { fill:none; stroke:var(--gold); stroke-width:.6; opacity:.5; }
+  .wheel .spoke { stroke:var(--gold); stroke-width:.6; opacity:.35; }
+  .wheel .glyph { fill:var(--gold-bright); font-family:var(--mono); font-size:13px; opacity:.55; }
+  .wheel-spin { transform-origin:200px 200px; animation:spin 220s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .hero .inner { position:relative; z-index:1; }
+  .hero h1 { font-family:var(--display); font-weight:500; font-size:clamp(30px,6vw,46px);
+             line-height:1.15; letter-spacing:-.01em; }
+  .hero h1 em { font-style:italic; color:var(--gold-bright); }
+  .hero .sub { color:#d6cbf2; margin:20px auto 0; max-width:480px; font-size:16.5px; }
+  .hero .stars { color:var(--gold); letter-spacing:14px; font-size:20px; margin:28px 0 8px; }
+  .cta { display:inline-block; margin-top:28px; background:linear-gradient(180deg,var(--gold-bright),var(--gold));
+         color:var(--ink); padding:15px 40px; border-radius:30px; font-size:16.5px; font-weight:600;
+         text-decoration:none; border:none; cursor:pointer; font-family:var(--body);
+         box-shadow:0 8px 24px rgba(198,161,91,.25); transition:transform .15s,box-shadow .15s; }
+  .cta:hover { transform:translateY(-1px); box-shadow:0 10px 28px rgba(198,161,91,.35); }
+  .honest { margin-top:18px; font-size:13px; letter-spacing:.02em; color:#a89bd1; }
 
-  section.band { background:var(--paper); color:var(--text); padding:44px 0; }
-  section.band h2 { color:var(--violet); font-weight:normal; font-size:26px;
-                    margin-bottom:14px; }
+  section.band { background:var(--paper); color:var(--text); padding:48px 0; }
+  section.band h2 { font-family:var(--display); color:var(--violet); font-weight:500; font-size:26px;
+                     margin-bottom:6px; }
+  section.band > .wrap > p { color:#5a5276; font-size:15px; }
   .tiers { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-           gap:14px; margin-top:22px; }
-  .tier { border:1.5px solid #d9d2ea; border-radius:10px; padding:18px;
-          background:#fff; cursor:pointer; transition:border-color .15s; }
-  .tier:hover, .tier.sel { border-color:var(--gold); box-shadow:0 2px 14px rgba(67,39,122,.12); }
-  .tier h3 { color:var(--deep); font-size:18px; font-weight:normal; }
-  .tier .price { font-size:24px; color:var(--violet); margin:8px 0 4px; }
+           gap:14px; margin-top:24px; }
+  .tier { border:1.5px solid var(--line); border-radius:14px; padding:20px; background:#fff;
+          cursor:pointer; transition:border-color .15s,transform .15s,box-shadow .15s; }
+  .tier:hover, .tier.sel { border-color:var(--gold); box-shadow:0 6px 20px rgba(74,47,136,.12);
+                            transform:translateY(-2px); }
+  .tier h3 { font-family:var(--display); color:var(--deep); font-size:19px; font-weight:500; }
+  .tier .price { font-family:var(--mono); font-size:23px; color:var(--violet); margin:10px 0 6px;
+                 font-weight:500; }
   .tier p { font-size:13.5px; color:#5a5276; }
-  .badge { display:inline-block; background:var(--gold); color:var(--ink);
-           font-size:11px; padding:2px 8px; border-radius:10px; margin-left:6px; }
+  .badge { display:inline-block; background:var(--gold); color:var(--ink); font-family:var(--mono);
+           font-size:10.5px; padding:3px 9px; border-radius:10px; margin-left:6px; letter-spacing:.02em; }
 
   /* quiz */
   #quiz { display:none; background:var(--paper); color:var(--text);
-          min-height:70vh; padding:36px 0 60px; }
+          min-height:70vh; padding:40px 0 60px; }
   .step { display:none; }
-  .step.on { display:block; animation:fade .25s; }
-  @keyframes fade { from {opacity:0; transform:translateY(6px);} to {opacity:1;} }
-  .progress { height:5px; background:#e3ddf2; border-radius:3px; margin-bottom:28px; }
-  .progress i { display:block; height:100%; background:var(--gold); border-radius:3px;
-                transition:width .3s; }
-  label { display:block; margin:14px 0 5px; color:var(--deep); font-size:15px; }
+  .step.on { display:block; animation:fade .3s ease; }
+  @keyframes fade { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:translateY(0);} }
+
+  .progress { position:relative; height:6px; border-radius:3px; background:var(--line);
+              background-image:repeating-linear-gradient(90deg,var(--paper) 0 1px,transparent 1px calc(100%/6));
+              margin-bottom:32px; }
+  .progress i { display:block; height:100%; border-radius:3px; position:relative;
+                background:linear-gradient(90deg,var(--violet),var(--gold));
+                transition:width .35s ease; }
+  .progress i::after { content:""; position:absolute; right:-4px; top:50%; transform:translateY(-50%);
+                        width:11px; height:11px; border-radius:50%; background:var(--gold-bright);
+                        box-shadow:0 0 0 3px var(--paper),0 0 10px rgba(198,161,91,.6); }
+
+  .step h2 { font-family:var(--display); color:var(--violet); font-weight:500; font-size:25px; }
+  label { display:block; margin:16px 0 6px; color:var(--deep); font-size:14px; font-weight:500; }
   input[type=text],input[type=email],input[type=date],input[type=time],select {
-    width:100%; padding:11px 12px; font-size:16px; font-family:inherit;
-    border:1.5px solid #cfc6e6; border-radius:7px; background:#fff; color:var(--text); }
+    width:100%; padding:12px 14px; font-size:16px; font-family:var(--body);
+    border:1.5px solid var(--line); border-radius:9px; background:#fff; color:var(--text);
+    transition:border-color .15s; }
   input:focus,select:focus { outline:none; border-color:var(--violet); }
   .row { display:flex; gap:12px; } .row > div { flex:1; }
-  .chips { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
-  .chip { padding:10px 18px; border:1.5px solid #cfc6e6; border-radius:22px;
-          background:#fff; cursor:pointer; font-size:15px; color:var(--text); }
+  .chips { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .chip { padding:11px 20px; border:1.5px solid var(--line); border-radius:24px;
+          background:#fff; cursor:pointer; font-size:15px; color:var(--text); transition:.15s; }
   .chip.sel { background:var(--violet); color:#fff; border-color:var(--violet); }
-  .nav { margin-top:28px; display:flex; justify-content:space-between; }
-  .btn { padding:12px 30px; font-size:16px; border-radius:7px; border:none;
-         cursor:pointer; font-family:inherit; }
+  .nav { margin-top:32px; display:flex; justify-content:space-between; gap:12px; }
+  .btn { padding:13px 32px; font-size:15.5px; font-weight:600; border-radius:9px; border:none;
+         cursor:pointer; font-family:var(--body); transition:.15s; }
   .btn.primary { background:var(--violet); color:#fff; }
+  .btn.primary:hover { background:var(--violet-soft); }
   .btn.ghost { background:none; color:var(--muted); }
-  .hint { font-size:13px; color:var(--muted); margin-top:4px; }
-  .total { font-size:20px; color:var(--violet); margin:16px 0; }
-  .legal { font-size:13px; color:#5a5276; margin:14px 0; }
+  .hint { font-size:13px; color:var(--muted); margin-top:5px; }
+  .total { font-family:var(--mono); font-size:19px; color:var(--violet); margin:18px 0; font-weight:500; }
+  .legal { font-size:12.5px; color:#5a5276; margin:16px 0; line-height:1.6; }
   .legal a { color:var(--violet); }
-  .optin { display:flex; gap:9px; align-items:flex-start; margin:16px 0;
-           font-size:13.5px; color:#5a5276; }
-  .optin input { margin-top:3px; }
-  .err { color:#b03030; font-size:14px; margin-top:10px; min-height:18px; }
+  .optin { display:flex; gap:10px; align-items:flex-start; margin:18px 0;
+           font-size:13px; color:#5a5276; }
+  .optin input { margin-top:3px; flex-shrink:0; }
+  .err { color:#b0304a; font-size:13.5px; margin-top:10px; min-height:18px; }
 
   /* processing / done */
-  .center { text-align:center; padding:60px 0; }
-  .spin { width:46px; height:46px; border:4px solid #e3ddf2; border-top-color:var(--gold);
-          border-radius:50%; margin:0 auto 22px; animation:rot 1s linear infinite; }
+  .center { text-align:center; padding:64px 0; }
+  .spin { width:52px; height:52px; margin:0 auto 24px; border-radius:50%;
+          background:conic-gradient(var(--gold-bright),var(--violet),var(--gold-bright));
+          -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 5px));
+          mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 5px));
+          animation:rot 1.4s linear infinite; }
   @keyframes rot { to { transform:rotate(360deg);} }
 
-  footer { padding:34px 0 44px; font-size:13px; color:var(--muted);
-           text-align:center; }
+  footer { padding:38px 0 48px; font-size:12.5px; color:var(--muted); text-align:center; }
   footer a { color:var(--muted); }
   .faq { max-width:680px; margin:0 auto; }
-  .faq h3 { color:var(--deep); font-size:16px; margin:18px 0 4px; font-weight:normal; }
-  .faq p { font-size:14.5px; color:#5a5276; }
+  .faq h3 { font-family:var(--display); color:var(--deep); font-size:16.5px; margin:20px 0 5px; font-weight:500; }
+  .faq p { font-size:14px; color:#5a5276; }
+
+  @media (max-width:480px) {
+    .wrap { padding:0 18px; }
+    .hero { padding:44px 0 36px; }
+    .wheel { opacity:.18; }
+    .row { flex-direction:column; gap:0; }
+    .nav { flex-direction:column-reverse; }
+    .nav .btn { width:100%; }
+    .cta { width:100%; padding:15px; }
+    .tier { padding:16px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .wheel-spin { animation:none; }
+    .spin { animation:none; background:var(--gold-bright); }
+    .cta { transition:none; }
+    .step.on { animation:none; }
+  }
 </style>
 </head>
 <body>
 
 <div id="landing">
   <div class="hero">
-    <div class="wrap">
+    <svg class="wheel" viewBox="-15 -15 430 430" aria-hidden="true">
+      <g class="wheel-spin">
+        <circle class="ring" cx="200" cy="200" r="188"/>
+        <circle class="ring" cx="200" cy="200" r="140"/>
+        <circle class="ring" cx="200" cy="200" r="92"/>
+        <line class="spoke" x1="292" y1="200" x2="388" y2="200"/>
+        <line class="spoke" x1="279.7" y1="246" x2="362.8" y2="294"/>
+        <line class="spoke" x1="246" y1="279.7" x2="294" y2="362.8"/>
+        <line class="spoke" x1="200" y1="292" x2="200" y2="388"/>
+        <line class="spoke" x1="154" y1="279.7" x2="106" y2="362.8"/>
+        <line class="spoke" x1="120.3" y1="246" x2="37.2" y2="294"/>
+        <line class="spoke" x1="108" y1="200" x2="12" y2="200"/>
+        <line class="spoke" x1="120.3" y1="154" x2="37.2" y2="106"/>
+        <line class="spoke" x1="154" y1="120.3" x2="106" y2="37.2"/>
+        <line class="spoke" x1="200" y1="108" x2="200" y2="12"/>
+        <line class="spoke" x1="246" y1="120.3" x2="294" y2="37.2"/>
+        <line class="spoke" x1="279.7" y1="154" x2="362.8" y2="106"/>
+        <text class="glyph" x="400" y="200" text-anchor="middle" dominant-baseline="middle">&#9800;</text>
+        <text class="glyph" x="373.2" y="300" text-anchor="middle" dominant-baseline="middle">&#9801;</text>
+        <text class="glyph" x="300" y="373.2" text-anchor="middle" dominant-baseline="middle">&#9802;</text>
+        <text class="glyph" x="200" y="400" text-anchor="middle" dominant-baseline="middle">&#9803;</text>
+        <text class="glyph" x="100" y="373.2" text-anchor="middle" dominant-baseline="middle">&#9804;</text>
+        <text class="glyph" x="26.8" y="300" text-anchor="middle" dominant-baseline="middle">&#9805;</text>
+        <text class="glyph" x="0" y="200" text-anchor="middle" dominant-baseline="middle">&#9806;</text>
+        <text class="glyph" x="26.8" y="100" text-anchor="middle" dominant-baseline="middle">&#9807;</text>
+        <text class="glyph" x="100" y="26.8" text-anchor="middle" dominant-baseline="middle">&#9808;</text>
+        <text class="glyph" x="200" y="0" text-anchor="middle" dominant-baseline="middle">&#9809;</text>
+        <text class="glyph" x="300" y="26.8" text-anchor="middle" dominant-baseline="middle">&#9810;</text>
+        <text class="glyph" x="373.2" y="100" text-anchor="middle" dominant-baseline="middle">&#9811;</text>
+      </g>
+    </svg>
+    <div class="wrap inner">
       <header><div class="brand">Arvelos</div></header>
       <div class="stars">&#10022; &#9789; &#10023;</div>
-      <h1>Your real birth chart.<br>One payment. No subscription.</h1>
+      <h1>Your real birth chart.<br><em>One payment.</em> No subscription.</h1>
       <p class="sub">A personalized astrology report, individually calculated from your
       exact birth date, time and place — Western, Vedic, or both compared.
       Delivered as a beautiful PDF within minutes.</p>
@@ -131,7 +217,7 @@
 
   <section class="band" style="background:#fff">
     <div class="wrap faq">
-      <h2 style="color:var(--violet);font-weight:normal">Honest answers</h2>
+      <h2 style="font-style:italic">Honest answers</h2>
       <h3>Is this a real calculation or a template?</h3>
       <p>Real. Your chart is computed with the Swiss Ephemeris — the same astronomical
       data professional astrologers use — from your exact birth moment and coordinates.
@@ -158,7 +244,7 @@
 
     <!-- STEP 1: birth details -->
     <div class="step on" id="s1">
-      <h2 style="color:var(--violet);font-weight:normal">Your birth details</h2>
+      <h2>Your birth details</h2>
       <p class="hint">Time and place are needed for an accurate chart — this is what makes the report yours.</p>
       <label>Your first name</label>
       <input type="text" id="name" placeholder="So the report can address you" maxlength="60">
@@ -187,7 +273,7 @@
 
     <!-- STEP 2: focus areas -->
     <div class="step" id="s2">
-      <h2 style="color:var(--violet);font-weight:normal">What should your report focus on?</h2>
+      <h2>What should your report focus on?</h2>
       <p class="hint">Pick as many as you like — each adds a dedicated section.</p>
       <div class="chips" id="focus">
         <div class="chip" data-v="personality">Personality</div>
@@ -202,7 +288,7 @@
 
     <!-- STEP 3: system/tier -->
     <div class="step" id="s3">
-      <h2 style="color:var(--violet);font-weight:normal">Choose your system</h2>
+      <h2>Choose your system</h2>
       <div class="tiers" id="tierpick">
         <div class="tier" data-tier="western"><h3>Western</h3>
           <div class="price" data-p>$19</div><p>Tropical zodiac · houses · aspects</p></div>
@@ -223,7 +309,7 @@
 
     <!-- STEP 4: checkout -->
     <div class="step" id="s4">
-      <h2 style="color:var(--violet);font-weight:normal">Checkout</h2>
+      <h2>Checkout</h2>
       <div class="total" id="total"></div>
       <label>Email — your report is delivered here</label>
       <input type="email" id="email" placeholder="you@example.com">
@@ -256,7 +342,7 @@
     <div class="step" id="s5">
       <div class="center">
         <div class="spin"></div>
-        <h2 style="color:var(--violet);font-weight:normal">Calculating your sky…</h2>
+        <h2>Calculating your sky…</h2>
         <p class="hint" id="procmsg">Computing planetary positions from your exact birth moment.</p>
       </div>
     </div>
@@ -265,7 +351,7 @@
     <div class="step" id="s6">
       <div class="center">
         <div style="font-size:44px;color:var(--gold)">&#10022;</div>
-        <h2 style="color:var(--violet);font-weight:normal">Your report is ready</h2>
+        <h2>Your report is ready</h2>
         <p class="hint" style="margin:12px 0 26px">We've also emailed the download link
         to you, so you can come back to it anytime.</p>
         <a class="cta" id="dl" href="#">Download your report (PDF)</a>
@@ -409,7 +495,6 @@ function paintTotal() {
     `${tier.charAt(0).toUpperCase()+tier.slice(1)} report — ${sym}${amt.toLocaleString(cur==="INR"?"en-IN":"en-US")} · one-time`;
 }
 // preselect tier if arrived via a tier card
-new MutationObserver(()=>{}).observe(document.body,{});
 document.addEventListener("DOMContentLoaded", ()=> {
   if (tier) { const el = document.querySelector(`#tierpick .tier[data-tier=${tier}]`);
     if (el) el.classList.add("sel"); }
