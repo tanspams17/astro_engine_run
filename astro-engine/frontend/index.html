@@ -156,13 +156,6 @@
   .timeoff { display:flex; gap:9px; align-items:flex-start; margin-top:9px; font-size:12.5px; color:var(--lavender); }
   .timeoff input { margin-top:2px; accent-color:var(--gold); }
 
-  .chip-group { display:flex; flex-wrap:wrap; gap:10px; }
-  .chip { padding:9px 18px; border:1px solid var(--surface-border); border-radius:999px;
-    background:rgba(255,255,255,0.02); cursor:pointer; font-size:13.5px; color:var(--lavender);
-    transition:all .15s; }
-  .chip.sel { background:rgba(212,146,10,0.15); color:var(--gold-light); border-color:var(--gold); }
-  .tier-chip[data-tier=western]::before, .tier-chip[data-tier=vedic]::before, .tier-chip[data-tier=mixed]::before { content:""; }
-
   .newsletter-box { border:1px dashed var(--surface-border); border-radius:12px; padding:14px 16px;
     margin-top:22px; display:flex; gap:10px; align-items:flex-start; }
   .newsletter-box input { margin-top:3px; accent-color:var(--gold); }
@@ -280,8 +273,8 @@
     <div class="included-grid">
       <div class="card"><div class="glyph">✦</div><h3>Real calculation</h3>
         <p>Swiss Ephemeris precision — the same astronomical data professional astrologers use.</p></div>
-      <div class="card"><div class="glyph">✦</div><h3>Your focus areas</h3>
-        <p>Personality, love, career or growth — each selection adds a dedicated section.</p></div>
+      <div class="card"><div class="glyph">✦</div><h3>Every angle covered</h3>
+        <p>Personality, love, career and growth — every report includes all four, no picking required.</p></div>
       <div class="card"><div class="glyph">✦</div><h3>Instant PDF</h3>
         <p>A beautifully typeset report delivered to your inbox within minutes.</p></div>
       <div class="card"><div class="glyph">✦</div><h3>One payment</h3>
@@ -385,16 +378,6 @@
               <option value="vedic">Vedic</option>
               <option value="mixed">Mixed</option>
             </select></div>
-
-          <div class="full">
-            <label>Focus area <span class="opt">pick as many as you like</span></label>
-            <div class="chip-group" id="focus">
-              <div class="chip" data-v="personality">Personality</div>
-              <div class="chip" data-v="love">Love &amp; relationships</div>
-              <div class="chip" data-v="career">Career &amp; direction</div>
-              <div class="chip" data-v="growth">Growth</div>
-            </div>
-          </div>
 
           <div class="full" id="cardfields">
             <label>Card number</label>
@@ -608,19 +591,47 @@ document.addEventListener("DOMContentLoaded", ensureSession);
 /* ---- city autocomplete ---- */
 let CITIES = [];
 fetch("/cities.json").then(r=>r.json()).then(d=>{CITIES=d;}).catch(()=>{});
+
+// older/colonial-era and common alternate names still widely used, mapped to the
+// name actually present in cities.json
+const CITY_ALIASES = {
+  bombay:"mumbai", calcutta:"kolkata", madras:"chennai", bangalore:"bengaluru",
+  poona:"pune", cochin:"kochi", trivandrum:"thiruvananthapuram", baroda:"vadodara",
+  benares:"varanasi", allahabad:"prayagraj", mysore:"mysuru", gurgaon:"gurugram",
+  peking:"beijing", canton:"guangzhou", saigon:"ho chi minh city",
+  constantinople:"istanbul",
+};
+
+// matches on the whole name OR on any individual word within it, so "york"
+// finds "New York City" and "francisco" finds "San Francisco" — not just
+// cities whose name happens to start with exactly what was typed.
+function searchCities(query) {
+  const terms = [query];
+  for (const [old, modern] of Object.entries(CITY_ALIASES))
+    if (old.startsWith(query) || query.startsWith(old)) terms.push(modern);
+
+  const startsMatch = [], wordMatch = [];
+  for (const c of CITIES) {
+    const name = c.n.toLowerCase();
+    const words = name.split(/[\s,]+/);
+    if (terms.some(t => name.startsWith(t))) startsMatch.push(c);
+    else if (terms.some(t => words.some(w => w.startsWith(t)))) wordMatch.push(c);
+  }
+  return startsMatch.concat(wordMatch);
+}
+
 document.getElementById("bplace").addEventListener("input", e => {
-  const v = e.target.value.toLowerCase(); chosenPlace = null;
+  const v = e.target.value.toLowerCase().trim(); chosenPlace = null;
   if (v.length < 2) return;
   const dl = document.getElementById("cities"); dl.innerHTML = "";
-  CITIES.filter(c => c.n.toLowerCase().startsWith(v)).slice(0,8)
+  searchCities(v).slice(0,8)
         .forEach(c => { const o = document.createElement("option"); o.value = c.n; dl.appendChild(o); });
 });
 document.getElementById("bplace").addEventListener("change", e => {
   chosenPlace = CITIES.find(c => c.n === e.target.value) || null;
 });
 
-document.querySelectorAll("#focus .chip").forEach(c =>
-  c.addEventListener("click", ()=>c.classList.toggle("sel")));
+const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
 
 /* ---- pricing ---- */
 const PRICES = {western:{USD:[19,"$"],INR:[999,"₹"]},
@@ -677,14 +688,17 @@ async function pay() {
   }
   if (!/.+@.+\..+/.test(email)) { err.textContent = "Please enter a valid email — your report is delivered there."; return; }
   if (!chosenPlace) {
-    chosenPlace = CITIES.find(c => c.n.toLowerCase() === p.toLowerCase());
+    const pl = p.toLowerCase();
+    chosenPlace = CITIES.find(c => c.n.toLowerCase() === pl);
+    if (!chosenPlace) {
+      const results = searchCities(pl);
+      if (results.length === 1) chosenPlace = results[0];
+    }
     if (!chosenPlace) { err.textContent = "Please pick your birth city from the suggestion list so we can locate it precisely."; return; }
   }
-  if (!document.querySelector("#focus .chip.sel")) { err.textContent = "Pick at least one focus area."; return; }
   if (PROVIDER === "mock" && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
 
   document.getElementById("paybtn").disabled = true;
-  const focus = [...document.querySelectorAll("#focus .chip.sel")].map(c=>c.dataset.v);
   try {
     const or = await fetch(API+"/api/orders", {method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -693,7 +707,7 @@ async function pay() {
         birth_date: d, birth_time: noTime ? null : t,
         gender: document.getElementById("gender").value,
         birth_place: chosenPlace.n, lat: chosenPlace.a, lon: chosenPlace.o, tz: chosenPlace.z,
-        focus_areas: focus, marketing_opt_in: document.getElementById("optin").checked })});
+        focus_areas: ALL_FOCUS_AREAS, marketing_opt_in: document.getElementById("optin").checked })});
     if (!or.ok) throw new Error((await or.json()).detail || "order failed");
     const order = await or.json();
 
