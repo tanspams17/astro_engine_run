@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#120c27">
-<title>Arvelos — Your Real Birth Chart. One Payment. No Subscription.</title>
-<meta name="description" content="A birth chart report calculated from your exact date, time and place. Western, Vedic, or both — one payment, nothing recurring.">
+<title>Arvelos: Your Real Birth Chart, One Payment, No Subscription</title>
+<meta name="description" content="A birth chart report calculated from your exact date, time and place. Western, Vedic, or both. One payment, nothing recurring.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -39,6 +39,18 @@
   .wheel .glyph { fill:var(--gold-bright); font-family:var(--mono); font-size:13px; opacity:.55; }
   .wheel-spin { transform-origin:200px 200px; animation:spin 220s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
+  .saptarshi { position:absolute; left:4%; bottom:6%; width:min(280px,40vw); opacity:.6; pointer-events:none; }
+  .saptarshi .links line { stroke:var(--gold); stroke-width:.7; opacity:.4; }
+  .saptarshi .stars circle { fill:var(--gold-bright); animation:twinkle 3.6s ease-in-out infinite; }
+  .saptarshi .stars circle:nth-child(1) { animation-delay:.0s; }
+  .saptarshi .stars circle:nth-child(2) { animation-delay:.5s; }
+  .saptarshi .stars circle:nth-child(3) { animation-delay:1s; }
+  .saptarshi .stars circle:nth-child(4) { animation-delay:1.5s; }
+  .saptarshi .stars circle:nth-child(5) { animation-delay:2s; }
+  .saptarshi .stars circle:nth-child(6) { animation-delay:2.5s; }
+  .saptarshi .stars circle:nth-child(7) { animation-delay:3s; }
+  .saptarshi .label { fill:var(--gold); font-family:var(--mono); font-size:9px; letter-spacing:.18em; opacity:.55; }
+  @keyframes twinkle { 0%,100% { opacity:.45; } 50% { opacity:1; } }
   .hero .inner { position:relative; z-index:1; }
   .hero h1 { font-family:var(--display); font-weight:500; font-size:clamp(30px,6vw,46px);
              line-height:1.15; letter-spacing:-.01em; }
@@ -132,6 +144,7 @@
     .wrap { padding:0 18px; }
     .hero { padding:44px 0 36px; }
     .wheel { opacity:.18; }
+    .saptarshi { width:38vw; opacity:.4; bottom:3%; }
     .row { flex-direction:column; gap:0; }
     .nav { flex-direction:column-reverse; }
     .nav .btn { width:100%; }
@@ -140,6 +153,7 @@
   }
   @media (prefers-reduced-motion:reduce) {
     .wheel-spin { animation:none; }
+    .saptarshi .stars circle { animation:none; }
     .spin { animation:none; background:var(--gold-bright); }
     .cta { transition:none; }
     .step.on { animation:none; }
@@ -181,12 +195,33 @@
         <text class="glyph" x="373.2" y="100" text-anchor="middle" dominant-baseline="middle">&#9811;</text>
       </g>
     </svg>
+    <svg class="saptarshi" viewBox="0 0 300 170" aria-hidden="true">
+      <g class="links">
+        <line x1="14" y1="42" x2="62" y2="56"/>
+        <line x1="62" y1="56" x2="112" y2="63"/>
+        <line x1="112" y1="63" x2="152" y2="50"/>
+        <line x1="152" y1="50" x2="268" y2="20"/>
+        <line x1="268" y1="20" x2="248" y2="128"/>
+        <line x1="248" y1="128" x2="160" y2="109"/>
+        <line x1="160" y1="109" x2="152" y2="50"/>
+      </g>
+      <g class="stars">
+        <circle cx="14" cy="42" r="2.6"/>
+        <circle cx="62" cy="56" r="2.1"/>
+        <circle cx="112" cy="63" r="2.3"/>
+        <circle cx="152" cy="50" r="2"/>
+        <circle cx="268" cy="20" r="2.8"/>
+        <circle cx="160" cy="109" r="2.2"/>
+        <circle cx="248" cy="128" r="2.6"/>
+      </g>
+      <text class="label" x="140" y="155" text-anchor="middle">SAPTARSHI</text>
+    </svg>
     <div class="wrap inner">
       <header><div class="brand">Arvelos</div></header>
       <div class="stars">&#10022; &#9789; &#10023;</div>
       <h1>Your real birth chart.<br><em>One payment.</em> No subscription.</h1>
       <p class="sub">Your chart, calculated from your exact birth date, time and
-      place — Western, Vedic, or both, side by side. You'll have the PDF in
+      place. Western, Vedic, or both, side by side. You'll have the PDF in
       your inbox within minutes.</p>
       <button class="cta" onclick="startQuiz()">Get your report</button>
       <div class="honest">No app, no account to set up, nothing that renews on its own.</div>
@@ -223,13 +258,13 @@
       data professional astrologers use, from your exact birth moment and coordinates.
       No two reports come out the same.</p>
       <h3>Will you charge me again?</h3>
-      <p>No. You pay once and get one report — there's no subscription running
-      in the background and nothing to remember to cancel.</p>
+      <p>No. You pay once and get one report. There's no subscription running
+      in the background, and nothing to remember to cancel.</p>
       <h3>What if my birth time is approximate?</h3>
       <p>Use your best estimate. Sun, Moon and planet signs are usually unaffected;
       your rising sign may shift if the time is off by more than an hour or two.</p>
       <h3>Refunds?</h3>
-      <p>If something's wrong on our end, we'll fix it or refund you — just reply
+      <p>If something's wrong on our end, we'll fix it or refund you. Just reply
       to your delivery email. Because each report is generated for you individually
       and delivered right away, we can't offer change-of-mind refunds after that.
       Full policy: <a href="/terms.html">terms &amp; refunds</a>.</p>
@@ -254,16 +289,16 @@
       </div>
       <div class="optin" style="margin:8px 0 0">
         <input type="checkbox" id="notime" onchange="document.getElementById('btime').disabled=this.checked">
-        <span>I don't know my exact birth time. (Your report still works —
-        we'll skip only the rising sign and houses, which need a clock time.)</span>
+        <span>I don't know my exact birth time. (Your report still works.
+        We'll only skip the rising sign and houses, which need a clock time.)</span>
       </div>
       <div class="row" style="margin-top:6px">
-        <div><label>Gender <span class="hint" style="display:inline">(optional — used only for the Kua direction calculation)</span></label>
+        <div><label>Gender <span class="hint" style="display:inline">(optional, used only for the Kua direction calculation)</span></label>
         <select id="gender"><option value="unspecified">Prefer not to say</option>
         <option value="male">Male</option><option value="female">Female</option></select></div>
       </div>
       <label>Place of birth</label>
-      <input type="text" id="bplace" placeholder="City, Country — e.g. Mumbai, India" list="cities" autocomplete="off">
+      <input type="text" id="bplace" placeholder="City, Country (e.g. Mumbai, India)" list="cities" autocomplete="off">
       <datalist id="cities"></datalist>
       <p class="hint" id="placehint">Start typing and pick your city from the list.</p>
       <div class="err" id="e1"></div>
@@ -274,7 +309,7 @@
     <!-- STEP 2: focus areas -->
     <div class="step" id="s2">
       <h2>What should your report focus on?</h2>
-      <p class="hint">Pick as many as you like — each one adds a section to your report.</p>
+      <p class="hint">Pick as many as you like. Each one adds a section to your report.</p>
       <div class="chips" id="focus">
         <div class="chip" data-v="personality">Personality</div>
         <div class="chip" data-v="love">Love &amp; relationships</div>
@@ -311,7 +346,7 @@
     <div class="step" id="s4">
       <h2>Checkout</h2>
       <div class="total" id="total"></div>
-      <label>Email — your report is delivered here</label>
+      <label>Email (your report is delivered here)</label>
       <input type="email" id="email" placeholder="you@example.com">
       <div id="cardfields">
       <label>Card number</label>
@@ -323,14 +358,14 @@
       </div>
       <p class="hint" id="hostednote" style="display:none">You'll be taken to our
       payment provider to pay, then brought straight back here for your report.</p>
-      <p class="legal">One-time payment — no subscription, no recurring charge.
+      <p class="legal">One-time payment. No subscription, no recurring charge.
         By purchasing you agree to the <a href="/terms.html" target="_blank">Terms &amp;
         Refund Policy</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>.
         We use your birth details only to calculate your report.</p>
       <div class="optin">
         <input type="checkbox" id="optin">
-        <span>Want occasional updates or future tools? Tick here. (Optional — we'll
-        never email you otherwise, beyond delivering this report.)</span>
+        <span>Want occasional updates or future tools? Tick here. (Optional.
+        We won't email you otherwise, beyond delivering this report.)</span>
       </div>
       <div class="err" id="e4"></div>
       <div class="nav"><button class="btn ghost" onclick="back(4)">Back</button>
@@ -444,7 +479,7 @@ function next(n) {
           p = document.getElementById("bplace").value.trim();
     if (!name || !d || (!t && !noTime) || !p) {
       document.getElementById("e1").textContent =
-        "Please fill in name, date and place — and either a birth time or tick the box if you don't know it.";
+        "Please fill in your name, date and place, plus either a birth time or the box below if you don't know it.";
       return;
     }
     if (!chosenPlace) {
@@ -491,7 +526,7 @@ function paintTotal() {
   const cur = document.getElementById("currency").value;
   const [amt,sym] = PRICES[tier][cur];
   document.getElementById("total").textContent =
-    `${tier.charAt(0).toUpperCase()+tier.slice(1)} report — ${sym}${amt.toLocaleString(cur==="INR"?"en-IN":"en-US")} · one-time`;
+    `${tier.charAt(0).toUpperCase()+tier.slice(1)} report · ${sym}${amt.toLocaleString(cur==="INR"?"en-IN":"en-US")} · one-time`;
 }
 // preselect tier if arrived via a tier card
 document.addEventListener("DOMContentLoaded", ()=> {
@@ -503,7 +538,7 @@ async function pay() {
   const email = document.getElementById("email").value.trim();
   const card = document.getElementById("card").value.replace(/\s/g,"");
   if (!/.+@.+\..+/.test(email)) {
-    document.getElementById("e4").textContent = "Please enter a valid email — your report is delivered there."; return; }
+    document.getElementById("e4").textContent = "Please enter a valid email. Your report is delivered there."; return; }
   if (PROVIDER === "mock" && card.length < 12) {
     document.getElementById("e4").textContent = "Please enter a valid card number."; return; }
   document.getElementById("paybtn").disabled = true;
@@ -549,7 +584,7 @@ async function pay() {
 
 const PROC_MSGS = ["Computing planetary positions from your exact birth moment.",
   "Placing your houses and aspects.", "Writing your report.",
-  "Rendering your PDF — nearly there."];
+  "Almost done, rendering your PDF now."];
 async function poll(orderId, n) {
   document.getElementById("procmsg").textContent = PROC_MSGS[Math.min(n,3)];
   const r = await fetch(API+`/api/orders/${orderId}/status`);
@@ -559,7 +594,7 @@ async function poll(orderId, n) {
     show(6); return;
   }
   if (n > 40) { document.getElementById("procmsg").textContent =
-    "Taking longer than usual — your report will arrive by email shortly."; return; }
+    "Taking longer than usual. Your report will arrive by email shortly."; return; }
   setTimeout(()=>poll(orderId, n+1), 3000);
 }
 </script>
