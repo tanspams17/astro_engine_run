@@ -477,6 +477,8 @@
     <a href="/privacy.html">Privacy</a> · support@arvelos.cloud
     <div class="fine">For reflection and entertainment. Reports describe tendencies, not
       certainties, and make no predictions about your future.</div>
+    <div class="fine">Birthplace data © <a href="https://www.geonames.org/" target="_blank">GeoNames.org</a>, licensed under
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>.</div>
   </div>
 </footer>
 
@@ -605,8 +607,26 @@ async function ensureSession() {
 document.addEventListener("DOMContentLoaded", ensureSession);
 
 /* ---- city autocomplete ---- */
-let CITIES = [];
-fetch("/cities.json").then(r=>r.json()).then(d=>{CITIES=d;}).catch(()=>{});
+let CITIES = [], citiesLoading = true;
+let WORD_INDEX = new Map(); // word length -> [[word, city], ...] — bucketed so the
+                            // fuzzy fallback only compares words of a plausible length
+                            // instead of scanning all ~375k words in the dataset
+fetch("/cities.json").then(r=>r.json()).then(d=>{
+  // pre-tokenize once at load instead of re-splitting ~150k names on every
+  // keystroke — this is what makes search over a dataset this size fast
+  for (const c of d) {
+    c._w = c.n.toLowerCase().split(/[\s,]+/).filter(Boolean);
+    for (const w of c._w) {
+      let bucket = WORD_INDEX.get(w.length);
+      if (!bucket) WORD_INDEX.set(w.length, bucket = []);
+      bucket.push([w, c]);
+    }
+  }
+  CITIES = d; citiesLoading = false;
+  const v = document.getElementById("bplace").value.trim();
+  if (document.activeElement === document.getElementById("bplace") && v.length >= 2 && !chosenPlace)
+    searchAndRender(v.toLowerCase());
+}).catch(()=>{citiesLoading=false;});
 
 // older/colonial-era and common alternate names still widely used, mapped to the
 // name actually present in cities.json
@@ -634,36 +654,74 @@ function editDistance(a, b) {
   return prev[n];
 }
 
-// matches on the whole name OR on any individual word within it, so "york"
-// finds "New York City" and "francisco" finds "San Francisco" — not just
-// cities whose name happens to start with exactly what was typed. Falls back
-// to typo-tolerant fuzzy matching when nothing matches exactly.
-function searchCities(query) {
-  const terms = [query];
+function aliasesFor(word) {
+  const out = [word];
   for (const [old, modern] of Object.entries(CITY_ALIASES))
-    if (old.startsWith(query) || query.startsWith(old)) terms.push(modern);
+    if (old.startsWith(word) || word.startsWith(old)) out.push(modern);
+  return out;
+}
+
+// token-based: splits the query into words and requires each query word (or
+// a known alias of it) to prefix-match SOME word in the city name, in any
+// order. This is what makes "Nizhny Novgorod" findable even though the city
+// is only findable by full-string prefix if you type it exactly, and what
+// makes "New York" findable by typing just "york". Cheap — safe to run
+// synchronously on every keystroke.
+function searchCitiesFast(query) {
+  const qWords = query.split(/[\s,]+/).filter(Boolean);
+  if (!qWords.length) return [];
+  const qAliases = qWords.map(aliasesFor);
 
   const startsMatch = [], wordMatch = [];
   for (const c of CITIES) {
-    const name = c.n.toLowerCase();
-    const words = name.split(/[\s,]+/);
-    if (terms.some(t => name.startsWith(t))) startsMatch.push(c);
-    else if (terms.some(t => words.some(w => w.startsWith(t)))) wordMatch.push(c);
+    if (!qAliases.every(alts => c._w.some(cw => alts.some(a => cw.startsWith(a))))) continue;
+    if (c.n.toLowerCase().startsWith(query) || c._w[0].startsWith(qWords[0])) startsMatch.push(c);
+    else wordMatch.push(c);
   }
-  if (startsMatch.length || wordMatch.length || query.length < 4)
-    return startsMatch.concat(wordMatch);
+  return startsMatch.concat(wordMatch);
+}
 
-  // fuzzy pass: tolerate ~1 typo per 4 characters against the first word of each city
-  const maxDist = Math.min(3, Math.floor(query.length / 4) + 1);
+// typo-tolerant fallback for when searchCitiesFast finds nothing — noticeably
+// more expensive (can take several hundred ms over ~150k cities), so callers
+// should only invoke it after showing a "searching" state and yielding a
+// frame, not synchronously on every keystroke.
+function searchCitiesFuzzy(query) {
+  const qWords = query.split(/[\s,]+/).filter(Boolean);
+  if (!qWords.length) return [];
+
+  // fuzzy fallback: tolerate typos in any query word against any city word
+  // (this is what lets "viskhapatnam" find "Visakhapatnam" and a misspelled
+  // first word of a multi-word city, like "Nizhni Novgorod", still resolve).
+  // Uses WORD_INDEX to only compare against words of a plausible length
+  // instead of scanning all ~375k words in the dataset on every query.
+  const maxDist = w => Math.min(3, Math.floor(w.length / 4) + 1);
+  const bestPerCity = new Map(); // city -> per-query-word best distance array
+  qWords.forEach((qw, qi) => {
+    const limit = maxDist(qw);
+    for (let len = qw.length - limit; len <= qw.length + limit; len++) {
+      const bucket = WORD_INDEX.get(len);
+      if (!bucket) continue;
+      for (const [w, c] of bucket) {
+        const d = editDistance(qw, w);
+        if (d > limit) continue;
+        let arr = bestPerCity.get(c);
+        if (!arr) bestPerCity.set(c, arr = new Array(qWords.length).fill(Infinity));
+        if (d < arr[qi]) arr[qi] = d;
+      }
+    }
+  });
   const scored = [];
-  for (const c of CITIES) {
-    const firstWord = c.n.toLowerCase().split(/[\s,]+/)[0];
-    const clipped = firstWord.slice(0, query.length + maxDist);
-    const dist = editDistance(query, clipped);
-    if (dist <= maxDist) scored.push([dist, c]);
-  }
+  for (const [c, arr] of bestPerCity)
+    if (arr.every(d => d !== Infinity)) scored.push([arr.reduce((a,b)=>a+b,0), c]);
   scored.sort((a,b) => a[0]-b[0]);
   return scored.map(s => s[1]);
+}
+
+// convenience wrapper for one-shot synchronous lookups (e.g. the final
+// pay() fallback) where a UI "searching" state isn't relevant
+function searchCities(query) {
+  const fast = searchCitiesFast(query);
+  return fast.length || query.length < 4 ? fast : searchCitiesFuzzy(query);
 }
 
 /* ---- custom city dropdown (native <datalist> rendering is unreliable across
@@ -680,7 +738,9 @@ function renderSuggestions(results) {
   if (!suggestItems.length) {
     const empty = document.createElement("div");
     empty.className = "empty";
-    empty.textContent = "No matching city — try a different spelling.";
+    empty.textContent = citiesLoading
+      ? "Loading city data… keep typing, results will appear shortly."
+      : "No matching city — try a different spelling, or just the city name without the country.";
     suggestBox.appendChild(empty);
   } else {
     suggestItems.forEach((c, i) => {
@@ -703,6 +763,15 @@ function selectCity(c) {
   cityHint.style.display = "none";
 }
 
+function showSearching() {
+  suggestBox.innerHTML = "";
+  const el = document.createElement("div");
+  el.className = "empty";
+  el.textContent = "Searching…";
+  suggestBox.appendChild(el);
+  suggestBox.classList.add("show");
+}
+
 function closeSuggestions() { suggestBox.classList.remove("show"); }
 
 function highlight(i) {
@@ -712,6 +781,16 @@ function highlight(i) {
   activeIndex = i;
 }
 
+function searchAndRender(v) {
+  const fast = searchCitiesFast(v);
+  if (fast.length || v.length < 4) { renderSuggestions(fast); return; }
+  // nothing matched the cheap pass — show a "searching" state and yield a
+  // frame before the more expensive typo-tolerant pass, so the field never
+  // just appears to freeze for the ~0.3-1s a fuzzy match over 150k cities can take
+  showSearching();
+  setTimeout(() => renderSuggestions(searchCitiesFuzzy(v)), 20);
+}
+
 let searchDebounce;
 bplaceInput.addEventListener("input", e => {
   chosenPlace = null;
@@ -719,7 +798,7 @@ bplaceInput.addEventListener("input", e => {
   const v = e.target.value.toLowerCase().trim();
   clearTimeout(searchDebounce);
   if (v.length < 2) { closeSuggestions(); return; }
-  searchDebounce = setTimeout(() => renderSuggestions(searchCities(v)), 80);
+  searchDebounce = setTimeout(() => searchAndRender(v), 80);
 });
 bplaceInput.addEventListener("keydown", e => {
   if (!suggestBox.classList.contains("show")) return;
@@ -731,7 +810,7 @@ bplaceInput.addEventListener("keydown", e => {
 bplaceInput.addEventListener("blur", () => setTimeout(closeSuggestions, 150));
 bplaceInput.addEventListener("focus", () => {
   const v = bplaceInput.value.trim();
-  if (v.length >= 2 && !chosenPlace) renderSuggestions(searchCities(v.toLowerCase()));
+  if (v.length >= 2 && !chosenPlace) searchAndRender(v.toLowerCase());
 });
 
 const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
@@ -801,7 +880,7 @@ async function pay() {
       err.textContent = "Please select your birth city from the dropdown so we can locate it precisely.";
       cityHint.style.display = "block";
       bplaceInput.focus();
-      if (p.length >= 2) renderSuggestions(searchCities(pl));
+      if (p.length >= 2) searchAndRender(pl);
       return;
     }
   }
