@@ -115,13 +115,15 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
                  tier: str, currency: str, birth_date: str, birth_time: str,
                  birth_place: str, lat: float, lon: float, tz: str,
                  focus_areas: list[str], marketing_opt_in: bool,
-                 gender: str = "unspecified") -> dict:
+                 gender: str = "unspecified", amount_minor: int | None = None) -> dict:
     if tier not in PRICES:
         raise ValueError(f"unknown tier {tier}")
     if currency not in PRICES[tier]:
         raise ValueError(f"unsupported currency {currency}")
     oid = f"ord_{secrets.token_urlsafe(10)}"
-    amount = PRICES[tier][currency]  # fixed now, per spec §6
+    amount = amount_minor if amount_minor is not None else PRICES[tier][currency]
+    if amount < 0:
+        raise ValueError("invalid amount")
     with _conn() as c:
         c.execute(
             "INSERT INTO orders (id, quiz_session_id, created_at, email, name,"
