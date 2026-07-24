@@ -111,7 +111,10 @@ def western_wheel(placements: list, asc_lon: float | None, size=440) -> str:
 
 
 def lo_shu_svg(counts: dict[int, int], size=300) -> str:
-    from numerology import LO_SHU_POSITIONS, LO_SHU_ELEMENT
+    try:
+        from .numerology import LO_SHU_POSITIONS, LO_SHU_ELEMENT
+    except ImportError:
+        from numerology import LO_SHU_POSITIONS, LO_SHU_ELEMENT
     s, cell = size, size / 3
     e = [f'<svg viewBox="0 0 {s} {s+8}" xmlns="http://www.w3.org/2000/svg">']
     for n, (row, col) in LO_SHU_POSITIONS.items():

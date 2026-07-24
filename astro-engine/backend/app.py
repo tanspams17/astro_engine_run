@@ -13,10 +13,16 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
-import orders
-from delivery import send_report_email
-from report_generator import generate_report, TIER_NAMES
-from payment.mock_adapter import MockAdapter
+try:
+    from . import orders
+    from .delivery import send_report_email
+    from .report_generator import generate_report, TIER_NAMES
+    from .payment.mock_adapter import MockAdapter
+except ImportError:
+    import orders
+    from delivery import send_report_email
+    from report_generator import generate_report, TIER_NAMES
+    from payment.mock_adapter import MockAdapter
 
 app = FastAPI(title="Arvelos API", docs_url=None, redoc_url=None)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
@@ -29,6 +35,18 @@ if PROVIDER == "mollie":
 else:
     payment = MockAdapter()
 REPORT_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "reports")
+
+FREE_COUPON_CODE = "ASTRO100"
+
+
+def _apply_coupon(amount_minor: int, coupon_code: str | None) -> int:
+    if not coupon_code:
+        return amount_minor
+    code = coupon_code.strip().upper()
+    if code == FREE_COUPON_CODE:
+        return 0
+    raise ValueError("invalid coupon code")
+
 
 orders.init_db()
 
@@ -50,6 +68,7 @@ class OrderIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     tier: str = Field(pattern="^(western|vedic|mixed)$")
     currency: str = Field(pattern="^(USD|INR)$")
+    coupon_code: str | None = None
     birth_date: str            # YYYY-MM-DD
     birth_time: str | None = None   # HH:MM, or None if unknown
     gender: str = Field(default="unspecified",
@@ -111,20 +130,27 @@ def create_order(o: OrderIn):
         raise HTTPException(400, "invalid birth date/time/timezone")
     focus = [f for f in o.focus_areas
              if f in ("personality", "love", "career", "growth")]
+    try:
+        amount_minor = _apply_coupon(orders.PRICES[o.tier][o.currency], o.coupon_code)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
     order = orders.create_order(
         o.quiz_session_id, o.email, o.name, o.tier, o.currency,
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
-        o.tz, focus, o.marketing_opt_in, o.gender)
-    kwargs = {}
-    if PROVIDER == "mollie":
-        kwargs["order_id"] = order["id"]
-    session = payment.create_order(order["amount_minor"], order["currency"],
-                                   order["tier"], order["email"], **kwargs)
-    if session.checkout_url:  # hosted checkout: remember session on the order
-        orders.set_payment_session(order["id"], session.session_id)
-    return {"order_id": order["id"], "payment_session_id": session.session_id,
+        o.tz, focus, o.marketing_opt_in, o.gender,
+        amount_minor=amount_minor)
+    session = None
+    if amount_minor > 0:
+        kwargs = {}
+        if PROVIDER == "mollie":
+            kwargs["order_id"] = order["id"]
+        session = payment.create_order(order["amount_minor"], order["currency"],
+                                       order["tier"], order["email"], **kwargs)
+        if session.checkout_url:  # hosted checkout: remember session on the order
+            orders.set_payment_session(order["id"], session.session_id)
+    return {"order_id": order["id"], "payment_session_id": session.session_id if session else None,
             "amount_minor": order["amount_minor"],
-            "currency": order["currency"], "checkout_url": session.checkout_url}
+            "currency": order["currency"], "checkout_url": session.checkout_url if session else None}
 
 
 def _fulfil(order_id: str):
@@ -155,6 +181,11 @@ def pay(p: PayIn, background: BackgroundTasks):
         raise HTTPException(404, "order not found")
     if order["status"] != "pending":
         raise HTTPException(409, f"order is {order['status']}")
+    if order["amount_minor"] <= 0:
+        orders.mark_paid(p.order_id, "free", "free")
+        background.add_task(_fulfil, p.order_id)
+        return {"ok": True, "order_id": p.order_id, "status": "paid",
+                "message": "Your free report is being generated and will arrive by email within a few minutes."}
     session = payment.create_order(order["amount_minor"], order["currency"],
                                    order["tier"], order["email"])
     result = payment.charge(session.session_id, p.payment_details)

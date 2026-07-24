@@ -396,6 +396,12 @@
             </div>
           </div>
 
+          <div class="full">
+            <label>Coupon code <span class="opt">optional</span></label>
+            <input type="text" id="coupon" placeholder="ASTRO100">
+            <div class="help-text">Use ASTRO100 for a free report.</div>
+          </div>
+
           <div class="full" id="cardfields">
             <label>Card number</label>
             <input type="text" id="card" placeholder="4242 4242 4242 4242" inputmode="numeric">
@@ -441,10 +447,15 @@
     </div>
 
     <div class="order-state card" id="orderDelivered">
-      <div class="glyph">✦</div>
-      <h3>Your report is ready</h3>
-      <p>We've also emailed the download link to you, so you can come back to it anytime.</p>
-      <a class="btn-primary" id="dl" href="#">Download your report (PDF)</a>
+      <div class="success-panel">
+        <div class="glyph">✦</div>
+        <h3>Your Arvelos report is ready</h3>
+        <p>The PDF has been generated and a copy is also on its way to your inbox. Click below to download it instantly.</p>
+        <div class="buttons">
+          <a class="btn-primary download-link" id="dl" href="#">Download your report (PDF)</a>
+          <a class="btn-ghost" href="#top" onclick="scrollToOrder()">Back to order</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -577,7 +588,9 @@ function scrollToOrder(){ document.getElementById('order').scrollIntoView({behav
 
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
+const FREE_COUPON_CODE = "ASTRO100";
 let quizSession = null, tier = null, currency = "USD", chosenPlace = null, quizCompleteSent = false;
+let couponCode = "";
 let PROVIDER = "mock";
 
 fetch(API+"/api/config").then(r=>r.json()).then(c=>{
@@ -619,6 +632,14 @@ document.getElementById("bplace").addEventListener("change", e => {
   chosenPlace = CITIES.find(c => c.n === e.target.value) || null;
 });
 
+document.getElementById("coupon").addEventListener("input", e => {
+  couponCode = e.target.value.trim();
+  const free = couponCode.toUpperCase() === FREE_COUPON_CODE;
+  document.getElementById("cardfields").style.display = free ? "none" : "grid";
+  document.getElementById("paybtn").textContent = free ? "Get my free report" : "Pay & get my report";
+  paintSummary();
+});
+
 document.querySelectorAll("#focus .chip").forEach(c =>
   c.addEventListener("click", ()=>c.classList.toggle("sel")));
 
@@ -654,8 +675,9 @@ function paintSummary() {
   if (!tier) { document.getElementById("sumTier").textContent = "Select a report";
     document.getElementById("sumAmt").textContent = "—"; return; }
   const [amt,sym] = PRICES[tier][currency];
+  const isFree = couponCode.toUpperCase() === FREE_COUPON_CODE;
   document.getElementById("sumTier").textContent = TIER_LABEL[tier] + " report";
-  document.getElementById("sumAmt").textContent = sym + amt.toLocaleString(currency==="INR"?"en-IN":"en-US");
+  document.getElementById("sumAmt").textContent = isFree ? "Free" : sym + amt.toLocaleString(currency==="INR"?"en-IN":"en-US");
 }
 
 /* ================= checkout ================= */
@@ -680,8 +702,10 @@ async function pay() {
     chosenPlace = CITIES.find(c => c.n.toLowerCase() === p.toLowerCase());
     if (!chosenPlace) { err.textContent = "Please pick your birth city from the suggestion list so we can locate it precisely."; return; }
   }
+  const coupon = document.getElementById("coupon").value.trim();
+  const free = coupon.toUpperCase() === FREE_COUPON_CODE;
   if (!document.querySelector("#focus .chip.sel")) { err.textContent = "Pick at least one focus area."; return; }
-  if (PROVIDER === "mock" && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
+  if (!free && PROVIDER === "mock" && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
 
   document.getElementById("paybtn").disabled = true;
   const focus = [...document.querySelectorAll("#focus .chip.sel")].map(c=>c.dataset.v);
@@ -690,6 +714,7 @@ async function pay() {
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         quiz_session_id: quizSession, email, name, tier, currency,
+        coupon_code: coupon || null,
         birth_date: d, birth_time: noTime ? null : t,
         gender: document.getElementById("gender").value,
         birth_place: chosenPlace.n, lat: chosenPlace.a, lon: chosenPlace.o, tz: chosenPlace.z,
@@ -717,6 +742,9 @@ function showOrderState(state) {
   document.getElementById("orderFormView").style.display = state === "form" ? "grid" : "none";
   document.getElementById("orderProcessing").classList.toggle("on", state === "processing");
   document.getElementById("orderDelivered").classList.toggle("on", state === "delivered");
+  if (state === "delivered") {
+    document.getElementById("orderDelivered").scrollIntoView({behavior:'smooth'});
+  }
 }
 
 const PROC_MSGS = ["Computing planetary positions from your exact birth moment.",
