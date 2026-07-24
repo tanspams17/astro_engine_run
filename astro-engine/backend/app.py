@@ -13,10 +13,16 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
-import orders
-from delivery import send_report_email
-from report_generator import generate_report, TIER_NAMES
-from payment.mock_adapter import MockAdapter
+try:
+    from . import orders
+    from .delivery import send_report_email
+    from .report_generator import generate_report, TIER_NAMES
+    from .payment.mock_adapter import MockAdapter
+except ImportError:
+    import orders
+    from delivery import send_report_email
+    from report_generator import generate_report, TIER_NAMES
+    from payment.mock_adapter import MockAdapter
 
 app = FastAPI(title="Arvelos API", docs_url=None, redoc_url=None)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],

@@ -9,9 +9,17 @@ import os
 
 from jinja2 import Environment, FileSystemLoader
 
-import content_library as cl
-import content_vedic as cv
-from chart_engine import Chart, compute_charts
+try:
+    from . import content_library as cl
+    from . import content_vedic as cv
+    from .chart_engine import Chart, compute_charts
+except ImportError:
+    import content_library as cl
+    import content_vedic as cv
+    try:
+        from .chart_engine import Chart, compute_charts
+    except ImportError:
+        from chart_engine import Chart, compute_charts
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "pdf_templates")
 
@@ -74,7 +82,13 @@ def _planet_sections(chart: Chart, with_houses: bool = True) -> list[dict]:
 
 
 def _house_sections(chart: Chart) -> list[dict]:
-    from chart_engine import SIGNS
+    try:
+        from .chart_engine import SIGNS
+    except ImportError:
+        try:
+            from .chart_engine import SIGNS
+        except ImportError:
+            from chart_engine import SIGNS
     by_house: dict[int, list[str]] = {}
     for p in chart.placements:
         by_house.setdefault(p.house, []).append(p.planet)
@@ -316,8 +330,14 @@ def _balance_section(chart: Chart) -> dict:
 
 
 def _numerology_sections(num: dict, no) -> list[dict]:
-    import content_numerology as cn
-    from chart_graphics import lo_shu_svg
+    try:
+        import content_numerology as cn
+    except ImportError:
+        from . import content_numerology as cn
+    try:
+        from .chart_graphics import lo_shu_svg
+    except ImportError:
+        from chart_graphics import lo_shu_svg
     out = [{"h1": "Your Numbers — Numerological Analysis", "no": no}]
     out.append({"title": f"Mulank {num['mulank']} — Your Psychic Number",
                 "body": (cn.MULANK_INTRO + f"\n\nYours is {num['mulank']}, "
@@ -331,7 +351,10 @@ def _numerology_sections(num: dict, no) -> list[dict]:
                          + cn.NUMBER_ESSENCE[num['bhagyank']])})
     friendly = (num["bhagyank"] in cn_friends(num["mulank"])
                 or num["bhagyank"] == num["mulank"])
-    from numerology import NUMBER_PLANETS
+    try:
+        from .numerology import NUMBER_PLANETS
+    except ImportError:
+        from numerology import NUMBER_PLANETS
     out.append({"title": f"The {num['mulank']}–{num['bhagyank']} Combination",
                 "body": cn.COMBO_TEXT.format(
                     m=num["mulank"], mp=NUMBER_PLANETS[num["mulank"]],
@@ -409,15 +432,27 @@ def _numerology_sections(num: dict, no) -> list[dict]:
 
 
 def cn_friends(m):
-    from numerology import FRIENDS
+    try:
+        from .numerology import FRIENDS
+    except ImportError:
+        from numerology import FRIENDS
     return FRIENDS[m]
 
 
 def _monthly_sections(num: dict, moon_sidereal_lon: float,
                       dashas) -> list[dict]:
-    import content_numerology as cn
-    from numerology import next_12_months
-    from chart_engine import monthly_transits
+    try:
+        import content_numerology as cn
+    except ImportError:
+        from . import content_numerology as cn
+    try:
+        from .numerology import next_12_months
+    except ImportError:
+        from numerology import next_12_months
+    try:
+        from .chart_engine import monthly_transits
+    except ImportError:
+        from chart_engine import monthly_transits
     months = next_12_months(dt.date.fromisoformat(num["_dob"]))
     transits = monthly_transits(moon_sidereal_lon)
     cur_dasha = next((d.lord for d in dashas if d.current), None) if dashas else None
@@ -453,9 +488,16 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
                          lon: float, tier: str, focus_areas: list[str],
                          time_known: bool = True,
                          gender: str = "unspecified") -> dict:
-    from numerology import compute_numerology
-    from chart_graphics import (north_indian_chart, western_wheel,
-                                lo_shu_svg, cover_zodiac_ring, SIGNS as GS)
+    try:
+        from .numerology import compute_numerology
+    except ImportError:
+        from numerology import compute_numerology
+    try:
+        from .chart_graphics import (north_indian_chart, western_wheel,
+                                    lo_shu_svg, cover_zodiac_ring, SIGNS as GS)
+    except ImportError:
+        from chart_graphics import (north_indian_chart, western_wheel,
+                                    lo_shu_svg, cover_zodiac_ring, SIGNS as GS)
     charts = compute_charts(tier, birth_dt_local, tz_name, lat, lon)
     primary = charts.get("western") or charts.get("vedic")
     num = compute_numerology(name, birth_dt_local.date(), gender)
