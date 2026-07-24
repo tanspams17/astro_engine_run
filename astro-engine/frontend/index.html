@@ -395,6 +395,12 @@
               <option value="mixed">Mixed</option>
             </select></div>
 
+          <div class="full">
+            <label>Coupon code <span class="opt">optional</span></label>
+            <input type="text" id="coupon" placeholder="ASTRO100">
+            <p class="hint">Enter ASTRO100 for a free report, or leave blank for the regular price.</p>
+          </div>
+
           <div class="full" id="cardfields">
             <label>Card number</label>
             <input type="text" id="card" placeholder="4242 4242 4242 4242" inputmode="numeric">
@@ -864,6 +870,7 @@ async function pay() {
         noTime = document.getElementById("notime").checked,
         p = document.getElementById("bplace").value.trim();
   const card = document.getElementById("card").value.replace(/\s/g,"");
+  const coupon = document.getElementById("coupon").value.trim();
 
   if (!tier) { err.textContent = "Please choose a report — Western, Vedic or Mixed."; scrollIntoView1("pricing"); return; }
   if (!name || !d || (!t && !noTime) || !p) {
@@ -886,7 +893,7 @@ async function pay() {
       return;
     }
   }
-  if (PROVIDER === "mock" && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
+  if (PROVIDER === "mock" && card.length > 0 && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
 
   document.getElementById("paybtn").disabled = true;
   try {
@@ -897,12 +904,16 @@ async function pay() {
         birth_date: d, birth_time: noTime ? null : t,
         gender: document.getElementById("gender").value,
         birth_place: chosenPlace.n, lat: chosenPlace.a, lon: chosenPlace.o, tz: chosenPlace.z,
-        focus_areas: ALL_FOCUS_AREAS, marketing_opt_in: document.getElementById("optin").checked })});
+        focus_areas: ALL_FOCUS_AREAS, marketing_opt_in: document.getElementById("optin").checked,
+        coupon_code: coupon || null })});
     if (!or.ok) throw new Error((await or.json()).detail || "order failed");
     const order = await or.json();
 
     if (order.checkout_url) { window.location.href = order.checkout_url; return; }
 
+    if (order.amount_minor > 0 && PROVIDER === "mock" && card.length < 12) {
+      throw new Error("Please enter a valid card number to complete payment.");
+    }
     const pr = await fetch(API+"/api/pay", {method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({order_id: order.order_id, payment_details:{card_number: card}})});
@@ -938,6 +949,10 @@ async function poll(orderId, n) {
       const dlBtn = document.getElementById("dl");
       if (dlBtn) dlBtn.href = s.download_url;
       showOrderState("delivered");
+      return;
+    }
+    if (s.status === "failed") {
+      document.getElementById("procmsg").textContent = "We could not generate your report. Please contact support or try again later.";
       return;
     }
 
