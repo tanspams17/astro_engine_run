@@ -158,20 +158,27 @@ def _fulfil(order_id: str):
     order = orders.get_order(order_id)
     if not order or order["status"] != "paid":
         return
-    os.makedirs(REPORT_DIR, exist_ok=True)
-    time_known = bool(order["birth_time"])
-    birth = dt.datetime.strptime(
-        order["birth_date"] + " " + (order["birth_time"] or "12:00"),
-        "%Y-%m-%d %H:%M")
-    pdf_path = os.path.join(REPORT_DIR, f"{order_id}.pdf")
-    generate_report(
-        order["name"], birth, order["tz"], order["birth_place"],
-        order["lat"], order["lon"], order["tier"],
-        [f for f in order["focus_areas"].split(",") if f], pdf_path,
-        time_known=time_known, gender=order.get("gender", "unspecified"))
-    token = orders.mark_delivered(order_id, pdf_path)
-    send_report_email(order["email"], order["name"],
-                      TIER_NAMES[order["tier"]], token)
+    try:
+        os.makedirs(REPORT_DIR, exist_ok=True)
+        time_known = bool(order["birth_time"])
+        birth = dt.datetime.strptime(
+            order["birth_date"] + " " + (order["birth_time"] or "12:00"),
+            "%Y-%m-%d %H:%M")
+        pdf_path = os.path.join(REPORT_DIR, f"{order_id}.pdf")
+        generate_report(
+            order["name"], birth, order["tz"], order["birth_place"],
+            order["lat"], order["lon"], order["tier"],
+            [f for f in order["focus_areas"].split(",") if f], pdf_path,
+            time_known=time_known, gender=order.get("gender", "unspecified"))
+        token = orders.mark_delivered(order_id, pdf_path)
+        send_report_email(order["email"], order["name"],
+                          TIER_NAMES[order["tier"]], token)
+    except Exception as exc:
+        print(f"[ERROR] report generation failed for order {order_id}: {exc}")
+        try:
+            orders.transition(order_id, "failed")
+        except Exception:
+            pass
 
 
 @app.post("/api/pay")
