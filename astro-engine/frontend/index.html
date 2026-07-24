@@ -440,10 +440,12 @@
     </div>
 
     <div class="order-state card" id="orderDelivered">
-      <div class="glyph">✦</div>
-      <h3>Your report is ready</h3>
+      <div class="glyph" style="font-size:64px">✦</div>
+      <h3>Your report is ready!</h3>
+      <p style="font-size:16px; color:var(--gold-light); margin-bottom:24px">Your personalized astrology report has been generated and is ready to download.</p>
       <p>We've also emailed the download link to you, so you can come back to it anytime.</p>
-      <a class="btn-primary" id="dl" href="#">Download your report (PDF)</a>
+      <a class="btn-primary" id="dl" href="#" style="margin-top:24px">⬇ Download your report (PDF)</a>
+      <p style="font-size:13px; color:var(--lavender); margin-top:20px">Didn't receive the email? Check your spam folder, or download using the button above.</p>
     </div>
   </div>
 </section>
@@ -924,16 +926,32 @@ function showOrderState(state) {
 const PROC_MSGS = ["Computing planetary positions from your exact birth moment.",
   "Placing your houses and aspects.", "Writing your report.", "Rendering your PDF — nearly there."];
 async function poll(orderId, n) {
-  document.getElementById("procmsg").textContent = PROC_MSGS[Math.min(n,3)];
-  const r = await fetch(API+`/api/orders/${orderId}/status`);
-  const s = await r.json();
-  if (s.status === "delivered") {
-    document.getElementById("dl").href = s.download_url;
-    showOrderState("delivered"); return;
+  try {
+    document.getElementById("procmsg").textContent = PROC_MSGS[Math.min(n,3)];
+    const r = await fetch(API+`/api/orders/${orderId}/status`);
+    if (!r.ok) throw new Error("Status check failed");
+    const s = await r.json();
+    console.log(`[Poll ${n}] Order ${orderId} status:`, s.status);
+
+    if (s.status === "delivered") {
+      console.log("Report delivered! Setting download URL:", s.download_url);
+      const dlBtn = document.getElementById("dl");
+      if (dlBtn) dlBtn.href = s.download_url;
+      showOrderState("delivered");
+      return;
+    }
+
+    if (n > 40) {
+      document.getElementById("procmsg").textContent =
+        "Taking longer than usual — your report will arrive by email shortly.";
+      return;
+    }
+
+    setTimeout(()=>poll(orderId, n+1), 2000);
+  } catch (e) {
+    console.error("Poll error:", e);
+    if (n < 40) setTimeout(()=>poll(orderId, n+1), 3000);
   }
-  if (n > 40) { document.getElementById("procmsg").textContent =
-    "Taking longer than usual — your report will arrive by email shortly."; return; }
-  setTimeout(()=>poll(orderId, n+1), 3000);
 }
 
 /* returning from hosted checkout (?order=...) */
