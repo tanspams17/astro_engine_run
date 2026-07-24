@@ -155,13 +155,18 @@
   select option { background:#1c1a3e; color:var(--cream); }
   .timeoff { display:flex; gap:9px; align-items:flex-start; margin-top:9px; font-size:12.5px; color:var(--lavender); }
   .timeoff input { margin-top:2px; accent-color:var(--gold); }
+  .hint { font-size:12.5px; color:var(--lavender); margin-top:8px; }
 
-  .chip-group { display:flex; flex-wrap:wrap; gap:10px; }
-  .chip { padding:9px 18px; border:1px solid var(--surface-border); border-radius:999px;
-    background:rgba(255,255,255,0.02); cursor:pointer; font-size:13.5px; color:var(--lavender);
-    transition:all .15s; }
-  .chip.sel { background:rgba(212,146,10,0.15); color:var(--gold-light); border-color:var(--gold); }
-  .tier-chip[data-tier=western]::before, .tier-chip[data-tier=vedic]::before, .tier-chip[data-tier=mixed]::before { content:""; }
+  .autocomplete { position:relative; }
+  .suggestions { position:absolute; left:0; right:0; top:calc(100% + 6px);
+    background:#211d47; border:1px solid var(--surface-border-strong); border-radius:12px;
+    max-height:260px; overflow-y:auto; z-index:60; display:none;
+    box-shadow:0 16px 40px rgba(0,0,0,0.4); }
+  .suggestions.show { display:block; }
+  .suggestions .item { padding:11px 16px; font-size:14.5px; color:var(--cream); cursor:pointer; }
+  .suggestions .item:hover, .suggestions .item.active { background:rgba(212,146,10,0.16); color:var(--gold-light); }
+  .suggestions .item + .item { border-top:1px solid rgba(212,146,10,0.12); }
+  .suggestions .empty { padding:11px 16px; font-size:13.5px; color:var(--lavender); cursor:default; }
 
   .newsletter-box { border:1px dashed var(--surface-border); border-radius:12px; padding:14px 16px;
     margin-top:22px; display:flex; gap:10px; align-items:flex-start; }
@@ -280,8 +285,8 @@
     <div class="included-grid">
       <div class="card"><div class="glyph">✦</div><h3>Real calculation</h3>
         <p>Swiss Ephemeris precision — the same astronomical data professional astrologers use.</p></div>
-      <div class="card"><div class="glyph">✦</div><h3>Your focus areas</h3>
-        <p>Personality, love, career or growth — each selection adds a dedicated section.</p></div>
+      <div class="card"><div class="glyph">✦</div><h3>Every angle covered</h3>
+        <p>Personality, love, career and growth — every report includes all four, no picking required.</p></div>
       <div class="card"><div class="glyph">✦</div><h3>Instant PDF</h3>
         <p>A beautifully typeset report delivered to your inbox within minutes.</p></div>
       <div class="card"><div class="glyph">✦</div><h3>One payment</h3>
@@ -368,8 +373,12 @@
           </div>
 
           <div class="full"><label>Place of birth</label>
-            <input type="text" id="bplace" placeholder="City, Country — e.g. Mumbai, India" list="cities" autocomplete="off">
-            <datalist id="cities"></datalist>
+            <div class="autocomplete">
+              <input type="text" id="bplace" placeholder="City, Country — e.g. Mumbai, India" autocomplete="off">
+              <div class="suggestions" id="citySuggestions"></div>
+            </div>
+            <p class="hint" id="cityHint" style="display:none">No matching city found — check the
+              spelling, or try just the city name without the country.</p>
           </div>
 
           <div><label>Gender <span class="opt">optional</span></label>
@@ -385,22 +394,6 @@
               <option value="vedic">Vedic</option>
               <option value="mixed">Mixed</option>
             </select></div>
-
-          <div class="full">
-            <label>Focus area <span class="opt">pick as many as you like</span></label>
-            <div class="chip-group" id="focus">
-              <div class="chip" data-v="personality">Personality</div>
-              <div class="chip" data-v="love">Love &amp; relationships</div>
-              <div class="chip" data-v="career">Career &amp; direction</div>
-              <div class="chip" data-v="growth">Growth</div>
-            </div>
-          </div>
-
-          <div class="full">
-            <label>Coupon code <span class="opt">optional</span></label>
-            <input type="text" id="coupon" placeholder="ASTRO100">
-            <div class="help-text">Use ASTRO100 for a free report.</div>
-          </div>
 
           <div class="full" id="cardfields">
             <label>Card number</label>
@@ -447,15 +440,12 @@
     </div>
 
     <div class="order-state card" id="orderDelivered">
-      <div class="success-panel">
-        <div class="glyph">✦</div>
-        <h3>Your Arvelos report is ready</h3>
-        <p>The PDF has been generated and a copy is also on its way to your inbox. Click below to download it instantly.</p>
-        <div class="buttons">
-          <a class="btn-primary download-link" id="dl" href="#">Download your report (PDF)</a>
-          <a class="btn-ghost" href="#top" onclick="scrollToOrder()">Back to order</a>
-        </div>
-      </div>
+      <div class="glyph" style="font-size:64px">✦</div>
+      <h3>Your report is ready!</h3>
+      <p style="font-size:16px; color:var(--gold-light); margin-bottom:24px">Your personalized astrology report has been generated and is ready to download.</p>
+      <p>We've also emailed the download link to you, so you can come back to it anytime.</p>
+      <a class="btn-primary" id="dl" href="#" style="margin-top:24px">⬇ Download your report (PDF)</a>
+      <p style="font-size:13px; color:var(--lavender); margin-top:20px">Didn't receive the email? Check your spam folder, or download using the button above.</p>
     </div>
   </div>
 </section>
@@ -489,6 +479,8 @@
     <a href="/privacy.html">Privacy</a> · support@arvelos.cloud
     <div class="fine">For reflection and entertainment. Reports describe tendencies, not
       certainties, and make no predictions about your future.</div>
+    <div class="fine">Birthplace data © <a href="https://www.geonames.org/" target="_blank">GeoNames.org</a>, licensed under
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>.</div>
   </div>
 </footer>
 
@@ -588,9 +580,7 @@ function scrollToOrder(){ document.getElementById('order').scrollIntoView({behav
 
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
-const FREE_COUPON_CODE = "ASTRO100";
 let quizSession = null, tier = null, currency = "USD", chosenPlace = null, quizCompleteSent = false;
-let couponCode = "";
 let PROVIDER = "mock";
 
 fetch(API+"/api/config").then(r=>r.json()).then(c=>{
@@ -619,29 +609,213 @@ async function ensureSession() {
 document.addEventListener("DOMContentLoaded", ensureSession);
 
 /* ---- city autocomplete ---- */
-let CITIES = [];
-fetch("/cities.json").then(r=>r.json()).then(d=>{CITIES=d;}).catch(()=>{});
-document.getElementById("bplace").addEventListener("input", e => {
-  const v = e.target.value.toLowerCase(); chosenPlace = null;
-  if (v.length < 2) return;
-  const dl = document.getElementById("cities"); dl.innerHTML = "";
-  CITIES.filter(c => c.n.toLowerCase().startsWith(v)).slice(0,8)
-        .forEach(c => { const o = document.createElement("option"); o.value = c.n; dl.appendChild(o); });
+let CITIES = [], citiesLoading = true;
+let WORD_INDEX = new Map(); // word length -> [[word, city], ...] — bucketed so the
+                            // fuzzy fallback only compares words of a plausible length
+                            // instead of scanning all ~375k words in the dataset
+fetch("/cities.json").then(r=>r.json()).then(d=>{
+  // pre-tokenize once at load instead of re-splitting ~150k names on every
+  // keystroke — this is what makes search over a dataset this size fast
+  for (const c of d) {
+    c._w = c.n.toLowerCase().split(/[\s,]+/).filter(Boolean);
+    for (const w of c._w) {
+      let bucket = WORD_INDEX.get(w.length);
+      if (!bucket) WORD_INDEX.set(w.length, bucket = []);
+      bucket.push([w, c]);
+    }
+  }
+  CITIES = d; citiesLoading = false;
+  const v = document.getElementById("bplace").value.trim();
+  if (document.activeElement === document.getElementById("bplace") && v.length >= 2 && !chosenPlace)
+    searchAndRender(v.toLowerCase());
+}).catch(()=>{citiesLoading=false;});
+
+// older/colonial-era and common alternate names still widely used, mapped to the
+// name actually present in cities.json
+const CITY_ALIASES = {
+  bombay:"mumbai", calcutta:"kolkata", madras:"chennai", bangalore:"bengaluru",
+  poona:"pune", cochin:"kochi", trivandrum:"thiruvananthapuram", baroda:"vadodara",
+  benares:"varanasi", allahabad:"prayagraj", mysore:"mysuru", gurgaon:"gurugram",
+  peking:"beijing", canton:"guangzhou", saigon:"ho chi minh city",
+  constantinople:"istanbul",
+};
+
+// Levenshtein edit distance — used to tolerate typos ("viskhapatnam" -> "visakhapatnam")
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({length:n+1}, (_,i)=>i);
+  for (let i = 1; i <= m; i++) {
+    const row = [i];
+    for (let j = 1; j <= n; j++) {
+      row.push(a[i-1] === b[j-1] ? prev[j-1]
+        : 1 + Math.min(prev[j-1], prev[j], row[j-1]));
+    }
+    prev = row;
+  }
+  return prev[n];
+}
+
+function aliasesFor(word) {
+  const out = [word];
+  for (const [old, modern] of Object.entries(CITY_ALIASES))
+    if (old.startsWith(word) || word.startsWith(old)) out.push(modern);
+  return out;
+}
+
+// token-based: splits the query into words and requires each query word (or
+// a known alias of it) to prefix-match SOME word in the city name, in any
+// order. This is what makes "Nizhny Novgorod" findable even though the city
+// is only findable by full-string prefix if you type it exactly, and what
+// makes "New York" findable by typing just "york". Cheap — safe to run
+// synchronously on every keystroke.
+function searchCitiesFast(query) {
+  const qWords = query.split(/[\s,]+/).filter(Boolean);
+  if (!qWords.length) return [];
+  const qAliases = qWords.map(aliasesFor);
+
+  const startsMatch = [], wordMatch = [];
+  for (const c of CITIES) {
+    if (!qAliases.every(alts => c._w.some(cw => alts.some(a => cw.startsWith(a))))) continue;
+    if (c.n.toLowerCase().startsWith(query) || c._w[0].startsWith(qWords[0])) startsMatch.push(c);
+    else wordMatch.push(c);
+  }
+  return startsMatch.concat(wordMatch);
+}
+
+// typo-tolerant fallback for when searchCitiesFast finds nothing — noticeably
+// more expensive (can take several hundred ms over ~150k cities), so callers
+// should only invoke it after showing a "searching" state and yielding a
+// frame, not synchronously on every keystroke.
+function searchCitiesFuzzy(query) {
+  const qWords = query.split(/[\s,]+/).filter(Boolean);
+  if (!qWords.length) return [];
+
+  // fuzzy fallback: tolerate typos in any query word against any city word
+  // (this is what lets "viskhapatnam" find "Visakhapatnam" and a misspelled
+  // first word of a multi-word city, like "Nizhni Novgorod", still resolve).
+  // Uses WORD_INDEX to only compare against words of a plausible length
+  // instead of scanning all ~375k words in the dataset on every query.
+  const maxDist = w => Math.min(3, Math.floor(w.length / 4) + 1);
+  const bestPerCity = new Map(); // city -> per-query-word best distance array
+  qWords.forEach((qw, qi) => {
+    const limit = maxDist(qw);
+    for (let len = qw.length - limit; len <= qw.length + limit; len++) {
+      const bucket = WORD_INDEX.get(len);
+      if (!bucket) continue;
+      for (const [w, c] of bucket) {
+        const d = editDistance(qw, w);
+        if (d > limit) continue;
+        let arr = bestPerCity.get(c);
+        if (!arr) bestPerCity.set(c, arr = new Array(qWords.length).fill(Infinity));
+        if (d < arr[qi]) arr[qi] = d;
+      }
+    }
+  });
+  const scored = [];
+  for (const [c, arr] of bestPerCity)
+    if (arr.every(d => d !== Infinity)) scored.push([arr.reduce((a,b)=>a+b,0), c]);
+  scored.sort((a,b) => a[0]-b[0]);
+  return scored.map(s => s[1]);
+}
+
+// convenience wrapper for one-shot synchronous lookups (e.g. the final
+// pay() fallback) where a UI "searching" state isn't relevant
+function searchCities(query) {
+  const fast = searchCitiesFast(query);
+  return fast.length || query.length < 4 ? fast : searchCitiesFuzzy(query);
+}
+
+/* ---- custom city dropdown (native <datalist> rendering is unreliable across
+   browsers, especially against a dark theme, so we build our own) ---- */
+const bplaceInput = document.getElementById("bplace");
+const suggestBox = document.getElementById("citySuggestions");
+const cityHint = document.getElementById("cityHint");
+let suggestItems = [], activeIndex = -1;
+
+function renderSuggestions(results) {
+  suggestItems = results.slice(0, 8);
+  activeIndex = -1;
+  suggestBox.innerHTML = "";
+  if (!suggestItems.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = citiesLoading
+      ? "Loading city data… keep typing, results will appear shortly."
+      : "No matching city — try a different spelling, or just the city name without the country.";
+    suggestBox.appendChild(empty);
+  } else {
+    suggestItems.forEach((c, i) => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.textContent = c.n;
+      // mousedown (not click) fires before the input's blur, so the box
+      // doesn't disappear out from under the click
+      el.addEventListener("mousedown", ev => { ev.preventDefault(); selectCity(c); });
+      suggestBox.appendChild(el);
+    });
+  }
+  suggestBox.classList.add("show");
+}
+
+function selectCity(c) {
+  chosenPlace = c;
+  bplaceInput.value = c.n;
+  suggestBox.classList.remove("show");
+  cityHint.style.display = "none";
+}
+
+function showSearching() {
+  suggestBox.innerHTML = "";
+  const el = document.createElement("div");
+  el.className = "empty";
+  el.textContent = "Searching…";
+  suggestBox.appendChild(el);
+  suggestBox.classList.add("show");
+}
+
+function closeSuggestions() { suggestBox.classList.remove("show"); }
+
+function highlight(i) {
+  const items = suggestBox.querySelectorAll(".item");
+  items.forEach(el => el.classList.remove("active"));
+  if (i >= 0 && i < items.length) { items[i].classList.add("active"); items[i].scrollIntoView({block:"nearest"}); }
+  activeIndex = i;
+}
+
+function searchAndRender(v) {
+  const fast = searchCitiesFast(v);
+  if (fast.length || v.length < 4) { renderSuggestions(fast); return; }
+  // nothing matched the cheap pass — show a "searching" state and yield a
+  // frame before the more expensive typo-tolerant pass, so the field never
+  // just appears to freeze for the ~0.3-1s a fuzzy match over 150k cities can take
+  showSearching();
+  setTimeout(() => renderSuggestions(searchCitiesFuzzy(v)), 20);
+}
+
+let searchDebounce;
+bplaceInput.addEventListener("input", e => {
+  chosenPlace = null;
+  cityHint.style.display = "none";
+  const v = e.target.value.toLowerCase().trim();
+  clearTimeout(searchDebounce);
+  if (v.length < 2) { closeSuggestions(); return; }
+  searchDebounce = setTimeout(() => searchAndRender(v), 80);
 });
-document.getElementById("bplace").addEventListener("change", e => {
-  chosenPlace = CITIES.find(c => c.n === e.target.value) || null;
+bplaceInput.addEventListener("keydown", e => {
+  if (!suggestBox.classList.contains("show")) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); highlight(Math.min(activeIndex+1, suggestItems.length-1)); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); highlight(Math.max(activeIndex-1, 0)); }
+  else if (e.key === "Enter") { if (activeIndex >= 0) { e.preventDefault(); selectCity(suggestItems[activeIndex]); } }
+  else if (e.key === "Escape") { closeSuggestions(); }
+});
+bplaceInput.addEventListener("blur", () => setTimeout(closeSuggestions, 150));
+bplaceInput.addEventListener("focus", () => {
+  const v = bplaceInput.value.trim();
+  if (v.length >= 2 && !chosenPlace) searchAndRender(v.toLowerCase());
 });
 
-document.getElementById("coupon").addEventListener("input", e => {
-  couponCode = e.target.value.trim();
-  const free = couponCode.toUpperCase() === FREE_COUPON_CODE;
-  document.getElementById("cardfields").style.display = free ? "none" : "grid";
-  document.getElementById("paybtn").textContent = free ? "Get my free report" : "Pay & get my report";
-  paintSummary();
-});
-
-document.querySelectorAll("#focus .chip").forEach(c =>
-  c.addEventListener("click", ()=>c.classList.toggle("sel")));
+const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
 
 /* ---- pricing ---- */
 const PRICES = {western:{USD:[19,"$"],INR:[999,"₹"]},
@@ -675,9 +849,8 @@ function paintSummary() {
   if (!tier) { document.getElementById("sumTier").textContent = "Select a report";
     document.getElementById("sumAmt").textContent = "—"; return; }
   const [amt,sym] = PRICES[tier][currency];
-  const isFree = couponCode.toUpperCase() === FREE_COUPON_CODE;
   document.getElementById("sumTier").textContent = TIER_LABEL[tier] + " report";
-  document.getElementById("sumAmt").textContent = isFree ? "Free" : sym + amt.toLocaleString(currency==="INR"?"en-IN":"en-US");
+  document.getElementById("sumAmt").textContent = sym + amt.toLocaleString(currency==="INR"?"en-IN":"en-US");
 }
 
 /* ================= checkout ================= */
@@ -699,26 +872,32 @@ async function pay() {
   }
   if (!/.+@.+\..+/.test(email)) { err.textContent = "Please enter a valid email — your report is delivered there."; return; }
   if (!chosenPlace) {
-    chosenPlace = CITIES.find(c => c.n.toLowerCase() === p.toLowerCase());
-    if (!chosenPlace) { err.textContent = "Please pick your birth city from the suggestion list so we can locate it precisely."; return; }
+    const pl = p.toLowerCase();
+    chosenPlace = CITIES.find(c => c.n.toLowerCase() === pl);
+    if (!chosenPlace) {
+      const results = searchCities(pl);
+      if (results.length === 1) chosenPlace = results[0];
+    }
+    if (!chosenPlace) {
+      err.textContent = "Please select your birth city from the dropdown so we can locate it precisely.";
+      cityHint.style.display = "block";
+      bplaceInput.focus();
+      if (p.length >= 2) searchAndRender(pl);
+      return;
+    }
   }
-  const coupon = document.getElementById("coupon").value.trim();
-  const free = coupon.toUpperCase() === FREE_COUPON_CODE;
-  if (!document.querySelector("#focus .chip.sel")) { err.textContent = "Pick at least one focus area."; return; }
-  if (!free && PROVIDER === "mock" && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
+  if (PROVIDER === "mock" && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
 
   document.getElementById("paybtn").disabled = true;
-  const focus = [...document.querySelectorAll("#focus .chip.sel")].map(c=>c.dataset.v);
   try {
     const or = await fetch(API+"/api/orders", {method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         quiz_session_id: quizSession, email, name, tier, currency,
-        coupon_code: coupon || null,
         birth_date: d, birth_time: noTime ? null : t,
         gender: document.getElementById("gender").value,
         birth_place: chosenPlace.n, lat: chosenPlace.a, lon: chosenPlace.o, tz: chosenPlace.z,
-        focus_areas: focus, marketing_opt_in: document.getElementById("optin").checked })});
+        focus_areas: ALL_FOCUS_AREAS, marketing_opt_in: document.getElementById("optin").checked })});
     if (!or.ok) throw new Error((await or.json()).detail || "order failed");
     const order = await or.json();
 
@@ -742,24 +921,37 @@ function showOrderState(state) {
   document.getElementById("orderFormView").style.display = state === "form" ? "grid" : "none";
   document.getElementById("orderProcessing").classList.toggle("on", state === "processing");
   document.getElementById("orderDelivered").classList.toggle("on", state === "delivered");
-  if (state === "delivered") {
-    document.getElementById("orderDelivered").scrollIntoView({behavior:'smooth'});
-  }
 }
 
 const PROC_MSGS = ["Computing planetary positions from your exact birth moment.",
   "Placing your houses and aspects.", "Writing your report.", "Rendering your PDF — nearly there."];
 async function poll(orderId, n) {
-  document.getElementById("procmsg").textContent = PROC_MSGS[Math.min(n,3)];
-  const r = await fetch(API+`/api/orders/${orderId}/status`);
-  const s = await r.json();
-  if (s.status === "delivered") {
-    document.getElementById("dl").href = s.download_url;
-    showOrderState("delivered"); return;
+  try {
+    document.getElementById("procmsg").textContent = PROC_MSGS[Math.min(n,3)];
+    const r = await fetch(API+`/api/orders/${orderId}/status`);
+    if (!r.ok) throw new Error("Status check failed");
+    const s = await r.json();
+    console.log(`[Poll ${n}] Order ${orderId} status:`, s.status);
+
+    if (s.status === "delivered") {
+      console.log("Report delivered! Setting download URL:", s.download_url);
+      const dlBtn = document.getElementById("dl");
+      if (dlBtn) dlBtn.href = s.download_url;
+      showOrderState("delivered");
+      return;
+    }
+
+    if (n > 40) {
+      document.getElementById("procmsg").textContent =
+        "Taking longer than usual — your report will arrive by email shortly.";
+      return;
+    }
+
+    setTimeout(()=>poll(orderId, n+1), 2000);
+  } catch (e) {
+    console.error("Poll error:", e);
+    if (n < 40) setTimeout(()=>poll(orderId, n+1), 3000);
   }
-  if (n > 40) { document.getElementById("procmsg").textContent =
-    "Taking longer than usual — your report will arrive by email shortly."; return; }
-  setTimeout(()=>poll(orderId, n+1), 3000);
 }
 
 /* returning from hosted checkout (?order=...) */
