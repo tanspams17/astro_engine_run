@@ -1,0 +1,31 @@
+# Database files (runtime)
+astro-engine/data/arvelos.db
+astro-engine/data/arvelos.db-*
+astro-engine/data/arvelos.db-shm
+astro-engine/data/arvelos.db-wal
+
+# Generated reports (runtime)
+astro-engine/data/reports/
+astro-engine/data/outbox/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
