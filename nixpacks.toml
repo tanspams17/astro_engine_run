@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["python312", "pango", "cairo", "gdk-pixbuf", "libffi", "shared-mime-info", "fontconfig", "dejavu_fonts"]
+
+[phases.install]
+cmds = ["pip install --no-cache-dir -r astro-engine/backend/requirements.txt"]
+
+[start]
+cmd = "cd astro-engine/backend && uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"
+
+[variables]
+PYTHONUNBUFFERED = "1"
+ARVELOS_FRONTEND = "astro-engine/frontend"
