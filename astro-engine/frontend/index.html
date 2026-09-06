@@ -402,12 +402,14 @@
           </div>
 
           <div class="full" id="cardfields">
-            <label>Card number</label>
+            <label>Card number <span class="opt">optional while in preview</span></label>
             <input type="text" id="card" placeholder="4242 4242 4242 4242" inputmode="numeric">
             <div class="field-grid" style="margin-top:14px">
               <div><label>Expiry</label><input type="text" id="exp" placeholder="MM/YY"></div>
               <div><label>CVC</label><input type="text" id="cvc" placeholder="123" inputmode="numeric"></div>
             </div>
+            <p class="hint" id="cardnote">Card processing isn't live yet — you can leave this blank to
+              get your report now, or enter a test card (e.g. 4242 4242 4242 4242) to try the checkout.</p>
           </div>
           <p class="legal full" id="hostednote" style="display:none">You'll be taken to our
             payment provider's secure page to complete the payment, then brought straight back
@@ -430,11 +432,11 @@
         <h4>Order summary</h4>
         <div class="summary-row"><span class="name" id="sumTier">Select a report</span>
           <span class="amt" id="sumAmt">—</span></div>
-        <div class="summary-note">Delivered as PDF within minutes · nothing to cancel</div>
+        <div class="summary-note">Delivered as PDF within minutes · nothing to cancel · card details optional while payments are in preview</div>
         <div class="paypills">
           <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span>
         </div>
-        <button class="btn-primary full" id="paybtn" onclick="pay()">Pay &amp; get my report</button>
+        <button class="btn-primary full" id="paybtn" onclick="pay()">Get my report</button>
         <div class="err" id="e1"></div>
       </aside>
     </div>
@@ -911,9 +913,9 @@ async function pay() {
 
     if (order.checkout_url) { window.location.href = order.checkout_url; return; }
 
-    if (order.amount_minor > 0 && PROVIDER === "mock" && card.length < 12) {
-      throw new Error("Please enter a valid card number to complete payment.");
-    }
+    // Card processing isn't live yet: a blank card still completes the order
+    // (the report is what matters in preview). A partly-typed card is caught
+    // above, so anything reaching here is either empty or a full test number.
     const pr = await fetch(API+"/api/pay", {method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({order_id: order.order_id, payment_details:{card_number: card}})});
