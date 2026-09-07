@@ -11,7 +11,10 @@ services:
       - arvelos_data:/data
     environment:
       - ARVELOS_DB=/data/arvelos.db
-      - BASE_URL=https://arvelos.cloud
+      - ARVELOS_DATA_DIR=/data
+      - ARVELOS_FRONTEND=/app/frontend
+      - BASE_URL=https://astro.arvelos.cloud
+      - ARVELOS_ALLOWED_ORIGINS=https://astro.arvelos.cloud
       - SUPPORT_EMAIL=support@arvelos.cloud
       - PAYMENT_PROVIDER=mock      # switch to 'mollie' when keys arrive
       # - MOLLIE_API_KEY=test_xxxxxxxxxxxx
@@ -20,7 +23,7 @@ services:
       # - SMTP_PORT=587
       # - SMTP_USER=...
       # - SMTP_PASS=...
-      # - SMTP_FROM=Arvelos <reports@arvelos.cloud>
+      # - SMTP_FROM=Arvelos <reports@astro.arvelos.cloud>
 
 volumes:
   arvelos_data:

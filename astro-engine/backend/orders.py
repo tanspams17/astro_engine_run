@@ -1,6 +1,7 @@
 """
 Order storage + lifecycle. SQLite (WAL) — swap for Postgres when volume demands.
-States: pending -> paid -> delivered ; pending -> failed ; paid/delivered -> refunded
+States: pending -> paid -> delivered ; paid -> fulfilment_failed -> paid
+pending -> failed ; paid/delivered -> refunded
 UTM params are captured at quiz-start (not just purchase) per spec §9.2/9.3,
 so drop-off is measurable per creative.
 """
@@ -20,11 +21,12 @@ PRICES = {  # minor units, fixed at order creation — never recomputed mid-chec
     "mixed": {"USD": 2900, "INR": 149900},
 }
 
-VALID_STATES = {"pending", "paid", "delivered", "failed", "refunded"}
+VALID_STATES = {"pending", "paid", "delivered", "fulfilment_failed", "failed", "refunded"}
 _TRANSITIONS = {
     "pending": {"paid", "failed"},
-    "paid": {"delivered", "refunded"},
+    "paid": {"delivered", "fulfilment_failed", "refunded"},
     "delivered": {"refunded"},
+    "fulfilment_failed": {"paid"},
     "failed": set(), "refunded": set(),
 }
 
@@ -55,7 +57,9 @@ CREATE TABLE IF NOT EXISTS orders (
     status TEXT NOT NULL DEFAULT 'pending',
     payment_session_id TEXT, charge_id TEXT,
     download_token TEXT, pdf_path TEXT,
-    delivered_at TEXT
+    delivered_at TEXT,
+    fulfilment_error TEXT,
+    email_error TEXT
 );
 CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,6 +81,10 @@ def _conn():
 def init_db():
     with _conn() as c:
         c.executescript(SCHEMA)
+        columns = {row[1] for row in c.execute("PRAGMA table_info(orders)")}
+        for column in ("fulfilment_error", "email_error"):
+            if column not in columns:
+                c.execute(f"ALTER TABLE orders ADD COLUMN {column} TEXT")
 
 
 def _now() -> str:
@@ -115,13 +123,15 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
                  tier: str, currency: str, birth_date: str, birth_time: str,
                  birth_place: str, lat: float, lon: float, tz: str,
                  focus_areas: list[str], marketing_opt_in: bool,
-                 gender: str = "unspecified") -> dict:
+                 gender: str = "unspecified", amount_minor: int | None = None) -> dict:
     if tier not in PRICES:
         raise ValueError(f"unknown tier {tier}")
     if currency not in PRICES[tier]:
         raise ValueError(f"unsupported currency {currency}")
     oid = f"ord_{secrets.token_urlsafe(10)}"
-    amount = PRICES[tier][currency]  # fixed now, per spec §6
+    amount = amount_minor if amount_minor is not None else PRICES[tier][currency]
+    if amount < 0:
+        raise ValueError("invalid amount")
     with _conn() as c:
         c.execute(
             "INSERT INTO orders (id, quiz_session_id, created_at, email, name,"
@@ -176,7 +186,7 @@ def transition(order_id: str, new_status: str, **fields):
     vals.append(order_id)
     with _conn() as c:
         c.execute(f"UPDATE orders SET {', '.join(sets)} WHERE id=?", vals)
-        if new_status == "paid":
+        if new_status == "paid" and order["status"] == "pending":
             c.execute("INSERT INTO events (at, kind, order_id, quiz_session_id)"
                       " VALUES (?,?,?,?)",
                       (_now(), "purchase", order_id, order["quiz_session_id"]))
@@ -190,5 +200,14 @@ def mark_paid(order_id: str, payment_session_id: str, charge_id: str):
 def mark_delivered(order_id: str, pdf_path: str) -> str:
     token = secrets.token_urlsafe(24)
     transition(order_id, "delivered", pdf_path=pdf_path,
-               download_token=token, delivered_at=_now())
+               download_token=token, delivered_at=_now(),
+               fulfilment_error=None)
     return token
+
+
+def mark_fulfilment_failed(order_id: str, error: str):
+    transition(order_id, "fulfilment_failed", fulfilment_error=error)
+
+
+def retry_fulfilment(order_id: str):
+    transition(order_id, "paid", fulfilment_error=None, email_error=None)

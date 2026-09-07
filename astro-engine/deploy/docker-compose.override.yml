@@ -1,0 +1,9 @@
+services:
+  arvelos-api:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.arvelos.rule=Host(`astro.arvelos.cloud`)
+      - traefik.http.routers.arvelos.entrypoints=websecure
+      - traefik.http.routers.arvelos.tls=true
+      - traefik.http.routers.arvelos.tls.certresolver=letsencrypt
+      - traefik.http.services.arvelos.loadbalancer.server.port=8000

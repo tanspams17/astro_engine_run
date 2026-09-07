@@ -6,6 +6,7 @@ webhook, report generation + delivery, download.
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import os
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
@@ -13,22 +14,50 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
-import orders
-from delivery import send_report_email
-from report_generator import generate_report, TIER_NAMES
-from payment.mock_adapter import MockAdapter
+try:
+    from . import orders
+    from .delivery import send_report_email
+    from .report_generator import generate_report, TIER_NAMES
+    from .payment.mock_adapter import MockAdapter
+except ImportError:
+    import orders
+    from delivery import send_report_email
+    from report_generator import generate_report, TIER_NAMES
+    from payment.mock_adapter import MockAdapter
 
 app = FastAPI(title="Arvelos API", docs_url=None, redoc_url=None)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
+_local_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+_data_dir = os.environ.get("ARVELOS_DATA_DIR", _local_data_dir)
+_allowed_origins = [origin.strip() for origin in os.environ.get(
+    "ARVELOS_ALLOWED_ORIGINS", os.environ.get("BASE_URL", "")
+).split(",") if origin.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=_allowed_origins,
+                   allow_methods=["GET", "POST"],
                    allow_headers=["*"])
 
-PROVIDER = os.environ.get("PAYMENT_PROVIDER", "mock")
+PROVIDER = os.environ.get("PAYMENT_PROVIDER", "mock").strip().lower()
 if PROVIDER == "mollie":
     from payment.mollie_adapter import MollieAdapter
     payment = MollieAdapter()
 else:
     payment = MockAdapter()
-REPORT_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "reports")
+REPORT_DIR = os.environ.get(
+    "ARVELOS_REPORT_DIR",
+    os.path.join(_data_dir, "reports"),
+)
+
+FREE_COUPON_CODE = "ASTRO100"
+logger = logging.getLogger(__name__)
+
+
+def _apply_coupon(amount_minor: int, coupon_code: str | None) -> int:
+    if not coupon_code:
+        return amount_minor
+    code = coupon_code.strip().upper()
+    if code == FREE_COUPON_CODE:
+        return 0
+    raise ValueError("invalid coupon code")
+
 
 orders.init_db()
 
@@ -50,6 +79,7 @@ class OrderIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     tier: str = Field(pattern="^(western|vedic|mixed)$")
     currency: str = Field(pattern="^(USD|INR)$")
+    coupon_code: str | None = None
     birth_date: str            # YYYY-MM-DD
     birth_time: str | None = None   # HH:MM, or None if unknown
     gender: str = Field(default="unspecified",
@@ -58,13 +88,13 @@ class OrderIn(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     tz: str                    # IANA name, e.g. Asia/Kolkata
-    focus_areas: list[str] = []
+    focus_areas: list[str] = Field(default_factory=list)
     marketing_opt_in: bool = False   # MUST default False (GDPR/PECR)
 
 
 class PayIn(BaseModel):
     order_id: str
-    payment_details: dict = {}
+    payment_details: dict = Field(default_factory=dict)
 
 
 # ------------------------------------------------------------ endpoints
@@ -72,6 +102,14 @@ class PayIn(BaseModel):
 
 @app.get("/api/health")
 def health():
+    try:
+        os.makedirs(REPORT_DIR, exist_ok=True)
+        probe = os.path.join(REPORT_DIR, ".healthcheck")
+        with open(probe, "w") as handle:
+            handle.write("ok")
+        os.remove(probe)
+    except OSError as exc:
+        raise HTTPException(503, f"report storage unavailable: {exc}")
     return {"ok": True, "service": "arvelos"}
 
 
@@ -111,20 +149,27 @@ def create_order(o: OrderIn):
         raise HTTPException(400, "invalid birth date/time/timezone")
     focus = [f for f in o.focus_areas
              if f in ("personality", "love", "career", "growth")]
+    try:
+        amount_minor = _apply_coupon(orders.PRICES[o.tier][o.currency], o.coupon_code)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
     order = orders.create_order(
         o.quiz_session_id, o.email, o.name, o.tier, o.currency,
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
-        o.tz, focus, o.marketing_opt_in, o.gender)
-    kwargs = {}
-    if PROVIDER == "mollie":
-        kwargs["order_id"] = order["id"]
-    session = payment.create_order(order["amount_minor"], order["currency"],
-                                   order["tier"], order["email"], **kwargs)
-    if session.checkout_url:  # hosted checkout: remember session on the order
-        orders.set_payment_session(order["id"], session.session_id)
-    return {"order_id": order["id"], "payment_session_id": session.session_id,
+        o.tz, focus, o.marketing_opt_in, o.gender,
+        amount_minor=amount_minor)
+    session = None
+    if amount_minor > 0:
+        kwargs = {}
+        if PROVIDER == "mollie":
+            kwargs["order_id"] = order["id"]
+        session = payment.create_order(order["amount_minor"], order["currency"],
+                                       order["tier"], order["email"], **kwargs)
+        if session.checkout_url:  # hosted checkout: remember session on the order
+            orders.set_payment_session(order["id"], session.session_id)
+    return {"order_id": order["id"], "payment_session_id": session.session_id if session else None,
             "amount_minor": order["amount_minor"],
-            "currency": order["currency"], "checkout_url": session.checkout_url}
+            "currency": order["currency"], "checkout_url": session.checkout_url if session else None}
 
 
 def _fulfil(order_id: str):
@@ -132,20 +177,46 @@ def _fulfil(order_id: str):
     order = orders.get_order(order_id)
     if not order or order["status"] != "paid":
         return
-    os.makedirs(REPORT_DIR, exist_ok=True)
-    time_known = bool(order["birth_time"])
-    birth = dt.datetime.strptime(
-        order["birth_date"] + " " + (order["birth_time"] or "12:00"),
-        "%Y-%m-%d %H:%M")
     pdf_path = os.path.join(REPORT_DIR, f"{order_id}.pdf")
-    generate_report(
-        order["name"], birth, order["tz"], order["birth_place"],
-        order["lat"], order["lon"], order["tier"],
-        [f for f in order["focus_areas"].split(",") if f], pdf_path,
-        time_known=time_known, gender=order.get("gender", "unspecified"))
-    token = orders.mark_delivered(order_id, pdf_path)
-    send_report_email(order["email"], order["name"],
-                      TIER_NAMES[order["tier"]], token)
+    try:
+        os.makedirs(REPORT_DIR, exist_ok=True)
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+        time_known = bool(order["birth_time"])
+        birth = dt.datetime.strptime(
+            order["birth_date"] + " " + (order["birth_time"] or "12:00"),
+            "%Y-%m-%d %H:%M")
+        generate_report(
+            order["name"], birth, order["tz"], order["birth_place"],
+            order["lat"], order["lon"], order["tier"],
+            [f for f in order["focus_areas"].split(",") if f], pdf_path,
+            time_known=time_known, gender=order.get("gender", "unspecified"))
+        if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
+            raise RuntimeError("report generator did not create a PDF")
+    except Exception as exc:
+        logger.exception("Report generation failed for paid order %s", order_id)
+        try:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+            orders.mark_fulfilment_failed(order_id, str(exc))
+        except Exception:
+            logger.exception("Could not record fulfilment failure for order %s", order_id)
+        return
+
+    try:
+        token = orders.mark_delivered(order_id, pdf_path)
+    except Exception:
+        logger.exception("Could not mark generated report delivered for order %s", order_id)
+        return
+
+    try:
+        send_report_email(order["email"], order["name"],
+                          TIER_NAMES[order["tier"]], token)
+    except Exception as exc:
+        logger.exception("Report email delivery failed for order %s", order_id)
+        with orders._conn() as connection:
+            connection.execute("UPDATE orders SET email_error=? WHERE id=?",
+                               (str(exc), order_id))
 
 
 @app.post("/api/pay")
@@ -155,6 +226,11 @@ def pay(p: PayIn, background: BackgroundTasks):
         raise HTTPException(404, "order not found")
     if order["status"] != "pending":
         raise HTTPException(409, f"order is {order['status']}")
+    if order["amount_minor"] <= 0:
+        orders.mark_paid(p.order_id, "free", "free")
+        background.add_task(_fulfil, p.order_id)
+        return {"ok": True, "order_id": p.order_id, "status": "paid",
+                "message": "Your free report is being generated and will arrive by email within a few minutes."}
     session = payment.create_order(order["amount_minor"], order["currency"],
                                    order["tier"], order["email"])
     result = payment.charge(session.session_id, p.payment_details)
@@ -203,7 +279,22 @@ def order_status(order_id: str):
     out = {"order_id": order_id, "status": order["status"]}
     if order["status"] == "delivered":
         out["download_url"] = f"/download/{order['download_token']}"
+    if order["status"] == "fulfilment_failed":
+        out["retryable"] = True
+        out["error"] = order.get("fulfilment_error") or "report generation failed"
     return out
+
+
+@app.post("/api/orders/{order_id}/retry")
+def retry_order(order_id: str, background: BackgroundTasks):
+    order = orders.get_order(order_id)
+    if not order:
+        raise HTTPException(404, "order not found")
+    if order["status"] != "fulfilment_failed":
+        raise HTTPException(409, f"order is {order['status']}")
+    orders.retry_fulfilment(order_id)
+    background.add_task(_fulfil, order_id)
+    return {"ok": True, "order_id": order_id, "status": "paid"}
 
 
 @app.get("/download/{token}")
