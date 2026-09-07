@@ -5,8 +5,10 @@ transactional provider (Postmark/SES) or plain SMTP.
 
 Env:
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, BASE_URL
-If SMTP_HOST is unset, emails are written to data/outbox/ for inspection
-(dev mode) instead of being sent.
+If SMTP_HOST is unset, emails are written to <data>/outbox/ for inspection
+(dev mode) instead of being sent. <data> is ARVELOS_DATA_DIR when set
+(so the outbox lands on the persistent volume, not an ephemeral container
+path), otherwise the repo-local data/ directory.
 """
 from __future__ import annotations
 
@@ -16,7 +18,9 @@ from email.message import EmailMessage
 
 BASE_URL = os.environ.get("BASE_URL", "https://arvelos.cloud")
 SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "support@arvelos.cloud")
-OUTBOX = os.path.join(os.path.dirname(__file__), "..", "data", "outbox")
+_DATA_DIR = os.environ.get("ARVELOS_DATA_DIR", os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "data")))
+OUTBOX = os.environ.get("ARVELOS_OUTBOX_DIR", os.path.join(_DATA_DIR, "outbox"))
 
 
 def _email_body(name: str, tier_name: str, token: str) -> str:

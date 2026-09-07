@@ -80,6 +80,10 @@
   .hero-actions { display:flex; flex-direction:column; align-items:flex-start; gap:12px; }
   .hero-note { font-size:13px; color:var(--lavender); letter-spacing:.02em; }
   .hero-note::before { content:"✦ "; color:var(--gold); }
+  .skip-link { position:absolute; left:16px; top:8px; z-index:200; padding:8px 12px;
+    background:var(--cream); color:#241505; transform:translateY(-160%); }
+  .skip-link:focus { transform:translateY(0); }
+  :focus-visible { outline:3px solid var(--gold-light); outline-offset:3px; }
 
   .constellation-wrap { position:relative; aspect-ratio:1/1; max-width:520px; margin:0 auto; }
   .constellation-wrap svg { width:100%; height:100%; overflow:visible; }
@@ -224,9 +228,16 @@
     .summary-card { position:static; }
     .navlinks { display:none; }
   }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior:auto; }
+    *, *::before, *::after { animation-duration:0.01ms !important;
+      animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+  }
 </style>
 </head>
 <body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
 <canvas id="particles"></canvas>
 
@@ -242,6 +253,7 @@
   </div>
 </nav>
 
+<main id="main-content">
 <header class="hero" id="hero">
   <div class="wrap hero-inner">
     <div class="hero-text">
@@ -307,7 +319,7 @@
       <button data-cur="INR" onclick="setCurrency('INR')">INR (₹)</button>
     </div>
     <div class="pricing-grid" id="pricingGrid">
-      <div class="card price-card" data-tier="western" onclick="chooseTier('western')">
+        <div class="card price-card" data-tier="western" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('western')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('western')}">
         <h3>Western</h3>
         <div class="tagline">The psychological lens</div>
         <div class="amount" data-amt>$19</div>
@@ -318,7 +330,7 @@
         </ul>
         <div class="choose">Choose Western</div>
       </div>
-      <div class="card price-card" data-tier="vedic" onclick="chooseTier('vedic')">
+        <div class="card price-card" data-tier="vedic" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('vedic')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('vedic')}">
         <h3>Vedic</h3>
         <div class="tagline">Authentic Jyotish</div>
         <div class="amount" data-amt>$19</div>
@@ -329,7 +341,7 @@
         </ul>
         <div class="choose">Choose Vedic</div>
       </div>
-      <div class="card price-card" data-tier="mixed" onclick="chooseTier('mixed')">
+        <div class="card price-card" data-tier="mixed" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('mixed')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('mixed')}">
         <span class="badge">Most chosen</span>
         <h3>Mixed</h3>
         <div class="tagline">Both, fully compared</div>
@@ -356,13 +368,13 @@
     <div class="order-layout" id="orderFormView">
       <div class="card order-card">
         <div class="field-grid">
-          <div><label>Your first name</label>
+          <div><label for="name">Your first name</label>
             <input type="text" id="name" placeholder="So the report can address you" maxlength="60"></div>
-          <div><label>Email <span class="opt">report delivered here</span></label>
+          <div><label for="email">Email <span class="opt">report delivered here</span></label>
             <input type="email" id="email" placeholder="you@example.com"></div>
 
-          <div><label>Date of birth</label><input type="date" id="bdate"></div>
-          <div><label>Time of birth</label><input type="time" id="btime"></div>
+          <div><label for="bdate">Date of birth</label><input type="date" id="bdate"></div>
+          <div><label for="btime">Time of birth</label><input type="time" id="btime"></div>
 
           <div class="full">
             <div class="timeoff">
@@ -372,22 +384,22 @@
             </div>
           </div>
 
-          <div class="full"><label>Place of birth</label>
+          <div class="full"><label for="bplace">Place of birth</label>
             <div class="autocomplete">
-              <input type="text" id="bplace" placeholder="City, Country — e.g. Mumbai, India" autocomplete="off">
-              <div class="suggestions" id="citySuggestions"></div>
+              <input type="text" id="bplace" placeholder="City, Country — e.g. Mumbai, India" autocomplete="off" aria-controls="citySuggestions" aria-expanded="false">
+              <div class="suggestions" id="citySuggestions" role="listbox"></div>
             </div>
             <p class="hint" id="cityHint" style="display:none">No matching city found — check the
               spelling, or try just the city name without the country.</p>
           </div>
 
-          <div><label>Gender <span class="opt">optional</span></label>
+          <div><label for="gender">Gender <span class="opt">optional</span></label>
             <select id="gender">
               <option value="unspecified">Prefer not to say</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
             </select></div>
-          <div><label>System</label>
+          <div><label for="tierSelect">System</label>
             <select id="tierSelect" onchange="chooseTier(this.value, true)">
               <option value="">Select a report</option>
               <option value="western">Western</option>
@@ -396,17 +408,17 @@
             </select></div>
 
           <div class="full">
-            <label>Coupon code <span class="opt">optional</span></label>
+            <label for="coupon">Coupon code <span class="opt">optional</span></label>
             <input type="text" id="coupon" placeholder="ASTRO100">
             <p class="hint">Enter ASTRO100 for a free report, or leave blank for the regular price.</p>
           </div>
 
           <div class="full" id="cardfields">
-            <label>Card number <span class="opt">optional while in preview</span></label>
+            <label for="card">Card number <span class="opt">optional while in preview</span></label>
             <input type="text" id="card" placeholder="4242 4242 4242 4242" inputmode="numeric">
             <div class="field-grid" style="margin-top:14px">
-              <div><label>Expiry</label><input type="text" id="exp" placeholder="MM/YY"></div>
-              <div><label>CVC</label><input type="text" id="cvc" placeholder="123" inputmode="numeric"></div>
+              <div><label for="exp">Expiry</label><input type="text" id="exp" placeholder="MM/YY"></div>
+              <div><label for="cvc">CVC</label><input type="text" id="cvc" placeholder="123" inputmode="numeric"></div>
             </div>
             <p class="hint" id="cardnote">Card processing isn't live yet — you can leave this blank to
               get your report now, or enter a test card (e.g. 4242 4242 4242 4242) to try the checkout.</p>
@@ -437,14 +449,22 @@
           <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span>
         </div>
         <button class="btn-primary full" id="paybtn" onclick="pay()">Get my report</button>
-        <div class="err" id="e1"></div>
+        <div class="err" id="e1" role="alert" aria-live="polite"></div>
       </aside>
     </div>
 
     <div class="order-state card" id="orderProcessing">
       <div class="spin"></div>
       <h3>Calculating your sky…</h3>
-      <p id="procmsg">Computing planetary positions from your exact birth moment.</p>
+      <p id="procmsg" aria-live="polite">Computing planetary positions from your exact birth moment.</p>
+    </div>
+    </div>
+
+    <div class="order-state card" id="orderFailed">
+      <div class="glyph" style="font-size:64px">!</div>
+      <h3>We couldn't finish your report</h3>
+      <p id="failmsg" aria-live="polite">Your payment is recorded and your report can be retried.</p>
+      <button class="btn-primary" id="retrybtn" onclick="retryFulfilment()" style="margin-top:24px">Try again</button>
     </div>
 
     <div class="order-state card" id="orderDelivered">
@@ -457,6 +477,8 @@
     </div>
   </div>
 </section>
+
+ </main>
 
 <section id="faq">
   <div class="wrap">
@@ -483,7 +505,7 @@
 
 <footer>
   <div class="wrap">
-    Arvelos · arvelos.cloud · <a href="/terms.html">Terms &amp; Refunds</a> ·
+    Arvelos · astro.arvelos.cloud · <a href="/terms.html">Terms &amp; Refunds</a> ·
     <a href="/privacy.html">Privacy</a> · support@arvelos.cloud
     <div class="fine">For reflection and entertainment. Reports describe tendencies, not
       certainties, and make no predictions about your future.</div>
@@ -589,6 +611,7 @@ function scrollToOrder(){ document.getElementById('order').scrollIntoView({behav
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
 let quizSession = null, tier = null, currency = "USD", chosenPlace = null, quizCompleteSent = false;
+let activeOrderId = null;
 let PROVIDER = "mock";
 
 fetch(API+"/api/config").then(r=>r.json()).then(c=>{
@@ -756,6 +779,8 @@ function renderSuggestions(results) {
     suggestItems.forEach((c, i) => {
       const el = document.createElement("div");
       el.className = "item";
+      el.setAttribute("role", "option");
+      el.setAttribute("aria-selected", "false");
       el.textContent = c.n;
       // mousedown (not click) fires before the input's blur, so the box
       // doesn't disappear out from under the click
@@ -764,12 +789,13 @@ function renderSuggestions(results) {
     });
   }
   suggestBox.classList.add("show");
+  bplaceInput.setAttribute("aria-expanded", "true");
 }
 
 function selectCity(c) {
   chosenPlace = c;
   bplaceInput.value = c.n;
-  suggestBox.classList.remove("show");
+  closeSuggestions();
   cityHint.style.display = "none";
 }
 
@@ -780,14 +806,22 @@ function showSearching() {
   el.textContent = "Searching…";
   suggestBox.appendChild(el);
   suggestBox.classList.add("show");
+  bplaceInput.setAttribute("aria-expanded", "true");
 }
 
-function closeSuggestions() { suggestBox.classList.remove("show"); }
+function closeSuggestions() {
+  suggestBox.classList.remove("show");
+  bplaceInput.setAttribute("aria-expanded", "false");
+}
 
 function highlight(i) {
   const items = suggestBox.querySelectorAll(".item");
-  items.forEach(el => el.classList.remove("active"));
-  if (i >= 0 && i < items.length) { items[i].classList.add("active"); items[i].scrollIntoView({block:"nearest"}); }
+  items.forEach(el => { el.classList.remove("active"); el.setAttribute("aria-selected", "false"); });
+  if (i >= 0 && i < items.length) {
+    items[i].classList.add("active");
+    items[i].setAttribute("aria-selected", "true");
+    items[i].scrollIntoView({block:"nearest"});
+  }
   activeIndex = i;
 }
 
@@ -826,10 +860,20 @@ bplaceInput.addEventListener("focus", () => {
 const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
 
 /* ---- pricing ---- */
-const PRICES = {western:{USD:[19,"$"],INR:[999,"₹"]},
+let PRICES = {western:{USD:[19,"$"],INR:[999,"₹"]},
                 vedic:{USD:[19,"$"],INR:[999,"₹"]},
                 mixed:{USD:[29,"$"],INR:[1499,"₹"]}};
 const TIER_LABEL = {western:"Western", vedic:"Vedic", mixed:"Mixed"};
+
+fetch(API+"/api/prices").then(r=>r.json()).then(serverPrices=>{
+  const symbols = {USD:"$", INR:"₹"};
+  for (const [name, values] of Object.entries(serverPrices)) {
+    if (!PRICES[name]) PRICES[name] = {};
+    for (const [cur, minor] of Object.entries(values))
+      PRICES[name][cur] = [minor / 100, symbols[cur] || cur + " "];
+  }
+  setCurrency(currency);
+}).catch(()=>{});
 
 function setCurrency(cur) {
   currency = cur;
@@ -845,7 +889,13 @@ function setCurrency(cur) {
 function chooseTier(t, fromSelect) {
   tier = t;
   document.querySelectorAll("#pricingGrid .price-card").forEach(el =>
-    el.classList.toggle("sel", el.dataset.tier === t));
+    (el.classList.toggle("sel", el.dataset.tier === t),
+     el.setAttribute("aria-pressed", String(el.dataset.tier === t))));
+    bplaceInput.setAttribute("aria-expanded", "true");
+  function closeSuggestions() {
+    suggestBox.classList.remove("show");
+    bplaceInput.setAttribute("aria-expanded", "false");
+  }
   document.getElementById("tierSelect").value = t;
   paintSummary();
   if (!quizCompleteSent) { quizCompleteSent = true; ensureSession().then(() => {
@@ -910,6 +960,7 @@ async function pay() {
         coupon_code: coupon || null })});
     if (!or.ok) throw new Error((await or.json()).detail || "order failed");
     const order = await or.json();
+    activeOrderId = order.order_id;
 
     if (order.checkout_url) { window.location.href = order.checkout_url; return; }
 
@@ -933,7 +984,23 @@ function scrollIntoView1(id){ document.getElementById(id).scrollIntoView({behavi
 function showOrderState(state) {
   document.getElementById("orderFormView").style.display = state === "form" ? "grid" : "none";
   document.getElementById("orderProcessing").classList.toggle("on", state === "processing");
+  document.getElementById("orderFailed").classList.toggle("on", state === "failed");
   document.getElementById("orderDelivered").classList.toggle("on", state === "delivered");
+}
+
+async function retryFulfilment() {
+  if (!activeOrderId) return;
+  const button = document.getElementById("retrybtn");
+  button.disabled = true;
+  try {
+    const r = await fetch(API+`/api/orders/${activeOrderId}/retry`, {method:"POST"});
+    if (!r.ok) throw new Error((await r.json()).detail || "Retry failed");
+    showOrderState("processing");
+    poll(activeOrderId, 0);
+  } catch (e) {
+    document.getElementById("failmsg").textContent = e.message;
+    button.disabled = false;
+  }
 }
 
 const PROC_MSGS = ["Computing planetary positions from your exact birth moment.",
@@ -954,7 +1021,13 @@ async function poll(orderId, n) {
       return;
     }
     if (s.status === "failed") {
-      document.getElementById("procmsg").textContent = "We could not generate your report. Please contact support or try again later.";
+      document.getElementById("failmsg").textContent = "Payment or report processing failed. Please contact support.";
+      showOrderState("failed");
+      return;
+    }
+    if (s.status === "fulfilment_failed") {
+      document.getElementById("failmsg").textContent = "Your payment was received, but the report could not be generated. You can safely try again.";
+      showOrderState("failed");
       return;
     }
 
@@ -974,6 +1047,7 @@ async function poll(orderId, n) {
 /* returning from hosted checkout (?order=...) */
 const returnOrder = new URLSearchParams(location.search).get("order");
 if (returnOrder) window.addEventListener("DOMContentLoaded", () => {
+  activeOrderId = returnOrder;
   scrollIntoView1("order");
   showOrderState("processing"); poll(returnOrder, 0);
 });

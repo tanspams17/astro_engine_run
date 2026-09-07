@@ -1,0 +1,15 @@
+# Deploy-host overrides (Dokploy VPS). Traefik fronts the container on
+# :443 and terminates TLS with on-demand Let's Encrypt certs.
+#
+# The app is host-agnostic, so we serve every hostname that resolves to
+# this VPS: the astro. subdomain plus the apex and www. Pick one as
+# canonical (and add a redirect middleware) once the domain is settled.
+services:
+  arvelos-api:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.arvelos.rule=Host(`astro.arvelos.cloud`) || Host(`arvelos.cloud`) || Host(`www.arvelos.cloud`)
+      - traefik.http.routers.arvelos.entrypoints=websecure
+      - traefik.http.routers.arvelos.tls=true
+      - traefik.http.routers.arvelos.tls.certresolver=letsencrypt
+      - traefik.http.services.arvelos.loadbalancer.server.port=8000
