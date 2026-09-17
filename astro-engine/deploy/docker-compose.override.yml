@@ -1,15 +1,24 @@
 # Deploy-host overrides (Dokploy VPS). Traefik fronts the container on
 # :443 and terminates TLS with on-demand Let's Encrypt certs.
 #
-# The app is host-agnostic, so we serve every hostname that resolves to
-# this VPS: the astro. subdomain plus the apex and www. Pick one as
-# canonical (and add a redirect middleware) once the domain is settled.
+# astro.arvelos.cloud is canonical (2026-09-17). The apex and www still
+# resolve here and keep their Let's Encrypt certs, but now 301-redirect
+# to the canonical host instead of serving content directly.
 services:
   arvelos-api:
     labels:
       - traefik.enable=true
-      - traefik.http.routers.arvelos.rule=Host(`astro.arvelos.cloud`) || Host(`arvelos.cloud`) || Host(`www.arvelos.cloud`)
+      - traefik.http.routers.arvelos.rule=Host(`astro.arvelos.cloud`)
       - traefik.http.routers.arvelos.entrypoints=websecure
       - traefik.http.routers.arvelos.tls=true
       - traefik.http.routers.arvelos.tls.certresolver=letsencrypt
       - traefik.http.services.arvelos.loadbalancer.server.port=8000
+      - traefik.http.routers.arvelos-redirect.rule=Host(`arvelos.cloud`) || Host(`www.arvelos.cloud`)
+      - traefik.http.routers.arvelos-redirect.entrypoints=websecure
+      - traefik.http.routers.arvelos-redirect.tls=true
+      - traefik.http.routers.arvelos-redirect.tls.certresolver=letsencrypt
+      - traefik.http.routers.arvelos-redirect.middlewares=arvelos-canonical-redirect
+      - traefik.http.routers.arvelos-redirect.service=arvelos
+      - traefik.http.middlewares.arvelos-canonical-redirect.redirectregex.regex=^https://(?:www\.)?arvelos\.cloud/(.*)
+      - traefik.http.middlewares.arvelos-canonical-redirect.redirectregex.replacement=https://astro.arvelos.cloud/$${1}
+      - traefik.http.middlewares.arvelos-canonical-redirect.redirectregex.permanent=true
