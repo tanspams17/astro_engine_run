@@ -30,3 +30,7 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets — real gateway/API keys live here on the VPS only, never in git
+.env
+!.env.example

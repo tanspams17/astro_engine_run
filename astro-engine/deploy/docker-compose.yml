@@ -18,15 +18,16 @@ services:
       - SUPPORT_EMAIL=support@arvelos.cloud
       # Gateway is picked per order by currency (INR -> Razorpay, else ->
       # Stripe) and falls back to the mock adapter automatically when a
-      # gateway's keys below are unset — so leaving all four commented out
-      # keeps the whole site on dummy payments. Uncomment PAYMENT_PROVIDER
-      # instead to force mock everywhere regardless of keys (e.g. staging).
-      # - PAYMENT_PROVIDER=mock
-      # - STRIPE_API_KEY=sk_test_xxxxxxxxxxxx
-      # - STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
-      # - RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
-      # - RAZORPAY_KEY_SECRET=xxxxxxxxxxxx
-      # - RAZORPAY_WEBHOOK_SECRET=xxxxxxxxxxxx
+      # gateway's keys below are unset — so leaving all five blank in .env
+      # (or omitting .env entirely) keeps the whole site on dummy payments.
+      # Real values live in deploy/.env (untracked, see .env.example) —
+      # never commit secrets into this file, it's version controlled.
+      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-}
+      - STRIPE_API_KEY=${STRIPE_API_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
       # SMTP — set these when the mail provider is chosen:
       # - SMTP_HOST=smtp.postmarkapp.com
       # - SMTP_PORT=587

@@ -38,11 +38,13 @@ it immediately for its currency, independent of the other gateway.
 
 ## Deploying the keys
 
-Add the env vars to `deploy/docker-compose.yml` (commented placeholders
-already there) and run `docker compose up -d` — no rebuild needed, it's
-just an environment change. Test with each gateway's test-mode keys
-first; a test-mode order goes through the exact same code path as a live
-one, so it's a real end-to-end check before switching to live keys.
+Copy `deploy/.env.example` to `deploy/.env` on the VPS and fill in the
+real values there — `.env` is gitignored, so secrets never enter version
+control; `docker-compose.yml` only references `${STRIPE_API_KEY}` etc.
+Then `docker compose up -d` — no rebuild needed, it's just an environment
+change. Test with each gateway's test-mode keys first; a test-mode order
+goes through the exact same code path as a live one, so it's a real
+end-to-end check before switching to live keys.
 
 ## Region default (not payment routing)
 
