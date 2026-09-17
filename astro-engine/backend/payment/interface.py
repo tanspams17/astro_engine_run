@@ -1,7 +1,8 @@
 """
-Payment adapter interface — gateway-agnostic by design.
-A real gateway (Mollie recommended) implements this ABC later without
-touching the rest of the system. No card data ever touches this codebase.
+Payment adapter interface — gateway-agnostic by design. A real gateway
+implements this ABC without touching the rest of the system. No card data
+ever touches this codebase — every live adapter uses a hosted checkout
+page (Stripe Checkout / Razorpay Payment Links), same pattern as MockAdapter.
 """
 from __future__ import annotations
 
@@ -43,7 +44,8 @@ class RefundResult:
 class PaymentAdapter(ABC):
     @abstractmethod
     def create_order(self, amount_minor: int, currency: str, tier: str,
-                     customer_email: str) -> OrderSession: ...
+                     customer_email: str,
+                     order_id: str | None = None) -> OrderSession: ...
 
     @abstractmethod
     def charge(self, order_session_id: str,

@@ -75,12 +75,22 @@ docker run -d --name arvelos -p 127.0.0.1:8801:8000 -v arvelos_data:/data arvelo
 ## Environment variables
 | Var | Default | Purpose |
 |-----|---------|---------|
-| `PAYMENT_PROVIDER` | `mock` | `mock` (test) or `mollie` (live) |
-| `MOLLIE_API_KEY` | – | set when `PAYMENT_PROVIDER=mollie` |
-| `BASE_URL` | `https://arvelos.cloud` | used in emails + redirects |
+| `PAYMENT_PROVIDER` | – | set to `mock` to force dummy payments for every currency regardless of the keys below (e.g. staging) |
+| `STRIPE_API_KEY` / `STRIPE_WEBHOOK_SECRET` | – | live gateway for every currency except INR; unset = mock |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET` | – | live gateway for INR; unset = mock |
+| `BASE_URL` | `https://astro.arvelos.cloud` | used in emails, gateway redirects, CORS |
+| `ARVELOS_ALLOWED_ORIGINS` | – | comma-separated CORS origins; falls back to `BASE_URL` |
 | `ARVELOS_FRONTEND` | – | path to `frontend/`; set to serve the site from the app |
 | `ARVELOS_DB` | `../data/arvelos.db` | SQLite path (use `/data/...` on hosts) |
+| `ARVELOS_DATA_DIR` | `../data` | base dir for the DB, generated reports, and the dev-mode email outbox — set to a persistent volume on hosts |
 | `SMTP_HOST/PORT/USER/PASS/FROM` | – | email delivery; unset = write to outbox |
+
+Gateway selection is automatic and per-order: an INR order goes to Razorpay
+if its keys are set, a non-INR order goes to Stripe if its key is set;
+either falls back to the built-in mock adapter (dummy payment, real
+report) when its keys are absent — so the site works end-to-end with
+zero payment config, and each gateway activates independently the moment
+its keys are added.
 
 Go-live checklist and the marketing/ads plan are in `DEPLOY_STEPS.md`,
 `ARVELOS_HANDOFF.md`, and `marketing/CAMPAIGN.md`.

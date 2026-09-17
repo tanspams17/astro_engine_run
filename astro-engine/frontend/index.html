@@ -315,8 +315,8 @@
       <p>Two great traditions read the same chart differently. Pick one — or see both, compared.</p>
     </div>
     <div class="currency-toggle">
-      <button data-cur="USD" class="on" onclick="setCurrency('USD')">USD ($)</button>
-      <button data-cur="INR" onclick="setCurrency('INR')">INR (₹)</button>
+      <button data-cur="USD" class="on" onclick="setCurrency('USD', true)">USD ($)</button>
+      <button data-cur="INR" onclick="setCurrency('INR', true)">INR (₹)</button>
     </div>
     <div class="pricing-grid" id="pricingGrid">
         <div class="card price-card" data-tier="western" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('western')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('western')}">
@@ -612,15 +612,32 @@ function scrollToOrder(){ document.getElementById('order').scrollIntoView({behav
 const API = "";   // same origin; Nginx proxies /api to the backend
 let quizSession = null, tier = null, currency = "USD", chosenPlace = null, quizCompleteSent = false;
 let activeOrderId = null;
-let PROVIDER = "mock";
+// Gateway is picked per currency server-side (INR -> Razorpay, else ->
+// Stripe, falling back to mock when a gateway's keys aren't configured
+// yet) — PROVIDERS mirrors that so the checkout UI matches what /api/pay
+// will actually do for the selected currency.
+let PROVIDERS = {USD: "mock", INR: "mock"};
+let currencyAutoSet = true;   // false once the visitor picks a currency themselves
+
+function applyProviderUI() {
+  const hosted = PROVIDERS[currency] !== "mock";
+  document.getElementById("cardfields").style.display = hosted ? "none" : "";
+  document.getElementById("hostednote").style.display = hosted ? "block" : "none";
+  document.getElementById("paybtn").textContent =
+    hosted ? "Continue to secure payment" : "Get my report";
+}
 
 fetch(API+"/api/config").then(r=>r.json()).then(c=>{
-  PROVIDER = c.payment_provider;
-  if (PROVIDER !== "mock") {
-    document.getElementById("cardfields").style.display = "none";
-    document.getElementById("hostednote").style.display = "block";
-    document.getElementById("paybtn").textContent = "Continue to secure payment";
-  }
+  if (c.providers) PROVIDERS = c.providers;
+  applyProviderUI();
+}).catch(()=>{});
+
+// Region default: detect the visitor's country server-side (IP-based, no
+// external call from the browser) and default the currency toggle to INR
+// for India / USD elsewhere. Only applies before the visitor touches the
+// toggle themselves, and never affects existing selections.
+fetch(API+"/api/geo").then(r=>r.json()).then(g=>{
+  if (currencyAutoSet && g.currency && g.currency !== currency) setCurrency(g.currency);
 }).catch(()=>{});
 
 function utmParams() {
@@ -875,8 +892,9 @@ fetch(API+"/api/prices").then(r=>r.json()).then(serverPrices=>{
   setCurrency(currency);
 }).catch(()=>{});
 
-function setCurrency(cur) {
+function setCurrency(cur, fromUser) {
   currency = cur;
+  if (fromUser) currencyAutoSet = false;
   document.querySelectorAll(".currency-toggle button").forEach(b =>
     b.classList.toggle("on", b.dataset.cur === cur));
   document.querySelectorAll("#pricingGrid .price-card").forEach(el => {
@@ -884,6 +902,7 @@ function setCurrency(cur) {
     el.querySelector("[data-amt]").textContent = sym + amt.toLocaleString(cur==="INR"?"en-IN":"en-US");
   });
   paintSummary();
+  applyProviderUI();
 }
 
 function chooseTier(t, fromSelect) {
@@ -891,11 +910,6 @@ function chooseTier(t, fromSelect) {
   document.querySelectorAll("#pricingGrid .price-card").forEach(el =>
     (el.classList.toggle("sel", el.dataset.tier === t),
      el.setAttribute("aria-pressed", String(el.dataset.tier === t))));
-    bplaceInput.setAttribute("aria-expanded", "true");
-  function closeSuggestions() {
-    suggestBox.classList.remove("show");
-    bplaceInput.setAttribute("aria-expanded", "false");
-  }
   document.getElementById("tierSelect").value = t;
   paintSummary();
   if (!quizCompleteSent) { quizCompleteSent = true; ensureSession().then(() => {
@@ -945,7 +959,7 @@ async function pay() {
       return;
     }
   }
-  if (PROVIDER === "mock" && card.length > 0 && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
+  if (PROVIDERS[currency] === "mock" && card.length > 0 && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
 
   document.getElementById("paybtn").disabled = true;
   try {

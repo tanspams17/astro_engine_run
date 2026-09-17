@@ -15,12 +15,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
 try:
-    from . import orders
+    from . import orders, geo
     from .delivery import send_report_email
     from .report_generator import generate_report, TIER_NAMES
     from .payment.mock_adapter import MockAdapter
 except ImportError:
     import orders
+    import geo
     from delivery import send_report_email
     from report_generator import generate_report, TIER_NAMES
     from payment.mock_adapter import MockAdapter
@@ -35,12 +36,43 @@ app.add_middleware(CORSMiddleware, allow_origins=_allowed_origins,
                    allow_methods=["GET", "POST"],
                    allow_headers=["*"])
 
-PROVIDER = os.environ.get("PAYMENT_PROVIDER", "mock").strip().lower()
-if PROVIDER == "mollie":
-    from payment.mollie_adapter import MollieAdapter
-    payment = MollieAdapter()
-else:
-    payment = MockAdapter()
+
+# ------------------------------------------------------------ payment gateway
+#
+# Gateway is chosen per order by currency, not globally: INR -> Razorpay
+# (built for India), everything else -> Stripe. Either falls back to the
+# mock adapter automatically if its keys aren't configured, so the site
+# stays fully functional (dummy payment, real report) before go-live.
+# PAYMENT_PROVIDER=mock forces mock for every currency regardless of keys
+# (useful for staging).
+_FORCE_MOCK = os.environ.get("PAYMENT_PROVIDER", "").strip().lower() == "mock"
+_mock_adapter = MockAdapter()
+_adapter_cache: dict[str, object] = {}
+
+
+def _provider_name(currency: str) -> str:
+    if _FORCE_MOCK:
+        return "mock"
+    if currency == "INR":
+        return ("razorpay" if os.environ.get("RAZORPAY_KEY_ID")
+                and os.environ.get("RAZORPAY_KEY_SECRET") else "mock")
+    return "stripe" if os.environ.get("STRIPE_API_KEY") else "mock"
+
+
+def get_adapter(currency: str):
+    name = _provider_name(currency)
+    if name == "mock":
+        return _mock_adapter
+    if name not in _adapter_cache:
+        if name == "razorpay":
+            from payment.razorpay_adapter import RazorpayAdapter
+            _adapter_cache[name] = RazorpayAdapter()
+        elif name == "stripe":
+            from payment.stripe_adapter import StripeAdapter
+            _adapter_cache[name] = StripeAdapter()
+    return _adapter_cache[name]
+
+
 REPORT_DIR = os.environ.get(
     "ARVELOS_REPORT_DIR",
     os.path.join(_data_dir, "reports"),
@@ -115,7 +147,16 @@ def health():
 
 @app.get("/api/config")
 def config():
-    return {"payment_provider": PROVIDER}
+    providers = {cur: _provider_name(cur) for cur in ("USD", "INR")}
+    return {"providers": providers,
+            # legacy field some older clients may still read
+            "payment_provider": providers["USD"]}
+
+
+@app.get("/api/geo")
+def geo_lookup(request: Request):
+    country = geo.country_for_ip(geo.client_ip(request))
+    return {"country": country, "currency": "INR" if country == "IN" else "USD"}
 
 
 @app.get("/api/prices")
@@ -160,11 +201,15 @@ def create_order(o: OrderIn):
         amount_minor=amount_minor)
     session = None
     if amount_minor > 0:
-        kwargs = {}
-        if PROVIDER == "mollie":
-            kwargs["order_id"] = order["id"]
-        session = payment.create_order(order["amount_minor"], order["currency"],
-                                       order["tier"], order["email"], **kwargs)
+        adapter = get_adapter(order["currency"])
+        try:
+            session = adapter.create_order(order["amount_minor"], order["currency"],
+                                           order["tier"], order["email"],
+                                           order_id=order["id"])
+        except Exception:
+            logger.exception("Gateway create_order failed for order %s (%s)",
+                             order["id"], order["currency"])
+            raise HTTPException(502, "payment gateway unavailable — please try again shortly")
         if session.checkout_url:  # hosted checkout: remember session on the order
             orders.set_payment_session(order["id"], session.session_id)
     return {"order_id": order["id"], "payment_session_id": session.session_id if session else None,
@@ -231,9 +276,16 @@ def pay(p: PayIn, background: BackgroundTasks):
         background.add_task(_fulfil, p.order_id)
         return {"ok": True, "order_id": p.order_id, "status": "paid",
                 "message": "Your free report is being generated and will arrive by email within a few minutes."}
-    session = payment.create_order(order["amount_minor"], order["currency"],
-                                   order["tier"], order["email"])
-    result = payment.charge(session.session_id, p.payment_details)
+    adapter = get_adapter(order["currency"])
+    try:
+        session = adapter.create_order(order["amount_minor"], order["currency"],
+                                       order["tier"], order["email"],
+                                       order_id=order["id"])
+        result = adapter.charge(session.session_id, p.payment_details)
+    except Exception:
+        logger.exception("Gateway call failed for order %s (%s)",
+                         p.order_id, order["currency"])
+        raise HTTPException(502, "payment gateway unavailable — please try again shortly")
     if not result.success:
         orders.transition(p.order_id, "failed")
         raise HTTPException(402, result.error or "payment failed")
@@ -244,11 +296,7 @@ def pay(p: PayIn, background: BackgroundTasks):
                        "and will arrive by email within a few minutes."}
 
 
-@app.post("/webhooks/payment")
-async def payment_webhook(request: Request, background: BackgroundTasks):
-    payload = await request.body()
-    signature = request.headers.get("X-Signature", "")
-    event = payment.verify_webhook(payload, signature)
+def _handle_webhook_event(event, background: BackgroundTasks):
     if not event.valid:
         raise HTTPException(400, "invalid webhook")
     if event.event_type == "payment.paid":
@@ -269,6 +317,22 @@ async def payment_webhook(request: Request, background: BackgroundTasks):
             if order and order["status"] == "pending":
                 orders.transition(order_id, "failed")
     return {"received": True, "type": event.event_type}
+
+
+@app.post("/webhooks/stripe")
+async def stripe_webhook(request: Request, background: BackgroundTasks):
+    payload = await request.body()
+    signature = request.headers.get("stripe-signature", "")
+    event = get_adapter("USD").verify_webhook(payload, signature)
+    return _handle_webhook_event(event, background)
+
+
+@app.post("/webhooks/razorpay")
+async def razorpay_webhook(request: Request, background: BackgroundTasks):
+    payload = await request.body()
+    signature = request.headers.get("x-razorpay-signature", "")
+    event = get_adapter("INR").verify_webhook(payload, signature)
+    return _handle_webhook_event(event, background)
 
 
 @app.get("/api/orders/{order_id}/status")

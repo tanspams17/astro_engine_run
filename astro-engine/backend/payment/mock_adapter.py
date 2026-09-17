@@ -1,7 +1,8 @@
 """
 Mock payment adapter — makes the full flow testable end-to-end with dummy
-payments. Swap for mollie_adapter.py (same interface) when the gateway
-account exists. See MOLLIE_INTEGRATION.md for the drop-in plan.
+payments. Used automatically for any currency whose real gateway isn't
+configured yet (see app.py's get_adapter()) — stripe_adapter.py /
+razorpay_adapter.py implement the same interface for the real thing.
 """
 from __future__ import annotations
 
@@ -22,7 +23,8 @@ class MockAdapter(PaymentAdapter):
     def __init__(self):
         self._sessions: dict[str, OrderSession] = {}
 
-    def create_order(self, amount_minor, currency, tier, customer_email):
+    def create_order(self, amount_minor, currency, tier, customer_email,
+                     order_id=None):
         sid = f"mock_{uuid.uuid4().hex[:16]}"
         session = OrderSession(session_id=sid, checkout_url=None,
                                amount_minor=amount_minor, currency=currency,
