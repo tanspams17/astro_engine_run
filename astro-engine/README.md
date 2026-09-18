@@ -109,6 +109,10 @@ deletion request, run on the server (same env as the container):
 ```bash
 python -m gdpr_tools export person@example.com   # full JSON of everything tied to that email
 python -m gdpr_tools delete person@example.com    # scrubs PII, keeps only the accounting trail
+python -m gdpr_tools optout person@example.com [marketing|zodiac|all]  # withdraw consent only —
+                                                   # keeps the customer/order record, just stops
+                                                   # future outreach; run this on any "stop emailing
+                                                   # me" request until a real unsubscribe link exists
 ```
 
 See the docstring in `backend/gdpr_tools.py` for exactly what each does.

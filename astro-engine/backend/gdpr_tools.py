@@ -9,6 +9,7 @@ container — ARVELOS_DATA_DIR / ARVELOS_DB set):
 
     python -m gdpr_tools export person@example.com
     python -m gdpr_tools delete person@example.com
+    python -m gdpr_tools optout person@example.com [marketing|zodiac|all]
 
 export prints a JSON document with everything tied to that email: the
 `customers` row plus every matching `orders` row (this IS their personal
@@ -22,6 +23,14 @@ payment_session_id/charge_id — since that's a legitimate business record
 once it no longer identifies a person. It also removes the `customers`
 row entirely, deletes any generated report PDFs, and deletes any queued
 outbox emails for that address. Covers the GDPR right to erasure.
+
+optout is lighter than delete: it withdraws consent (flips one or both
+opt-in flags to false) without touching the customer record or order
+history — for "please stop emailing me, but I still want my past order
+on file for support" requests, which is a separate right (withdrawal of
+consent) from erasure. `scope` defaults to "all" if omitted. Until real
+outbound email exists, this is the only way consent gets withdrawn —
+there's no unsubscribe link yet; support runs this by hand on request.
 """
 from __future__ import annotations
 
@@ -98,13 +107,38 @@ def delete(email: str) -> dict:
     }
 
 
+def optout(email: str, scope: str = "all") -> dict:
+    if scope not in ("marketing", "zodiac", "all"):
+        raise ValueError('scope must be "marketing", "zodiac", or "all"')
+    now = orders_module._now()
+    sets, vals = [], []
+    if scope in ("marketing", "all"):
+        sets += ["marketing_opt_in=0", "marketing_opt_in_at=?"]
+        vals.append(now)
+    if scope in ("zodiac", "all"):
+        sets += ["zodiac_insights_opt_in=0", "zodiac_insights_opt_in_at=?"]
+        vals.append(now)
+    vals.append(email)
+    with orders_module._conn() as c:
+        updated = c.execute(
+            f"UPDATE customers SET {', '.join(sets)} WHERE lower(email)=lower(?)",
+            vals).rowcount
+    return {"customer_found": bool(updated), "scope": scope, "withdrawn_at": now}
+
+
 def main():
-    if len(sys.argv) != 3 or sys.argv[1] not in ("export", "delete"):
+    if len(sys.argv) < 3 or sys.argv[1] not in ("export", "delete", "optout"):
         print(__doc__)
         sys.exit(1)
     action, email = sys.argv[1], sys.argv[2]
     orders_module.init_db()
-    result = export(email) if action == "export" else delete(email)
+    if action == "export":
+        result = export(email)
+    elif action == "delete":
+        result = delete(email)
+    else:
+        scope = sys.argv[3] if len(sys.argv) > 3 else "all"
+        result = optout(email, scope)
     print(json.dumps(result, indent=2, default=str))
 
 
