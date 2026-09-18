@@ -372,6 +372,8 @@
             <input type="text" id="name" placeholder="So the report can address you" maxlength="60"></div>
           <div><label for="email">Email <span class="opt">report delivered here</span></label>
             <input type="email" id="email" placeholder="you@example.com"></div>
+          <div><label for="phone">Phone <span class="opt">optional, for support only</span></label>
+            <input type="tel" id="phone" placeholder="+44 7..." maxlength="32"></div>
 
           <div><label for="bdate">Date of birth</label><input type="date" id="bdate"></div>
           <div><label for="btime">Time of birth</label><input type="time" id="btime"></div>
@@ -431,6 +433,12 @@
             <input type="checkbox" id="optin">
             <span><span class="opt-tag">Optional</span><br>Want occasional updates or future tools?
               Tick here. We'll never email you otherwise, beyond delivering this report.</span>
+          </div>
+
+          <div class="full newsletter-box">
+            <input type="checkbox" id="zodiacoptin">
+            <span><span class="opt-tag">Optional</span><br>Want monthly insights based on your
+              Rashi/zodiac sign? Tick here to get them by email — unsubscribe anytime.</span>
           </div>
 
           <p class="legal full">One-time payment. No subscription or recurring charge of any kind.
@@ -966,11 +974,14 @@ async function pay() {
     const or = await fetch(API+"/api/orders", {method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
-        quiz_session_id: quizSession, email, name, tier, currency,
+        quiz_session_id: quizSession, email, name,
+        phone: document.getElementById("phone").value.trim() || null,
+        tier, currency,
         birth_date: d, birth_time: noTime ? null : t,
         gender: document.getElementById("gender").value,
         birth_place: chosenPlace.n, lat: chosenPlace.a, lon: chosenPlace.o, tz: chosenPlace.z,
         focus_areas: ALL_FOCUS_AREAS, marketing_opt_in: document.getElementById("optin").checked,
+        zodiac_insights_opt_in: document.getElementById("zodiacoptin").checked,
         coupon_code: coupon || null })});
     if (!or.ok) throw new Error((await or.json()).detail || "order failed");
     const order = await or.json();

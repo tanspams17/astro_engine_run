@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at TEXT NOT NULL,
     email TEXT NOT NULL,
     name TEXT NOT NULL,
+    phone TEXT,                          -- optional, support reference only
     tier TEXT NOT NULL,
     currency TEXT NOT NULL,
     amount_minor INTEGER NOT NULL,
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS orders (
     lat REAL NOT NULL, lon REAL NOT NULL, tz TEXT NOT NULL,
     focus_areas TEXT NOT NULL,           -- comma-separated
     marketing_opt_in INTEGER NOT NULL DEFAULT 0,  -- unticked by default (GDPR/PECR)
+    zodiac_insights_opt_in INTEGER NOT NULL DEFAULT 0,  -- separate consent, unticked by default
     status TEXT NOT NULL DEFAULT 'pending',
     payment_session_id TEXT, charge_id TEXT,
     download_token TEXT, pdf_path TEXT,
@@ -66,6 +68,23 @@ CREATE TABLE IF NOT EXISTS events (
     at TEXT NOT NULL,
     kind TEXT NOT NULL,                  -- quiz_start | quiz_complete | purchase
     quiz_session_id TEXT, order_id TEXT
+);
+-- One row per unique customer (keyed by lowercased email), built up from
+-- orders. Deliberately excludes birth details (data minimization — those
+-- stay in `orders`, the only place they're actually needed). This is the
+-- table community/support tooling should read from, not `orders`.
+CREATE TABLE IF NOT EXISTS customers (
+    email TEXT PRIMARY KEY,              -- lowercased
+    name TEXT NOT NULL,
+    phone TEXT,
+    created_at TEXT NOT NULL,
+    first_order_at TEXT NOT NULL,
+    last_order_at TEXT NOT NULL,
+    order_count INTEGER NOT NULL DEFAULT 0,
+    marketing_opt_in INTEGER NOT NULL DEFAULT 0,
+    marketing_opt_in_at TEXT,             -- when consent was given (GDPR proof)
+    zodiac_insights_opt_in INTEGER NOT NULL DEFAULT 0,
+    zodiac_insights_opt_in_at TEXT
 );
 """
 
@@ -82,9 +101,12 @@ def init_db():
     with _conn() as c:
         c.executescript(SCHEMA)
         columns = {row[1] for row in c.execute("PRAGMA table_info(orders)")}
-        for column in ("fulfilment_error", "email_error"):
+        for column in ("fulfilment_error", "email_error", "phone"):
             if column not in columns:
                 c.execute(f"ALTER TABLE orders ADD COLUMN {column} TEXT")
+        if "zodiac_insights_opt_in" not in columns:
+            c.execute("ALTER TABLE orders ADD COLUMN zodiac_insights_opt_in"
+                      " INTEGER NOT NULL DEFAULT 0")
 
 
 def _now() -> str:
@@ -123,7 +145,9 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
                  tier: str, currency: str, birth_date: str, birth_time: str,
                  birth_place: str, lat: float, lon: float, tz: str,
                  focus_areas: list[str], marketing_opt_in: bool,
-                 gender: str = "unspecified", amount_minor: int | None = None) -> dict:
+                 gender: str = "unspecified", amount_minor: int | None = None,
+                 phone: str | None = None,
+                 zodiac_insights_opt_in: bool = False) -> dict:
     if tier not in PRICES:
         raise ValueError(f"unknown tier {tier}")
     if currency not in PRICES[tier]:
@@ -135,13 +159,47 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
     with _conn() as c:
         c.execute(
             "INSERT INTO orders (id, quiz_session_id, created_at, email, name,"
-            " tier, currency, amount_minor, birth_date, birth_time, gender,"
-            " birth_place, lat, lon, tz, focus_areas, marketing_opt_in)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (oid, quiz_session_id, _now(), email, name, tier, currency,
+            " phone, tier, currency, amount_minor, birth_date, birth_time,"
+            " gender, birth_place, lat, lon, tz, focus_areas,"
+            " marketing_opt_in, zodiac_insights_opt_in)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (oid, quiz_session_id, _now(), email, name, phone, tier, currency,
              amount, birth_date, birth_time, gender, birth_place, lat, lon,
-             tz, ",".join(focus_areas), int(marketing_opt_in)))
+             tz, ",".join(focus_areas), int(marketing_opt_in),
+             int(zodiac_insights_opt_in)))
+        _upsert_customer(c, email, name, phone, marketing_opt_in,
+                         zodiac_insights_opt_in)
     return get_order(oid)
+
+
+def _upsert_customer(c, email: str, name: str, phone: str | None,
+                     marketing_opt_in: bool, zodiac_insights_opt_in: bool):
+    key = email.strip().lower()
+    now = _now()
+    existing = c.execute("SELECT * FROM customers WHERE email=?",
+                         (key,)).fetchone()
+    if existing is None:
+        c.execute(
+            "INSERT INTO customers (email, name, phone, created_at,"
+            " first_order_at, last_order_at, order_count, marketing_opt_in,"
+            " marketing_opt_in_at, zodiac_insights_opt_in,"
+            " zodiac_insights_opt_in_at) VALUES (?,?,?,?,?,?,1,?,?,?,?)",
+            (key, name, phone, now, now, now, int(marketing_opt_in),
+             now if marketing_opt_in else None, int(zodiac_insights_opt_in),
+             now if zodiac_insights_opt_in else None))
+        return
+    # Opt-ins only ever flip false -> true here (explicit re-tick); an
+    # unticked box on a later order is not a withdrawal of prior consent.
+    sets = ["name=?", "phone=?", "last_order_at=?", "order_count=order_count+1"]
+    vals = [name, phone or existing["phone"], now]
+    if marketing_opt_in and not existing["marketing_opt_in"]:
+        sets += ["marketing_opt_in=1", "marketing_opt_in_at=?"]
+        vals.append(now)
+    if zodiac_insights_opt_in and not existing["zodiac_insights_opt_in"]:
+        sets += ["zodiac_insights_opt_in=1", "zodiac_insights_opt_in_at=?"]
+        vals.append(now)
+    vals.append(key)
+    c.execute(f"UPDATE customers SET {', '.join(sets)} WHERE email=?", vals)
 
 
 def get_order(order_id: str) -> dict:

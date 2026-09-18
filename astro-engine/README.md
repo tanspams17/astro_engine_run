@@ -94,3 +94,21 @@ its keys are added.
 
 Go-live checklist and the marketing/ads plan are in `DEPLOY_STEPS.md`,
 `ARVELOS_HANDOFF.md`, and `marketing/CAMPAIGN.md`.
+
+## Customer records & GDPR
+
+Every order upserts a row in `customers` (deduped by lowercased email —
+name, phone, order count, and the two separate opt-in flags/timestamps
+for general updates and monthly Rashi/zodiac insights). It deliberately
+excludes birth details, which stay in `orders` only. This is the table
+to read from for anything community/outreach-related — never `orders`.
+
+There's no admin UI or API for this yet — to handle a data access or
+deletion request, run on the server (same env as the container):
+
+```bash
+python -m gdpr_tools export person@example.com   # full JSON of everything tied to that email
+python -m gdpr_tools delete person@example.com    # scrubs PII, keeps only the accounting trail
+```
+
+See the docstring in `backend/gdpr_tools.py` for exactly what each does.

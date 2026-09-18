@@ -109,6 +109,7 @@ class OrderIn(BaseModel):
     quiz_session_id: str | None = None
     email: EmailStr
     name: str = Field(min_length=1, max_length=80)
+    phone: str | None = Field(default=None, max_length=32)  # optional, support reference only
     tier: str = Field(pattern="^(western|vedic|mixed)$")
     currency: str = Field(pattern="^(USD|INR)$")
     coupon_code: str | None = None
@@ -122,6 +123,7 @@ class OrderIn(BaseModel):
     tz: str                    # IANA name, e.g. Asia/Kolkata
     focus_areas: list[str] = Field(default_factory=list)
     marketing_opt_in: bool = False   # MUST default False (GDPR/PECR)
+    zodiac_insights_opt_in: bool = False   # separate consent, MUST default False
 
 
 class PayIn(BaseModel):
@@ -198,7 +200,8 @@ def create_order(o: OrderIn):
         o.quiz_session_id, o.email, o.name, o.tier, o.currency,
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
         o.tz, focus, o.marketing_opt_in, o.gender,
-        amount_minor=amount_minor)
+        amount_minor=amount_minor, phone=o.phone,
+        zodiac_insights_opt_in=o.zodiac_insights_opt_in)
     session = None
     if amount_minor > 0:
         adapter = get_adapter(order["currency"])
