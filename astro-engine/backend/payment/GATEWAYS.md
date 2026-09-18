@@ -14,14 +14,25 @@ it immediately for its currency, independent of the other gateway.
 
 ## Stripe (non-India)
 
-1. Create a Stripe account, grab the **secret key** (`sk_test_...` to
-   start, `sk_live_...` when ready) from the Dashboard → Developers → API keys.
+`stripe_adapter.py` uses the official `stripe` Python SDK (`StripeClient`,
+v1 namespace) — Stripe's own recommended pattern, not raw HTTP.
+
+1. Create a Stripe account, then create a **restricted API key** (RAK,
+   `rk_test_.../rk_live_...`) at Dashboard → Developers → API keys →
+   Create restricted key — Stripe's recommended alternative to a full
+   secret key, especially when handing a key to an AI agent. This
+   integration only needs: **Checkout Sessions: Write**, **Refunds:
+   Write**. A plain secret key (`sk_test_.../sk_live_...`) works too as a
+   drop-in if you'd rather skip this step.
 2. Add a webhook endpoint in the Dashboard pointing at
    `https://astro.arvelos.cloud/webhooks/stripe`, subscribed to
-   `checkout.session.completed` (and `checkout.session.expired` if you
-   want failed/abandoned checkouts recorded). Copy the **signing secret**
-   (`whsec_...`).
-3. Set on the server: `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`.
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, and `checkout.session.expired`
+   (the async ones cover delayed payment methods like bank transfers —
+   funds aren't confirmed until later for those). Copy the **signing
+   secret** (`whsec_...`).
+3. Set on the server: `STRIPE_API_KEY` (works for either an `sk_` or `rk_`
+   key — same env var), `STRIPE_WEBHOOK_SECRET`.
 
 ## Razorpay (India)
 
@@ -45,6 +56,21 @@ Then `docker compose up -d` — no rebuild needed, it's just an environment
 change. Test with each gateway's test-mode keys first; a test-mode order
 goes through the exact same code path as a live one, so it's a real
 end-to-end check before switching to live keys.
+
+## Why not Stripe Invoicing
+
+Invoicing (Stripe's `Invoice`/`InvoiceItem` API) is for billing someone
+after the fact — recurring/subscription charges, or B2B where a customer
+expects a formal invoice with payment terms (net-30, etc.). Arvelos sells
+a single digital report for immediate card payment; Checkout already
+handles that up front and Stripe auto-emails a receipt on successful
+payment (toggle at Dashboard → Settings → Customer emails). Adding
+Invoicing on top would mean generating an invoice for a purchase that's
+already been paid, which doesn't fit the flow and adds another API
+surface for no benefit here. Revisit this only if Arvelos ever sells to
+businesses that specifically require invoice documents (e.g. a corporate
+bulk-report purchase with PO/NET terms) — that's a real Invoicing use
+case, this isn't it.
 
 ## Region default (not payment routing)
 
