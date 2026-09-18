@@ -103,16 +103,22 @@ for general updates and monthly Rashi/zodiac insights). It deliberately
 excludes birth details, which stay in `orders` only. This is the table
 to read from for anything community/outreach-related — never `orders`.
 
-There's no admin UI or API for this yet — to handle a data access or
-deletion request, run on the server (same env as the container):
+There's no admin UI or API for this yet — everything runs on the server
+(same env as the container). `export` is read-only and immediate.
+`delete`/`optout` are deliberately two-step: **nothing destructive ever
+happens automatically** — logging a request never touches data, only an
+explicit `approve` does, and every request plus its outcome stays in
+`gdpr_requests` forever as the audit trail, independent of whether the
+underlying customer/order data still exists.
 
 ```bash
-python -m gdpr_tools export person@example.com   # full JSON of everything tied to that email
-python -m gdpr_tools delete person@example.com    # scrubs PII, keeps only the accounting trail
-python -m gdpr_tools optout person@example.com [marketing|zodiac|all]  # withdraw consent only —
-                                                   # keeps the customer/order record, just stops
-                                                   # future outreach; run this on any "stop emailing
-                                                   # me" request until a real unsubscribe link exists
+python -m gdpr_tools export person@example.com        # full JSON of everything tied to that email
+
+python -m gdpr_tools request delete person@example.com [note...]
+python -m gdpr_tools request optout person@example.com marketing|zodiac|all [note...]
+python -m gdpr_tools list [pending|approved|rejected|all]   # default: pending
+python -m gdpr_tools approve <request_id> [approved_by]     # only this executes anything
+python -m gdpr_tools reject <request_id> [reason...]
 ```
 
 See the docstring in `backend/gdpr_tools.py` for exactly what each does.

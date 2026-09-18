@@ -86,6 +86,24 @@ CREATE TABLE IF NOT EXISTS customers (
     zodiac_insights_opt_in INTEGER NOT NULL DEFAULT 0,
     zodiac_insights_opt_in_at TEXT
 );
+-- GDPR delete/optout requests. Nothing in gdpr_tools.py executes
+-- automatically: a request just sits here as 'pending' until a human
+-- explicitly runs `approve` (or `reject`) on it. This table IS the
+-- permanent audit trail of what was requested, by whom, when, and what
+-- was actually done about it — kept forever, independent of whatever
+-- happens to the underlying customer/order data.
+CREATE TABLE IF NOT EXISTS gdpr_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    action TEXT NOT NULL,                -- 'delete' | 'optout'
+    scope TEXT,                          -- optout only: 'marketing'|'zodiac'|'all'
+    note TEXT,                           -- free text, e.g. how the request arrived
+    requested_at TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',  -- 'pending' | 'approved' | 'rejected'
+    decided_at TEXT,
+    decided_by TEXT,
+    result TEXT                          -- JSON: what approve() actually did
+);
 """
 
 

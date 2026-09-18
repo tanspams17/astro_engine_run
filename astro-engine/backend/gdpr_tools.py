@@ -1,36 +1,46 @@
 """
-GDPR export/delete — admin-only. There is no admin auth system in this
-app yet, so this is deliberately a CLI run directly on the server (over
-SSH), not an HTTP endpoint — that avoids adding a new unauthenticated
-surface that could export or delete anyone's data.
+GDPR export/delete/optout — admin-only. There is no admin auth system in
+this app yet, so this is deliberately a CLI run directly on the server
+(over SSH), not an HTTP endpoint — that avoids adding a new
+unauthenticated surface that could export or delete anyone's data.
+
+Nothing destructive happens automatically. `export` is read-only, so it
+runs immediately. `delete` and `optout` are two-step by design: logging
+a request never touches customer/order data — only `approve` does that,
+and only once a human has looked at the pending list and explicitly
+decided to. Every request, and what was ultimately done about it, is
+kept forever in `gdpr_requests` — that table IS the audit trail.
 
 Usage (from astro-engine/backend/, with the same env as the running
 container — ARVELOS_DATA_DIR / ARVELOS_DB set):
 
     python -m gdpr_tools export person@example.com
-    python -m gdpr_tools delete person@example.com
-    python -m gdpr_tools optout person@example.com [marketing|zodiac|all]
+
+    python -m gdpr_tools request delete person@example.com [note...]
+    python -m gdpr_tools request optout person@example.com marketing|zodiac|all [note...]
+    python -m gdpr_tools list [pending|approved|rejected|all]     # default: pending
+    python -m gdpr_tools approve <request_id> [approved_by]
+    python -m gdpr_tools reject <request_id> [reason...]
 
 export prints a JSON document with everything tied to that email: the
 `customers` row plus every matching `orders` row (this IS their personal
 data, in full, including birth details — covers the GDPR right of
 access).
 
-delete scrubs personal fields from `orders` (name, phone, birth details,
-consent flags, download token) but keeps the non-identifying accounting
-trail — id, created_at, tier, currency, amount_minor, status,
-payment_session_id/charge_id — since that's a legitimate business record
-once it no longer identifies a person. It also removes the `customers`
-row entirely, deletes any generated report PDFs, and deletes any queued
-outbox emails for that address. Covers the GDPR right to erasure.
+approve on a 'delete' request scrubs personal fields from `orders`
+(name, email, phone, birth details, consent flags, download token) but
+keeps the non-identifying accounting trail — id, created_at, tier,
+currency, amount_minor, status, payment_session_id/charge_id — since
+that's a legitimate business record once it no longer identifies a
+person. It also removes the `customers` row entirely, deletes any
+generated report PDFs, and deletes any queued outbox emails for that
+address. Covers the GDPR right to erasure.
 
-optout is lighter than delete: it withdraws consent (flips one or both
-opt-in flags to false) without touching the customer record or order
-history — for "please stop emailing me, but I still want my past order
-on file for support" requests, which is a separate right (withdrawal of
-consent) from erasure. `scope` defaults to "all" if omitted. Until real
-outbound email exists, this is the only way consent gets withdrawn —
-there's no unsubscribe link yet; support runs this by hand on request.
+approve on an 'optout' request is lighter than delete: it withdraws
+consent (flips one or both opt-in flags to false) without touching the
+customer record or order history — for "stop emailing me, but keep my
+order on file for support" requests, which is a separate right
+(withdrawal of consent) from erasure.
 """
 from __future__ import annotations
 
@@ -61,6 +71,9 @@ def _matching_orders(c, email: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# ------------------------------------------------------------ read-only
+
+
 def export(email: str) -> dict:
     with orders_module._conn() as c:
         customer = c.execute("SELECT * FROM customers WHERE lower(email)=lower(?)",
@@ -79,7 +92,73 @@ def export(email: str) -> dict:
     }
 
 
-def delete(email: str) -> dict:
+# ------------------------------------------------------- request / review
+
+
+def create_request(email: str, action: str, scope: str | None = None,
+                   note: str | None = None) -> int:
+    if action not in ("delete", "optout"):
+        raise ValueError('action must be "delete" or "optout"')
+    if action == "optout" and scope not in ("marketing", "zodiac", "all"):
+        raise ValueError('scope must be "marketing", "zodiac", or "all"')
+    with orders_module._conn() as c:
+        cur = c.execute(
+            "INSERT INTO gdpr_requests (email, action, scope, note,"
+            " requested_at, status) VALUES (?,?,?,?,?,'pending')",
+            (email, action, scope, note, orders_module._now()))
+        return cur.lastrowid
+
+
+def list_requests(status: str = "pending") -> list[dict]:
+    with orders_module._conn() as c:
+        if status == "all":
+            rows = c.execute("SELECT * FROM gdpr_requests ORDER BY id DESC").fetchall()
+        else:
+            rows = c.execute("SELECT * FROM gdpr_requests WHERE status=?"
+                             " ORDER BY id DESC", (status,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def approve(request_id: int, approved_by: str | None = None) -> dict:
+    with orders_module._conn() as c:
+        req = c.execute("SELECT * FROM gdpr_requests WHERE id=?",
+                        (request_id,)).fetchone()
+    if not req:
+        raise ValueError(f"no request with id {request_id}")
+    if req["status"] != "pending":
+        raise ValueError(f"request {request_id} is already {req['status']}")
+
+    if req["action"] == "delete":
+        result = _execute_delete(req["email"])
+    else:
+        result = _execute_optout(req["email"], req["scope"] or "all")
+
+    with orders_module._conn() as c:
+        c.execute(
+            "UPDATE gdpr_requests SET status='approved', decided_at=?,"
+            " decided_by=?, result=? WHERE id=?",
+            (orders_module._now(), approved_by,
+             json.dumps(result, default=str), request_id))
+    return {"request_id": request_id, "status": "approved", "result": result}
+
+
+def reject(request_id: int, reason: str | None = None) -> dict:
+    with orders_module._conn() as c:
+        updated = c.execute(
+            "UPDATE gdpr_requests SET status='rejected', decided_at=?,"
+            " decided_by=?, result=? WHERE id=? AND status='pending'",
+            (orders_module._now(), None, reason, request_id)).rowcount
+    if not updated:
+        raise ValueError(f"no pending request with id {request_id}")
+    return {"request_id": request_id, "status": "rejected", "reason": reason}
+
+
+# --------------------------------------------------- actual execution
+# Only ever called from approve() above — never exposed directly on the
+# CLI, so delete/optout can't happen without going through a request.
+
+
+def _execute_delete(email: str) -> dict:
     with orders_module._conn() as c:
         order_rows = _matching_orders(c, email)
         for o in order_rows:
@@ -107,9 +186,7 @@ def delete(email: str) -> dict:
     }
 
 
-def optout(email: str, scope: str = "all") -> dict:
-    if scope not in ("marketing", "zodiac", "all"):
-        raise ValueError('scope must be "marketing", "zodiac", or "all"')
+def _execute_optout(email: str, scope: str) -> dict:
     now = orders_module._now()
     sets, vals = [], []
     if scope in ("marketing", "all"):
@@ -126,19 +203,39 @@ def optout(email: str, scope: str = "all") -> dict:
     return {"customer_found": bool(updated), "scope": scope, "withdrawn_at": now}
 
 
+# ------------------------------------------------------------------ CLI
+
+
 def main():
-    if len(sys.argv) < 3 or sys.argv[1] not in ("export", "delete", "optout"):
+    args = sys.argv[1:]
+    if not args:
         print(__doc__)
         sys.exit(1)
-    action, email = sys.argv[1], sys.argv[2]
     orders_module.init_db()
+    action = args[0]
+
     if action == "export":
-        result = export(email)
-    elif action == "delete":
-        result = delete(email)
+        result = export(args[1])
+    elif action == "request":
+        sub, email = args[1], args[2]
+        if sub == "optout":
+            scope = args[3] if len(args) > 3 else "all"
+            note = " ".join(args[4:]) or None
+        else:
+            scope = None
+            note = " ".join(args[3:]) or None
+        rid = create_request(email, sub, scope, note)
+        result = {"request_id": rid, "status": "pending"}
+    elif action == "list":
+        result = list_requests(args[1] if len(args) > 1 else "pending")
+    elif action == "approve":
+        result = approve(int(args[1]), args[2] if len(args) > 2 else None)
+    elif action == "reject":
+        result = reject(int(args[1]), " ".join(args[2:]) or None)
     else:
-        scope = sys.argv[3] if len(sys.argv) > 3 else "all"
-        result = optout(email, scope)
+        print(__doc__)
+        sys.exit(1)
+
     print(json.dumps(result, indent=2, default=str))
 
 
