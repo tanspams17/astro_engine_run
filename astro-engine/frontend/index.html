@@ -150,11 +150,14 @@
   .field-grid .full { grid-column:1/-1; }
   label { display:block; font-size:13px; color:var(--lavender); margin-bottom:6px; letter-spacing:.01em; }
   label .opt { color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-left:4px; }
-  input[type=text], input[type=email], input[type=date], input[type=time], select {
+  input[type=text], input[type=email], input[type=date], input[type=time], input[type=tel], select {
     width:100%; padding:12px 14px; font-size:15px; font-family:var(--sans); font-weight:400;
     border:1px solid var(--surface-border); border-radius:9px; background:rgba(255,255,255,0.03);
     color:var(--cream); }
   input::placeholder { color:rgba(160,155,191,0.6); }
+  .phone-row { display:flex; gap:8px; }
+  .phone-row select { flex:0 0 108px; width:108px; }
+  .phone-row input { flex:1; min-width:0; }
   input:focus, select:focus { outline:none; border-color:var(--gold); background:rgba(255,255,255,0.05); }
   select option { background:#1c1a3e; color:var(--cream); }
   .timeoff { display:flex; gap:9px; align-items:flex-start; margin-top:9px; font-size:12.5px; color:var(--lavender); }
@@ -372,8 +375,12 @@
             <input type="text" id="name" placeholder="So the report can address you" maxlength="60"></div>
           <div><label for="email">Email <span class="opt">report delivered here</span></label>
             <input type="email" id="email" placeholder="you@example.com"></div>
-          <div><label for="phone">Phone <span class="opt">optional, for support only</span></label>
-            <input type="tel" id="phone" placeholder="+44 7..." maxlength="32"></div>
+          <div><label for="phoneNumber">Phone <span class="opt">optional, for support only</span></label>
+            <div class="phone-row">
+              <select id="phoneCode" aria-label="Country code"></select>
+              <input type="tel" id="phoneNumber" placeholder="7911 123456" inputmode="tel" maxlength="15">
+            </div>
+            <p class="hint" id="phoneHint" style="display:none; color:#e08a8a"></p></div>
 
           <div><label for="bdate">Date of birth</label><input type="date" id="bdate"></div>
           <div><label for="btime">Time of birth</label><input type="time" id="btime"></div>
@@ -646,7 +653,86 @@ fetch(API+"/api/config").then(r=>r.json()).then(c=>{
 // toggle themselves, and never affects existing selections.
 fetch(API+"/api/geo").then(r=>r.json()).then(g=>{
   if (currencyAutoSet && g.currency && g.currency !== currency) setCurrency(g.currency);
+  if (g.country) setDefaultPhoneCountry(g.country);
 }).catch(()=>{});
+
+/* ---- phone: country code + number, E.164-ish combine + validation ---- */
+const DIAL_CODES = [
+  ["AF","93","Afghanistan"],["AL","355","Albania"],["DZ","213","Algeria"],["AD","376","Andorra"],
+  ["AO","244","Angola"],["AR","54","Argentina"],["AM","374","Armenia"],["AU","61","Australia"],
+  ["AT","43","Austria"],["AZ","994","Azerbaijan"],["BH","973","Bahrain"],["BD","880","Bangladesh"],
+  ["BY","375","Belarus"],["BE","32","Belgium"],["BZ","501","Belize"],["BJ","229","Benin"],
+  ["BT","975","Bhutan"],["BO","591","Bolivia"],["BA","387","Bosnia & Herzegovina"],["BW","267","Botswana"],
+  ["BR","55","Brazil"],["BN","673","Brunei"],["BG","359","Bulgaria"],["BF","226","Burkina Faso"],
+  ["BI","257","Burundi"],["KH","855","Cambodia"],["CM","237","Cameroon"],["CA","1","Canada"],
+  ["CV","238","Cape Verde"],["CF","236","Central African Republic"],["TD","235","Chad"],["CL","56","Chile"],
+  ["CN","86","China"],["CO","57","Colombia"],["KM","269","Comoros"],["CD","243","Congo (DRC)"],
+  ["CG","242","Congo (Republic)"],["CR","506","Costa Rica"],["HR","385","Croatia"],["CU","53","Cuba"],
+  ["CY","357","Cyprus"],["CZ","420","Czechia"],["DK","45","Denmark"],["DJ","253","Djibouti"],
+  ["DO","1","Dominican Republic"],["EC","593","Ecuador"],["EG","20","Egypt"],["SV","503","El Salvador"],
+  ["GQ","240","Equatorial Guinea"],["ER","291","Eritrea"],["EE","372","Estonia"],["SZ","268","Eswatini"],
+  ["ET","251","Ethiopia"],["FJ","679","Fiji"],["FI","358","Finland"],["FR","33","France"],
+  ["GA","241","Gabon"],["GM","220","Gambia"],["GE","995","Georgia"],["DE","49","Germany"],
+  ["GH","233","Ghana"],["GR","30","Greece"],["GT","502","Guatemala"],["GN","224","Guinea"],
+  ["GW","245","Guinea-Bissau"],["GY","592","Guyana"],["HT","509","Haiti"],["HN","504","Honduras"],
+  ["HK","852","Hong Kong"],["HU","36","Hungary"],["IS","354","Iceland"],["IN","91","India"],
+  ["ID","62","Indonesia"],["IR","98","Iran"],["IQ","964","Iraq"],["IE","353","Ireland"],
+  ["IL","972","Israel"],["IT","39","Italy"],["CI","225","Ivory Coast"],["JM","1","Jamaica"],
+  ["JP","81","Japan"],["JO","962","Jordan"],["KZ","7","Kazakhstan"],["KE","254","Kenya"],
+  ["KW","965","Kuwait"],["KG","996","Kyrgyzstan"],["LA","856","Laos"],["LV","371","Latvia"],
+  ["LB","961","Lebanon"],["LS","266","Lesotho"],["LR","231","Liberia"],["LY","218","Libya"],
+  ["LI","423","Liechtenstein"],["LT","370","Lithuania"],["LU","352","Luxembourg"],["MO","853","Macau"],
+  ["MG","261","Madagascar"],["MW","265","Malawi"],["MY","60","Malaysia"],["MV","960","Maldives"],
+  ["ML","223","Mali"],["MT","356","Malta"],["MR","222","Mauritania"],["MU","230","Mauritius"],
+  ["MX","52","Mexico"],["MD","373","Moldova"],["MC","377","Monaco"],["MN","976","Mongolia"],
+  ["ME","382","Montenegro"],["MA","212","Morocco"],["MZ","258","Mozambique"],["MM","95","Myanmar"],
+  ["NA","264","Namibia"],["NP","977","Nepal"],["NL","31","Netherlands"],["NZ","64","New Zealand"],
+  ["NI","505","Nicaragua"],["NE","227","Niger"],["NG","234","Nigeria"],["MK","389","North Macedonia"],
+  ["NO","47","Norway"],["OM","968","Oman"],["PK","92","Pakistan"],["PA","507","Panama"],
+  ["PG","675","Papua New Guinea"],["PY","595","Paraguay"],["PE","51","Peru"],["PH","63","Philippines"],
+  ["PL","48","Poland"],["PT","351","Portugal"],["QA","974","Qatar"],["RO","40","Romania"],
+  ["RU","7","Russia"],["RW","250","Rwanda"],["SA","966","Saudi Arabia"],["SN","221","Senegal"],
+  ["RS","381","Serbia"],["SC","248","Seychelles"],["SL","232","Sierra Leone"],["SG","65","Singapore"],
+  ["SK","421","Slovakia"],["SI","386","Slovenia"],["SO","252","Somalia"],["ZA","27","South Africa"],
+  ["KR","82","South Korea"],["SS","211","South Sudan"],["ES","34","Spain"],["LK","94","Sri Lanka"],
+  ["SD","249","Sudan"],["SR","597","Suriname"],["SE","46","Sweden"],["CH","41","Switzerland"],
+  ["SY","963","Syria"],["TW","886","Taiwan"],["TJ","992","Tajikistan"],["TZ","255","Tanzania"],
+  ["TH","66","Thailand"],["TG","228","Togo"],["TT","1","Trinidad & Tobago"],["TN","216","Tunisia"],
+  ["TR","90","Turkey"],["TM","993","Turkmenistan"],["UG","256","Uganda"],["UA","380","Ukraine"],
+  ["AE","971","United Arab Emirates"],["GB","44","United Kingdom"],["US","1","United States"],
+  ["UY","598","Uruguay"],["UZ","998","Uzbekistan"],["VE","58","Venezuela"],["VN","84","Vietnam"],
+  ["YE","967","Yemen"],["ZM","260","Zambia"],["ZW","263","Zimbabwe"],
+];
+const phoneCodeSelect = document.getElementById("phoneCode");
+for (const [iso, code, cname] of DIAL_CODES) {
+  const opt = document.createElement("option");
+  opt.value = code; opt.dataset.iso = iso;
+  opt.textContent = `${iso} +${code}`;
+  opt.title = cname;
+  phoneCodeSelect.appendChild(opt);
+}
+phoneCodeSelect.value = "44"; // GB default until geo/currency resolves
+function setDefaultPhoneCountry(iso2) {
+  if (phoneCodeSelect.dataset.touched) return; // visitor already picked one
+  const match = DIAL_CODES.find(([iso]) => iso === iso2);
+  if (match) phoneCodeSelect.value = match[1];
+}
+phoneCodeSelect.addEventListener("change", () => { phoneCodeSelect.dataset.touched = "1"; });
+document.getElementById("phoneNumber").addEventListener("blur", validatePhone);
+
+function validatePhone() {
+  const digits = document.getElementById("phoneNumber").value.replace(/\D/g, "");
+  const hint = document.getElementById("phoneHint");
+  if (!digits) { hint.style.display = "none"; return true; }   // optional — empty is fine
+  const ok = digits.length >= 6 && digits.length <= 14;
+  hint.textContent = ok ? "" : "That doesn't look like a valid phone number.";
+  hint.style.display = ok ? "none" : "block";
+  return ok;
+}
+function combinedPhone() {
+  const digits = document.getElementById("phoneNumber").value.replace(/\D/g, "");
+  return digits ? `+${phoneCodeSelect.value} ${digits}` : null;
+}
 
 function utmParams() {
   const q = new URLSearchParams(location.search), out = {};
@@ -968,6 +1054,7 @@ async function pay() {
     }
   }
   if (PROVIDERS[currency] === "mock" && card.length > 0 && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
+  if (!validatePhone()) { err.textContent = "Please enter a valid phone number, or leave it blank."; document.getElementById("phoneNumber").focus(); return; }
 
   document.getElementById("paybtn").disabled = true;
   try {
@@ -975,7 +1062,7 @@ async function pay() {
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
         quiz_session_id: quizSession, email, name,
-        phone: document.getElementById("phone").value.trim() || null,
+        phone: combinedPhone(),
         tier, currency,
         birth_date: d, birth_time: noTime ? null : t,
         gender: document.getElementById("gender").value,

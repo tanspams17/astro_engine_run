@@ -78,7 +78,11 @@ REPORT_DIR = os.environ.get(
     os.path.join(_data_dir, "reports"),
 )
 
-FREE_COUPON_CODE = "ASTRO100"
+# Coupon codes that make an order free (amount_minor=0 — bypasses the
+# payment gateway entirely, see /api/orders and /api/pay below).
+# FREENOW07 is temporary, added 2026-09-20 at Raj's request — remove it
+# from this set whenever he says to stop it, nothing else references it.
+FREE_COUPON_CODES = {"ASTRO100", "FREENOW07"}
 logger = logging.getLogger(__name__)
 
 
@@ -86,7 +90,7 @@ def _apply_coupon(amount_minor: int, coupon_code: str | None) -> int:
     if not coupon_code:
         return amount_minor
     code = coupon_code.strip().upper()
-    if code == FREE_COUPON_CODE:
+    if code in FREE_COUPON_CODES:
         return 0
     raise ValueError("invalid coupon code")
 
