@@ -25,6 +25,9 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "pdf_templates")
 
 TIER_NAMES = {"western": "Western Report", "vedic": "Vedic Report",
               "mixed": "Mixed Report — Western + Vedic"}
+COMPAT_TIER_NAMES = {"zodiac_compat": "Zodiac Compatibility Report",
+                     "vedic_compat": "Vedic Compatibility Report",
+                     "mixed_compat": "Combined Compatibility Report"}
 
 
 # ------------------------------------------------------------ assembly
@@ -689,3 +692,71 @@ def generate_report(name, birth_dt_local, tz_name, place_label, lat, lon,
                                lat, lon, tier, focus_areas,
                                time_known=time_known, gender=gender)
     return render_pdf(ctx, out_path)
+
+
+# ------------------------------------------------------------ compatibility
+
+
+def build_compatibility_report_context(order: dict) -> dict:
+    try:
+        from .numerology import compute_numerology
+        from .compatibility_engine import zodiac_compare, guna_milan
+    except ImportError:
+        from numerology import compute_numerology
+        from compatibility_engine import zodiac_compare, guna_milan
+
+    tier = order["tier"]
+    a_birth = dt.datetime.strptime(
+        order["birth_date"] + " " + (order["birth_time"] or "12:00"), "%Y-%m-%d %H:%M")
+    b_birth = dt.datetime.strptime(
+        order["partner_birth_date"] + " " + (order["partner_birth_time"] or "12:00"),
+        "%Y-%m-%d %H:%M")
+
+    needs_western = tier in ("zodiac_compat", "mixed_compat")
+    needs_vedic = tier in ("vedic_compat", "mixed_compat")
+    system = "mixed" if (needs_western and needs_vedic) else ("western" if needs_western else "vedic")
+    a_charts = compute_charts(system, a_birth, order["tz"], order["lat"], order["lon"])
+    b_charts = compute_charts(system, b_birth, order["partner_tz"],
+                              order["partner_lat"], order["partner_lon"])
+
+    sections = []
+
+    if needs_western:
+        num_a = compute_numerology(order["name"], a_birth.date(), order.get("gender", "unspecified"))
+        num_b = compute_numerology(order["partner_name"], b_birth.date(),
+                                   order.get("partner_gender", "unspecified"))
+        sun_a = a_charts["western"].get("Sun").sign
+        sun_b = b_charts["western"].get("Sun").sign
+        sections.append({"h1": "Zodiac & Numerology Compatibility", "no": "01"})
+        sections += zodiac_compare(num_a, sun_a, num_b, sun_b)
+
+    guna = None
+    if needs_vedic:
+        vc_a, vc_b = a_charts["vedic"], b_charts["vedic"]
+        guna = guna_milan(vc_a.get("Moon").sign, vc_a.moon_nakshatra,
+                          vc_b.get("Moon").sign, vc_b.moon_nakshatra)
+        sections.append({"h1": "Vedic Guna Milan (Ashtakoota Matching)",
+                         "no": "02" if needs_western else "01"})
+        sections.append({"guna": guna, "title": "Your Compatibility Score"})
+        for k in guna["kootas"]:
+            sections.append({"title": f"{k['name']} ({k['score']}/{k['max']})", "body": k["note"]})
+
+    return {
+        "tier": tier, "tier_name": COMPAT_TIER_NAMES[tier],
+        "name": order["name"], "partner_name": order["partner_name"],
+        "generated": dt.date.today().strftime("%d %B %Y"),
+        "sections": sections, "guna_summary": guna,
+    }
+
+
+def generate_compatibility_report(order: dict, out_path: str) -> str:
+    ctx = build_compatibility_report_context(order)
+    from weasyprint import HTML
+    # Same autoescape=True reasoning as render_pdf() above: `name` and
+    # `partner_name` are free-text customer input rendered into this
+    # template before WeasyPrint turns it into a PDF server-side.
+    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=True)
+    tpl = env.get_template("compatibility_report.html")
+    html = tpl.render(**ctx)
+    HTML(string=html, base_url=TEMPLATE_DIR).write_pdf(out_path)
+    return out_path

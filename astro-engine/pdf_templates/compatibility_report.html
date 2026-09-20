@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  body { font-family: Georgia, serif; color: #241505; }
+  .cover { text-align: center; padding-top: 40mm; }
+  .cover .brand { font-size: 14pt; letter-spacing: 0.2em; color: #d4920a; text-transform: uppercase; }
+  .cover h1 { font-size: 30pt; margin: 8mm 0; }
+  .cover .names { font-size: 18pt; color: #5a3c1a; margin-top: 6mm; }
+  .cover .sub { font-size: 11pt; color: #7a6a52; margin-top: 4mm; }
+  h1.section { font-size: 18pt; color: #5a3c1a; border-bottom: 1pt solid #d4920a; padding-bottom: 3mm; margin-top: 14mm; }
+  .section-body { margin: 6mm 0; }
+  .section-body h2 { font-size: 13pt; margin-bottom: 2mm; }
+  .section-body p { font-size: 10.5pt; line-height: 1.5; }
+  .guna-total { text-align: center; font-size: 22pt; color: #d4920a; margin: 8mm 0; }
+  .guna-total .max { font-size: 12pt; color: #7a6a52; }
+  table.kootas { width: 100%; border-collapse: collapse; margin: 6mm 0; }
+  table.kootas th, table.kootas td { border: 0.5pt solid #d9cbb0; padding: 2mm 3mm; font-size: 9.5pt; text-align: left; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="brand">Arvelos</div>
+  <h1>{{ tier_name }}</h1>
+  <div class="names">{{ name }} &amp; {{ partner_name }}</div>
+  <div class="sub">Prepared {{ generated }}</div>
+</div>
+
+{% if guna_summary %}
+<h1 class="section">Guna Milan Score</h1>
+<div class="guna-total">{{ guna_summary.total }} <span class="max">/ {{ guna_summary.max_total }}</span></div>
+<table class="kootas">
+  <tr><th>Koota</th><th>Score</th><th>Note</th></tr>
+  {% for k in guna_summary.kootas %}
+  <tr><td>{{ k.name }}</td><td>{{ k.score }}/{{ k.max }}</td><td>{{ k.note }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% for s in sections %}
+  {% if s.h1 is defined %}
+    <h1 class="section">{{ s.h1 }}</h1>
+  {% elif s.guna is defined %}
+    {# already rendered above #}
+  {% else %}
+    <div class="section-body">
+      {% if s.title %}<h2>{{ s.title }}</h2>{% endif %}
+      {% if s.body %}<p>{{ s.body }}</p>{% endif %}
+    </div>
+  {% endif %}
+{% endfor %}
+
+</body>
+</html>
