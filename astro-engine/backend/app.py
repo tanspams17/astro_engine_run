@@ -13,18 +13,20 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 try:
     from . import orders, geo
     from .delivery import send_report_email
-    from .report_generator import generate_report, TIER_NAMES
+    from .report_generator import (generate_report, TIER_NAMES,
+                                   generate_compatibility_report, COMPAT_TIER_NAMES)
     from .payment.mock_adapter import MockAdapter
 except ImportError:
     import orders
     import geo
     from delivery import send_report_email
-    from report_generator import generate_report, TIER_NAMES
+    from report_generator import (generate_report, TIER_NAMES,
+                                  generate_compatibility_report, COMPAT_TIER_NAMES)
     from payment.mock_adapter import MockAdapter
 
 # openapi_url=None too: /docs and /redoc were already disabled, but the raw
@@ -136,12 +138,16 @@ class QuizStart(BaseModel):
     utm_term: str | None = None
 
 
+COMPAT_TIERS = {"zodiac_compat", "vedic_compat", "mixed_compat"}
+ALL_TIERS_PATTERN = "^(western|vedic|mixed|zodiac_compat|vedic_compat|mixed_compat)$"
+
+
 class OrderIn(BaseModel):
     quiz_session_id: str | None = Field(default=None, max_length=64)
     email: EmailStr
     name: str = Field(min_length=1, max_length=80)
     phone: str | None = Field(default=None, max_length=32)  # optional, support reference only
-    tier: str = Field(pattern="^(western|vedic|mixed)$")
+    tier: str = Field(pattern=ALL_TIERS_PATTERN)
     currency: str = Field(pattern="^USD$")  # Stripe/USD only — see get_adapter() above
     coupon_code: str | None = Field(default=None, max_length=40)
     birth_date: str = Field(max_length=10)          # YYYY-MM-DD
@@ -159,6 +165,31 @@ class OrderIn(BaseModel):
     marketing_opt_in: bool = False   # MUST default False (GDPR/PECR)
     zodiac_insights_opt_in: bool = False   # separate consent, MUST default False
 
+    # Compatibility-report tiers only — "Your Partner's details". Optional
+    # here at the field level; the validator below enforces presence/
+    # absence based on `tier`, the same way pricing is derived from tier
+    # rather than trusted from the client.
+    partner_name: str | None = Field(default=None, min_length=1, max_length=80)
+    partner_birth_date: str | None = Field(default=None, max_length=10)
+    partner_birth_time: str | None = Field(default=None, max_length=5)
+    partner_birth_place: str | None = Field(default=None, max_length=200)
+    partner_lat: float | None = Field(default=None, ge=-90, le=90)
+    partner_lon: float | None = Field(default=None, ge=-180, le=180)
+    partner_tz: str | None = Field(default=None, max_length=64)
+    partner_gender: str | None = Field(default="unspecified",
+                                       pattern="^(male|female|unspecified)$")
+
+    @model_validator(mode="after")
+    def _partner_fields_match_tier(self):
+        is_compat = self.tier in COMPAT_TIERS
+        required = (self.partner_name, self.partner_birth_date, self.partner_birth_place,
+                   self.partner_lat, self.partner_lon, self.partner_tz)
+        if is_compat and any(v is None for v in required):
+            raise ValueError("partner details are required for a compatibility report")
+        if not is_compat and any(v is not None for v in required):
+            raise ValueError("partner details are only accepted for a compatibility report")
+        return self
+
 
 class PayIn(BaseModel):
     order_id: str = Field(max_length=64)
@@ -166,7 +197,7 @@ class PayIn(BaseModel):
 
 
 class CouponCheckIn(BaseModel):
-    tier: str = Field(pattern="^(western|vedic|mixed)$")
+    tier: str = Field(pattern=ALL_TIERS_PATTERN)
     currency: str = Field(pattern="^USD$")
     coupon_code: str = Field(min_length=1, max_length=40)
 
@@ -244,6 +275,20 @@ def create_order(o: OrderIn):
         ZoneInfo(o.tz)
     except Exception:
         raise HTTPException(400, "invalid birth date/time/timezone")
+
+    is_compat = o.tier in COMPAT_TIERS
+    if is_compat:
+        # Same reasoning as the primary person above: payment must never
+        # precede a chart the engine can't actually calculate.
+        try:
+            dt.datetime.strptime(
+                o.partner_birth_date + " " + (o.partner_birth_time or "12:00"),
+                "%Y-%m-%d %H:%M")
+            from zoneinfo import ZoneInfo
+            ZoneInfo(o.partner_tz)
+        except Exception:
+            raise HTTPException(400, "invalid partner birth date/time/timezone")
+
     focus = [f for f in o.focus_areas
              if f in ("personality", "love", "career", "growth")]
     # An unrecognized coupon code shouldn't block checkout: the field is
@@ -260,7 +305,12 @@ def create_order(o: OrderIn):
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
         o.tz, focus, o.marketing_opt_in, o.gender,
         amount_minor=amount_minor, phone=o.phone,
-        zodiac_insights_opt_in=o.zodiac_insights_opt_in)
+        zodiac_insights_opt_in=o.zodiac_insights_opt_in,
+        product_type="compatibility" if is_compat else "individual",
+        partner_name=o.partner_name, partner_birth_date=o.partner_birth_date,
+        partner_birth_time=o.partner_birth_time, partner_birth_place=o.partner_birth_place,
+        partner_lat=o.partner_lat, partner_lon=o.partner_lon, partner_tz=o.partner_tz,
+        partner_gender=o.partner_gender)
     session = None
     if amount_minor > 0:
         adapter = get_adapter()
@@ -289,15 +339,18 @@ def _fulfil(order_id: str):
         os.makedirs(REPORT_DIR, exist_ok=True)
         if os.path.exists(pdf_path):
             os.remove(pdf_path)
-        time_known = bool(order["birth_time"])
-        birth = dt.datetime.strptime(
-            order["birth_date"] + " " + (order["birth_time"] or "12:00"),
-            "%Y-%m-%d %H:%M")
-        generate_report(
-            order["name"], birth, order["tz"], order["birth_place"],
-            order["lat"], order["lon"], order["tier"],
-            [f for f in order["focus_areas"].split(",") if f], pdf_path,
-            time_known=time_known, gender=order.get("gender", "unspecified"))
+        if order.get("product_type") == "compatibility":
+            generate_compatibility_report(order, pdf_path)
+        else:
+            time_known = bool(order["birth_time"])
+            birth = dt.datetime.strptime(
+                order["birth_date"] + " " + (order["birth_time"] or "12:00"),
+                "%Y-%m-%d %H:%M")
+            generate_report(
+                order["name"], birth, order["tz"], order["birth_place"],
+                order["lat"], order["lon"], order["tier"],
+                [f for f in order["focus_areas"].split(",") if f], pdf_path,
+                time_known=time_known, gender=order.get("gender", "unspecified"))
         if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
             raise RuntimeError("report generator did not create a PDF")
     except Exception as exc:
@@ -317,8 +370,10 @@ def _fulfil(order_id: str):
         return
 
     try:
-        send_report_email(order["email"], order["name"],
-                          TIER_NAMES[order["tier"]], token)
+        tier_name = (COMPAT_TIER_NAMES[order["tier"]]
+                    if order.get("product_type") == "compatibility"
+                    else TIER_NAMES[order["tier"]])
+        send_report_email(order["email"], order["name"], tier_name, token)
     except Exception as exc:
         logger.exception("Report email delivery failed for order %s", order_id)
         with orders._conn() as connection:
