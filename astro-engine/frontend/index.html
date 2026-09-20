@@ -523,6 +523,148 @@
   </div>
 </section>
 
+<section id="compatibility">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Two charts, compared</span>
+      <h2>Compatibility Reports</h2>
+      <p>See how your chart and someone else's actually compare — numerology and zodiac
+        compatibility, or the classical Vedic Guna Milan match score, or both.</p>
+    </div>
+    <div class="pricing-grid" id="compatPricingGrid">
+      <div class="card price-card" data-tier="zodiac_compat" role="button" tabindex="0" aria-pressed="false" onclick="chooseCompatTier('zodiac_compat')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseCompatTier('zodiac_compat')}">
+        <h3>Zodiac</h3>
+        <div class="tagline">Numerology + zodiac compatibility</div>
+        <div class="amount" data-amt>$24</div>
+        <ul>
+          <li>Core-number harmony</li>
+          <li>Elemental &amp; modality read</li>
+          <li>Descriptive — no numeric score</li>
+        </ul>
+        <div class="choose">Choose Zodiac</div>
+      </div>
+      <div class="card price-card" data-tier="vedic_compat" role="button" tabindex="0" aria-pressed="false" onclick="chooseCompatTier('vedic_compat')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseCompatTier('vedic_compat')}">
+        <h3>Vedic</h3>
+        <div class="tagline">Classical Guna Milan matching</div>
+        <div class="amount" data-amt>$30</div>
+        <ul>
+          <li>8-koota Ashtakoota score, out of 36</li>
+          <li>Koota-by-koota breakdown</li>
+          <li>The traditional marriage-matching system</li>
+        </ul>
+        <div class="choose">Choose Vedic</div>
+      </div>
+      <div class="card price-card" data-tier="mixed_compat" role="button" tabindex="0" aria-pressed="false" onclick="chooseCompatTier('mixed_compat')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseCompatTier('mixed_compat')}">
+        <span class="badge">Most chosen</span>
+        <h3>Combined</h3>
+        <div class="tagline">Zodiac + Vedic, fully compared</div>
+        <div class="amount" data-amt>$39</div>
+        <ul>
+          <li>Everything in Zodiac and Vedic</li>
+          <li>Two full traditions, one report</li>
+        </ul>
+        <div class="choose">Choose Combined</div>
+      </div>
+    </div>
+
+    <div class="order-layout" id="compatFormView" style="display:none; margin-top:48px;">
+      <div class="card order-card">
+        <div class="field-grid">
+          <div class="full"><label style="font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--gold); margin-bottom:0;">Your details</label></div>
+          <div><label for="cName">Your first name</label>
+            <input type="text" id="cName" placeholder="So the report can address you" maxlength="60"></div>
+          <div><label for="cEmail">Email <span class="opt">report delivered here</span></label>
+            <input type="email" id="cEmail" placeholder="you@example.com"></div>
+          <div><label for="cBdate">Date of birth</label><input type="date" id="cBdate"></div>
+          <div><label for="cBtime">Time of birth</label><input type="time" id="cBtime"></div>
+          <div class="full">
+            <div class="timeoff">
+              <input type="checkbox" id="cNotime" onchange="document.getElementById('cBtime').disabled=this.checked">
+              <span>I don't know my exact birth time.</span>
+            </div>
+          </div>
+          <div class="full"><label for="bplaceA">Place of birth</label>
+            <div class="autocomplete">
+              <input type="text" id="bplaceA" placeholder="City, Country — e.g. Mumbai, India" autocomplete="off" aria-controls="citySuggestionsA" aria-expanded="false">
+              <div class="suggestions" id="citySuggestionsA" role="listbox"></div>
+            </div>
+            <p class="hint" id="cityHintA" style="display:none">No matching city found — check the
+              spelling, or try just the city name without the country.</p>
+          </div>
+          <div class="full"><label for="cGender">Gender <span class="opt">optional</span></label>
+            <select id="cGender">
+              <option value="unspecified">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select></div>
+        </div>
+
+        <div class="field-grid" style="margin-top:28px; border-top:1px solid var(--surface-border); padding-top:28px;">
+          <div class="full"><label style="font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--gold); margin-bottom:0;">Your Partner's details</label></div>
+          <div><label for="pName">Their first name</label>
+            <input type="text" id="pName" placeholder="So the report can address them" maxlength="60"></div>
+          <div><label for="pBdate">Date of birth</label><input type="date" id="pBdate"></div>
+          <div><label for="pBtime">Time of birth</label><input type="time" id="pBtime"></div>
+          <div class="full">
+            <div class="timeoff">
+              <input type="checkbox" id="pNotime" onchange="document.getElementById('pBtime').disabled=this.checked">
+              <span>I don't know their exact birth time.</span>
+            </div>
+          </div>
+          <div class="full"><label for="bplaceB">Place of birth</label>
+            <div class="autocomplete">
+              <input type="text" id="bplaceB" placeholder="City, Country — e.g. Mumbai, India" autocomplete="off" aria-controls="citySuggestionsB" aria-expanded="false">
+              <div class="suggestions" id="citySuggestionsB" role="listbox"></div>
+            </div>
+            <p class="hint" id="cityHintB" style="display:none">No matching city found — check the
+              spelling, or try just the city name without the country.</p>
+          </div>
+          <div class="full"><label for="pGender">Gender <span class="opt">optional</span></label>
+            <select id="pGender">
+              <option value="unspecified">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select></div>
+        </div>
+
+        <div class="field-grid" style="margin-top:28px;">
+          <div class="full">
+            <label for="cCoupon">Apply Coupon Code <span class="opt">optional</span></label>
+            <div class="coupon-row">
+              <input type="text" id="cCoupon" placeholder="Enter code" autocapitalize="characters">
+              <button type="button" class="btn-ghost" id="applyCompatCouponBtn" onclick="applyCompatCoupon()">Apply</button>
+            </div>
+            <p class="hint" id="compatCouponResult">Enter a coupon code to receive a discount on your report.</p>
+          </div>
+          <div class="full" id="compatCardfields">
+            <label for="cCard">Card number <span class="opt">optional while in preview</span></label>
+            <input type="text" id="cCard" placeholder="4242 4242 4242 4242" inputmode="numeric">
+          </div>
+          <p class="legal full" id="compatHostednote" style="display:none">You'll be taken to our
+            payment provider's secure page to complete the payment, then brought straight back
+            here for your report.</p>
+          <p class="legal full">One-time payment. No subscription or recurring charge of any kind.
+            By purchasing you agree to the <a href="/terms.html" target="_blank">Terms &amp; Refund
+            Policy</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. Your and your
+            partner's birth details are used only to calculate this report.</p>
+        </div>
+      </div>
+
+      <aside class="card summary-card">
+        <h4>Order summary</h4>
+        <div class="summary-row"><span class="name" id="compatSumTier">Select a report</span>
+          <span class="amt" id="compatSumAmt">—</span></div>
+        <div class="summary-note">Instant PDF delivery by email · Secure checkout · One-time payment — no subscription, nothing to cancel</div>
+        <div class="paypills">
+          <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span>
+        </div>
+        <button class="btn-primary full" id="compatPaybtn" onclick="payCompat()">Get our report</button>
+        <div class="err" id="compatErr" role="alert" aria-live="polite"></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
  </main>
 
 <section id="faq">
@@ -683,6 +825,13 @@ function applyProviderUI() {
   document.getElementById("hostednote").style.display = hosted ? "block" : "none";
   document.getElementById("paybtn").textContent =
     hosted ? "Continue to secure payment" : "Get my report";
+  const compatCardfields = document.getElementById("compatCardfields");
+  if (compatCardfields) {
+    compatCardfields.style.display = hosted ? "none" : "";
+    document.getElementById("compatHostednote").style.display = hosted ? "block" : "none";
+    document.getElementById("compatPaybtn").textContent =
+      hosted ? "Continue to secure payment" : "Get our report";
+  }
 }
 
 fetch(API+"/api/config").then(r=>r.json()).then(c=>{
@@ -1023,11 +1172,132 @@ bplaceInput.addEventListener("focus", () => {
   if (v.length >= 2 && !chosenPlace) searchAndRender(v.toLowerCase());
 });
 
+// Self-contained city-autocomplete instance for the compatibility form's
+// two place fields — deliberately NOT a refactor of the single-person
+// wiring above (that code is already hardened/tested; duplicating the
+// DOM-wiring here in a small factory is lower risk than reworking it to
+// be multi-instance). Reuses the same shared search functions/city index.
+function makeCityAutocomplete(inputId, suggestBoxId, hintId) {
+  const input = document.getElementById(inputId);
+  const box = document.getElementById(suggestBoxId);
+  const hint = document.getElementById(hintId);
+  let chosen = null, items = [], activeIdx = -1, debounce;
+
+  function render(results) {
+    items = results.slice(0, 8);
+    activeIdx = -1;
+    box.innerHTML = "";
+    if (!items.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = citiesLoading
+        ? "Loading city data… keep typing, results will appear shortly."
+        : "No matching city — try a different spelling, or just the city name without the country.";
+      box.appendChild(empty);
+    } else {
+      items.forEach((c, i) => {
+        const el = document.createElement("div");
+        el.className = "item";
+        el.setAttribute("role", "option");
+        el.setAttribute("aria-selected", "false");
+        el.textContent = c.n;
+        el.addEventListener("mousedown", ev => { ev.preventDefault(); select(c); });
+        box.appendChild(el);
+      });
+    }
+    box.classList.add("show");
+    input.setAttribute("aria-expanded", "true");
+  }
+  function select(c) {
+    chosen = c;
+    input.value = c.n;
+    close();
+    hint.style.display = "none";
+  }
+  function showSearching() {
+    box.innerHTML = "";
+    const el = document.createElement("div");
+    el.className = "empty";
+    el.textContent = "Searching…";
+    box.appendChild(el);
+    box.classList.add("show");
+    input.setAttribute("aria-expanded", "true");
+  }
+  function close() {
+    box.classList.remove("show");
+    input.setAttribute("aria-expanded", "false");
+  }
+  function highlightIdx(i) {
+    const els = box.querySelectorAll(".item");
+    els.forEach(el => { el.classList.remove("active"); el.setAttribute("aria-selected", "false"); });
+    if (i >= 0 && i < els.length) {
+      els[i].classList.add("active");
+      els[i].setAttribute("aria-selected", "true");
+      els[i].scrollIntoView({block:"nearest"});
+    }
+    activeIdx = i;
+  }
+  function searchAndRenderLocal(v) {
+    const fast = searchCitiesFast(v);
+    if (fast.length || v.length < 4) { render(fast); return; }
+    showSearching();
+    setTimeout(() => render(searchCitiesFuzzy(v)), 20);
+  }
+
+  input.addEventListener("input", e => {
+    chosen = null;
+    hint.style.display = "none";
+    const v = e.target.value.toLowerCase().trim();
+    clearTimeout(debounce);
+    if (v.length < 2) { close(); return; }
+    debounce = setTimeout(() => searchAndRenderLocal(v), 80);
+  });
+  input.addEventListener("keydown", e => {
+    if (!box.classList.contains("show")) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); highlightIdx(Math.min(activeIdx+1, items.length-1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); highlightIdx(Math.max(activeIdx-1, 0)); }
+    else if (e.key === "Enter") { if (activeIdx >= 0) { e.preventDefault(); select(items[activeIdx]); } }
+    else if (e.key === "Escape") { close(); }
+  });
+  input.addEventListener("blur", () => setTimeout(close, 150));
+  input.addEventListener("focus", () => {
+    const v = input.value.trim();
+    if (v.length >= 2 && !chosen) searchAndRenderLocal(v.toLowerCase());
+  });
+
+  return {
+    // Mirrors pay()'s existing fallback-resolution logic for the primary
+    // field: accept an exact/unique typed match even without an explicit
+    // dropdown pick, otherwise prompt for one. Returns null (and surfaces
+    // the hint) when nothing resolves.
+    resolve() {
+      if (chosen) return chosen;
+      const raw = input.value.trim();
+      let found = CITIES.find(c => c._nn === norm(raw));
+      if (!found && raw.length >= 2) {
+        const results = searchCities(raw.toLowerCase());
+        if (results.length === 1) found = results[0];
+      }
+      if (found) { chosen = found; return found; }
+      hint.style.display = "block";
+      input.focus();
+      if (raw.length >= 2) searchAndRenderLocal(raw.toLowerCase());
+      return null;
+    },
+  };
+}
+
+const compatPlaceA = makeCityAutocomplete("bplaceA", "citySuggestionsA", "cityHintA");
+const compatPlaceB = makeCityAutocomplete("bplaceB", "citySuggestionsB", "cityHintB");
+
 const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
 
 /* ---- pricing (USD only) ---- */
-let PRICES = {western:[19,"$"], vedic:[19,"$"], mixed:[29,"$"]};
-const TIER_LABEL = {western:"Western", vedic:"Vedic", mixed:"Mixed"};
+let PRICES = {western:[19,"$"], vedic:[19,"$"], mixed:[29,"$"],
+              zodiac_compat:[24,"$"], vedic_compat:[30,"$"], mixed_compat:[39,"$"]};
+const TIER_LABEL = {western:"Western", vedic:"Vedic", mixed:"Mixed",
+                    zodiac_compat:"Zodiac Compatibility", vedic_compat:"Vedic Compatibility",
+                    mixed_compat:"Combined Compatibility"};
 
 fetch(API+"/api/prices").then(r=>r.json()).then(serverPrices=>{
   for (const [name, values] of Object.entries(serverPrices))
@@ -1036,11 +1306,12 @@ fetch(API+"/api/prices").then(r=>r.json()).then(serverPrices=>{
 }).catch(()=>{});
 
 function paintPricing() {
-  document.querySelectorAll("#pricingGrid .price-card").forEach(el => {
+  document.querySelectorAll("#pricingGrid .price-card, #compatPricingGrid .price-card").forEach(el => {
     const [amt,sym] = PRICES[el.dataset.tier];
     el.querySelector("[data-amt]").textContent = sym + amt.toLocaleString("en-US");
   });
   paintSummary();
+  paintCompatSummary();
   applyProviderUI();
 }
 
@@ -1112,6 +1383,143 @@ document.getElementById("coupon").addEventListener("input", () => {
   result.classList.remove("ok", "bad");
   paintSummary();
 });
+
+/* ================= compatibility reports ================= */
+let compatTier = null, compatAppliedCoupon = null;
+
+function chooseCompatTier(t) {
+  compatTier = t;
+  document.querySelectorAll("#compatPricingGrid .price-card").forEach(el =>
+    (el.classList.toggle("sel", el.dataset.tier === t),
+     el.setAttribute("aria-pressed", String(el.dataset.tier === t))));
+  document.getElementById("compatFormView").style.display = "grid";
+  paintCompatSummary();
+  scrollIntoViewSettled(document.getElementById("compatFormView"));
+}
+
+function paintCompatSummary() {
+  const sumTier = document.getElementById("compatSumTier");
+  if (!sumTier) return;  // section not yet in the DOM on first script pass
+  if (!compatTier) { sumTier.textContent = "Select a report";
+    document.getElementById("compatSumAmt").textContent = "—"; return; }
+  const [amt, sym] = PRICES[compatTier];
+  const full = sym + amt.toLocaleString("en-US");
+  sumTier.textContent = TIER_LABEL[compatTier] + " report";
+  document.getElementById("compatSumAmt").innerHTML = compatAppliedCoupon
+    ? `<span class="strike">${full}</span>FREE`
+    : full;
+}
+
+async function applyCompatCoupon() {
+  const code = document.getElementById("cCoupon").value.trim();
+  const result = document.getElementById("compatCouponResult");
+  result.classList.remove("ok", "bad");
+  if (!code) { result.textContent = "Enter a code first."; result.classList.add("bad"); return; }
+  if (!compatTier) { result.textContent = "Choose a report above, then apply your code."; result.classList.add("bad"); return; }
+  const btn = document.getElementById("applyCompatCouponBtn");
+  btn.disabled = true; btn.textContent = "Checking…";
+  try {
+    const r = await fetch(API+"/api/coupon/check", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({tier: compatTier, currency, coupon_code: code})});
+    const data = await r.json();
+    if (data.valid && data.amount_minor === 0) {
+      compatAppliedCoupon = code;
+      result.textContent = "✓ Coupon applied — this report is free.";
+      result.classList.add("ok");
+    } else if (data.valid) {
+      compatAppliedCoupon = null;
+      result.textContent = "Coupon applied.";
+      result.classList.add("ok");
+    } else {
+      compatAppliedCoupon = null;
+      result.textContent = "That coupon code isn't valid.";
+      result.classList.add("bad");
+    }
+  } catch (e) {
+    compatAppliedCoupon = null;
+    result.textContent = "Couldn't check that code — please try again.";
+    result.classList.add("bad");
+  }
+  btn.disabled = false; btn.textContent = "Apply";
+  paintCompatSummary();
+}
+
+document.getElementById("cCoupon").addEventListener("input", () => {
+  if (!compatAppliedCoupon) return;
+  compatAppliedCoupon = null;
+  const result = document.getElementById("compatCouponResult");
+  result.textContent = "Enter a coupon code to receive a discount on your report.";
+  result.classList.remove("ok", "bad");
+  paintCompatSummary();
+});
+
+async function payCompat() {
+  const err = document.getElementById("compatErr");
+  err.textContent = "";
+  const name = document.getElementById("cName").value.trim();
+  const email = document.getElementById("cEmail").value.trim();
+  const d = document.getElementById("cBdate").value,
+        t = document.getElementById("cBtime").value,
+        noTime = document.getElementById("cNotime").checked;
+  const pName = document.getElementById("pName").value.trim();
+  const pD = document.getElementById("pBdate").value,
+        pT = document.getElementById("pBtime").value,
+        pNoTime = document.getElementById("pNotime").checked;
+  const card = document.getElementById("cCard").value.replace(/\s/g,"");
+  const coupon = document.getElementById("cCoupon").value.trim();
+
+  if (!compatTier) { err.textContent = "Please choose Zodiac, Vedic, or Combined above."; return; }
+  if (!name || !d || (!t && !noTime) || !document.getElementById("bplaceA").value.trim()) {
+    err.textContent = "Please fill in your name, date of birth, place of birth, and either a birth time or tick that you don't know it.";
+    return;
+  }
+  if (!pName || !pD || (!pT && !pNoTime) || !document.getElementById("bplaceB").value.trim()) {
+    err.textContent = "Please fill in your partner's name, date of birth, place of birth, and either a birth time or tick that you don't know it.";
+    return;
+  }
+  if (!/.+@.+\..+/.test(email)) { err.textContent = "Please enter a valid email — your report is delivered there."; return; }
+
+  const placeA = compatPlaceA.resolve();
+  if (!placeA) { err.textContent = "Please select your birth city from the dropdown so we can locate it precisely."; return; }
+  const placeB = compatPlaceB.resolve();
+  if (!placeB) { err.textContent = "Please select your partner's birth city from the dropdown so we can locate it precisely."; return; }
+
+  if (PROVIDER === "mock" && card.length > 0 && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
+
+  document.getElementById("compatPaybtn").disabled = true;
+  try {
+    const or = await fetch(API+"/api/orders", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        quiz_session_id: quizSession, email, name,
+        tier: compatTier, currency,
+        birth_date: d, birth_time: noTime ? null : t,
+        gender: document.getElementById("cGender").value,
+        birth_place: placeA.n, lat: placeA.a, lon: placeA.o, tz: placeA.z,
+        focus_areas: [], marketing_opt_in: false, zodiac_insights_opt_in: false,
+        coupon_code: coupon || null,
+        partner_name: pName, partner_birth_date: pD, partner_birth_time: pNoTime ? null : pT,
+        partner_birth_place: placeB.n, partner_lat: placeB.a, partner_lon: placeB.o, partner_tz: placeB.z,
+        partner_gender: document.getElementById("pGender").value })});
+    if (!or.ok) throw new Error((await or.json()).detail || "order failed");
+    const order = await or.json();
+    activeOrderId = order.order_id;
+
+    if (order.checkout_url) { window.location.href = order.checkout_url; return; }
+
+    const pr = await fetch(API+"/api/pay", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({order_id: order.order_id, payment_details:{card_number: card}})});
+    if (!pr.ok) throw new Error((await pr.json()).detail || "payment failed");
+
+    showOrderState("processing");
+    poll(order.order_id, 0);
+  } catch(err2) {
+    err.textContent = err2.message;
+    document.getElementById("compatPaybtn").disabled = false;
+  }
+}
 
 /* ================= checkout ================= */
 async function pay() {
@@ -1213,6 +1621,11 @@ const STATE_EL_ID = {processing: "orderProcessing", failed: "orderFailed",
 
 function showOrderState(state) {
   document.getElementById("orderFormView").style.display = state === "form" ? "grid" : "none";
+  // Compatibility orders share this same processing/failed/delivered UI
+  // (see the compatibility-reports design spec) — its form needs hiding
+  // too, the same reason the single-person form above does.
+  const compatForm = document.getElementById("compatFormView");
+  if (compatForm) compatForm.style.display = state === "form" ? "grid" : "none";
   document.getElementById("orderProcessing").classList.toggle("on", state === "processing");
   document.getElementById("orderFailed").classList.toggle("on", state === "failed");
   document.getElementById("orderDelivered").classList.toggle("on", state === "delivered");
