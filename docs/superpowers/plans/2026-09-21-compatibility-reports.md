@@ -479,11 +479,12 @@ def _vashya_score(sign_a: str, sign_b: str) -> tuple[float, str]:
 
 def _tara_score(nak_a: str, nak_b: str) -> tuple[float, str]:
     ia, ib = NAKSHATRAS.index(nak_a), NAKSHATRAS.index(nak_b)
-    # Count-from-birth-star in both directions, mod 9; remainders 3, 5, 7
-    # (Vipat, Pratyak, Vadha) are the classically inauspicious taras.
+    # Tara category = ((count from one nakshatra to the other, inclusive) - 1) % 9 + 1,
+    # simplifies to (index difference % 9) + 1 since 9 divides 27 evenly.
+    # Categories 3, 5, 7 (Vipat, Pratyak, Vadha) are the classically inauspicious taras.
     bad = {3, 5, 7}
-    d1 = ((ib - ia) % 27 + 1) % 9 or 9
-    d2 = ((ia - ib) % 27 + 1) % 9 or 9
+    d1 = ((ib - ia) % 9) + 1
+    d2 = ((ia - ib) % 9) + 1
     good = sum(1 for d in (d1, d2) if d not in bad)
     return (3 if good == 2 else 1.5 if good == 1 else 0), "Based on birth-star distance, both directions."
 
