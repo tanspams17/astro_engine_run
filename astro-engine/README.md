@@ -19,7 +19,7 @@ true native app, that would wrap this same API and is a separate project.
 
 ## Project layout
 ```
-Dockerfile          ← builds the whole app into one container (root level)
+Dockerfile          ← root-context build, used by render.yaml / railway.json only
 render.yaml         ← one-click deploy on Render.com
 railway.json        ← one-click deploy on Railway
 Procfile            ← generic PaaS start command
@@ -27,6 +27,7 @@ requirements.txt    ← Python deps (root copy for host auto-detection)
 runtime.txt         ← pins Python 3.12
 app.json            ← Heroku deploy-button manifest
 Aptfile             ← system libs (for non-Docker buildpack hosts)
+.dockerignore       ← keeps the root-context build fast (see astro-engine/.dockerignore too)
 
 backend/            FastAPI app + engine
   app.py            API + serves the static frontend when ARVELOS_FRONTEND set
@@ -35,13 +36,20 @@ backend/            FastAPI app + engine
   report_generator.py  assembles the PDF (WeasyPrint)
   content_*.py      the interpretive writing
   chart_graphics.py chart wheels + Lo Shu SVGs
-  orders.py delivery.py  order lifecycle + email
-  payment/          gateway-agnostic adapter (mock + Mollie)
+  orders.py         order lifecycle + the `customers` table
+  delivery.py       email delivery (Resend HTTP API, legacy SMTP fallback, outbox in dev)
+  geo.py            offline IP -> country lookup, for the currency-toggle default only
+  gdpr_tools.py      export/delete/optout CLI — request+approve, never automatic (see below)
+  payment/          gateway-agnostic adapter — Stripe + Razorpay (per currency) + mock fallback
   requirements.txt
 frontend/           landing, quiz, checkout, delivery, terms, privacy, cities.json
 pdf_templates/      report.html + cover_emblem.png
 assets/             cover artwork source
-deploy/             VPS files (Docker Compose, Nginx vhost, deploy.sh)
+deploy/             the ACTUAL production path — Dokploy + Traefik + Docker
+                    Compose on the Hostinger VPS. deploy/Dockerfile (not the
+                    root one), docker-compose.yml + .override.yml (Traefik
+                    router labels), .env.example (real secrets go in a
+                    gitignored deploy/.env, never committed)
 samples/            example generated PDFs (Western / Vedic / Mixed)
 ```
 
@@ -55,22 +63,29 @@ ARVELOS_FRONTEND=$(pwd)/../frontend uvicorn app:app --reload --port 8000
 
 ## Deploy — pick one
 
-**A. Render.com (easiest, free-ish tier)**
+**A. Your VPS via Dokploy + Docker Compose (what's actually running in
+production today, on Hostinger)**
+```bash
+ssh <vps> && cd /path/to/repo
+git pull
+cd astro-engine/deploy
+docker compose up -d --build      # rebuild + recreate whenever backend/frontend code changed
+                                   # (env-only changes, e.g. a new API key in .env, just need `up -d`)
+```
+Real secrets (Stripe/Razorpay/Resend keys) go in `deploy/.env` — copy
+`deploy/.env.example`, fill it in on the server, never commit it.
+`docker-compose.override.yml` carries the Traefik router labels (TLS via
+Let's Encrypt, canonical-domain redirect); Traefik itself runs as its own
+Dokploy-managed container, not something this repo starts.
+
+**B. Render.com (one-click, untested against the current codebase for a while)**
 Push this repo to GitHub → Render → New + → **Blueprint** → select the repo →
 Apply. `render.yaml` provisions the web service + a 1 GB disk for the database.
-Then point `arvelos.cloud` at the Render URL (CNAME) in your DNS.
+Then point your domain at the Render URL (CNAME) in your DNS.
 
-**B. Railway / Fly.io**
-Connect the repo; both auto-detect the `Dockerfile` (`railway.json` sets the
-start command). Add a persistent volume mounted at `/data`.
-
-**C. Your Hostinger VPS (Docker)**
-```bash
-git clone <repo> arvelos && cd arvelos
-docker build -t arvelos .
-docker run -d --name arvelos -p 127.0.0.1:8801:8000 -v arvelos_data:/data arvelos
-# then add the Nginx vhost in deploy/nginx.conf.template for arvelos.cloud + certbot
-```
+**C. Railway / Fly.io (same caveat as B)**
+Connect the repo; both auto-detect the root `Dockerfile` (`railway.json` sets
+the start command). Add a persistent volume mounted at `/data`.
 
 ## Environment variables
 | Var | Default | Purpose |

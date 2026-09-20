@@ -1,0 +1,16 @@
+# Keeps the Docker build context small and builds fast. Applies when the
+# build context is the repo root — the root Dockerfile / Render / Railway
+# path. None of these are COPY'd into the image — they're runtime-
+# generated, dev-only, or source material for offline scripts.
+.git
+.venv
+venv
+__pycache__
+*.pyc
+astro-engine/data/
+astro-engine/marketing/videos/
+astro-engine/marketing/vo/
+astro-engine/samples/
+astro-engine/backend/vendor/
+astro-engine/tools/
+astro-engine/assets/

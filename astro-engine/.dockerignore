@@ -1,0 +1,16 @@
+# Keeps the Docker build context small and builds fast. Applies when the
+# build context is this directory (astro-engine/) — the actual production
+# path, deploy/docker-compose.yml's `context: ..`. None of these are
+# COPY'd into the image by deploy/Dockerfile — they're runtime-generated,
+# dev-only, or source material for offline scripts (regen_assets.py).
+data/
+marketing/videos/
+marketing/vo/
+samples/
+backend/vendor/
+tools/
+assets/
+.venv/
+venv/
+__pycache__/
+*.pyc

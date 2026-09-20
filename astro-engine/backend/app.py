@@ -12,6 +12,7 @@ import os
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
 try:
@@ -35,6 +36,10 @@ _allowed_origins = [origin.strip() for origin in os.environ.get(
 app.add_middleware(CORSMiddleware, allow_origins=_allowed_origins,
                    allow_methods=["GET", "POST"],
                    allow_headers=["*"])
+# cities.json alone is ~12MB uncompressed (150k cities for birth-place
+# autocomplete) — gzip cuts that to ~2.5MB on the wire for any client
+# that sends Accept-Encoding: gzip (i.e. every real browser).
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # ------------------------------------------------------------ payment gateway

@@ -4,7 +4,11 @@
   "keywords": ["astrology", "fastapi", "pdf", "weasyprint"],
   "stack": "container",
   "env": {
-    "PAYMENT_PROVIDER": { "value": "mock", "description": "mock | mollie" },
+    "PAYMENT_PROVIDER": { "value": "", "description": "leave blank for auto (Stripe/Razorpay per currency, falling back to mock per-gateway); set to 'mock' to force mock for every currency" },
+    "STRIPE_API_KEY": { "required": false },
+    "RAZORPAY_KEY_ID": { "required": false },
+    "RAZORPAY_KEY_SECRET": { "required": false },
+    "RESEND_API_KEY": { "required": false },
     "BASE_URL": { "value": "https://arvelos.cloud" }
   }
 }
