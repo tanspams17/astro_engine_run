@@ -424,12 +424,12 @@
             </select></div>
 
           <div class="full">
-            <label for="coupon">Coupon code <span class="opt">optional</span></label>
+            <label for="coupon">Apply Coupon Code <span class="opt">optional</span></label>
             <div class="coupon-row">
               <input type="text" id="coupon" placeholder="Enter code" autocapitalize="characters">
               <button type="button" class="btn-ghost" id="applyCouponBtn" onclick="applyCoupon()">Apply</button>
             </div>
-            <p class="hint" id="couponResult">Apply a coupon code if you have one, or leave blank for the regular price.</p>
+            <p class="hint" id="couponResult">Optional — if you have a coupon code, apply it for a discount or a free report. If not, your order proceeds as a regular paid report.</p>
           </div>
 
           <div class="full" id="cardfields">
@@ -1073,7 +1073,7 @@ document.getElementById("coupon").addEventListener("input", () => {
   if (!appliedCoupon) return;
   appliedCoupon = null;
   const result = document.getElementById("couponResult");
-  result.textContent = "Apply a coupon code if you have one, or leave blank for the regular price.";
+  result.textContent = "Optional — if you have a coupon code, apply it for a discount or a free report. If not, your order proceeds as a regular paid report.";
   result.classList.remove("ok", "bad");
   paintSummary();
 });
