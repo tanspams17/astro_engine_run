@@ -62,6 +62,9 @@ _SCRUB_ORDER_FIELDS = {
     "lat": 0.0, "lon": 0.0, "tz": "UTC", "focus_areas": "",
     "marketing_opt_in": 0, "zodiac_insights_opt_in": 0,
     "download_token": None, "pdf_path": None,
+    "partner_name": None, "partner_birth_date": None, "partner_birth_time": None,
+    "partner_birth_place": None, "partner_lat": None, "partner_lon": None,
+    "partner_tz": None, "partner_gender": None,
 }
 
 
