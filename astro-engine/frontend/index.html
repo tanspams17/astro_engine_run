@@ -1205,11 +1205,24 @@ function scrollIntoViewSettled(el) {
   setTimeout(() => el.scrollIntoView({block: "start", behavior: "instant"}), 50);
 }
 
+// Centralizing the post-transition scroll here (rather than at each call
+// site) is deliberate: showOrderState always hides/shows a section whose
+// height differs from what was on screen a moment ago (form -> spinner,
+// spinner -> success/fail card), which is exactly the layout-collapse
+// race that can strand the viewport on whatever section now happens to
+// sit at the old scroll offset — first caught on the hosted-checkout
+// return path, but the same call shape here meant every other caller
+// (pay(), retryFulfilment()) had the identical latent bug even though
+// only one of them had been patched.
+const STATE_EL_ID = {processing: "orderProcessing", failed: "orderFailed",
+                     delivered: "orderDelivered"};
+
 function showOrderState(state) {
   document.getElementById("orderFormView").style.display = state === "form" ? "grid" : "none";
   document.getElementById("orderProcessing").classList.toggle("on", state === "processing");
   document.getElementById("orderFailed").classList.toggle("on", state === "failed");
   document.getElementById("orderDelivered").classList.toggle("on", state === "delivered");
+  if (STATE_EL_ID[state]) scrollIntoViewSettled(document.getElementById(STATE_EL_ID[state]));
 }
 
 async function retryFulfilment() {
@@ -1245,10 +1258,6 @@ async function poll(orderId, n) {
         tierPill.style.display = "inline-block";
       }
       showOrderState("delivered");
-      // layout height just changed (processing spinner -> full success card);
-      // re-settle the scroll against the final geometry, instantly, so it
-      // can't overshoot into whatever section now sits below.
-      scrollIntoViewSettled(document.getElementById("orderDelivered"));
       return;
     }
     if (s.status === "failed") {
@@ -1291,13 +1300,7 @@ if (cancelledOrder) window.addEventListener("DOMContentLoaded", () => {
 const returnOrder = new URLSearchParams(location.search).get("order");
 if (returnOrder) window.addEventListener("DOMContentLoaded", () => {
   activeOrderId = returnOrder;
-  // Show the (much shorter) processing state FIRST, so the layout has
-  // already settled to its final height before we scroll — scrolling
-  // first and hiding the form second raced a smooth-scroll animation
-  // against the resulting layout collapse and could overshoot straight
-  // past this section into whatever comes after it on the page.
   showOrderState("processing");
-  scrollIntoViewSettled(document.getElementById("orderProcessing"));
   poll(returnOrder, 0);
 });
 </script>
