@@ -43,7 +43,9 @@
   nav.top .wrap { display:flex; align-items:center; justify-content:space-between; }
   nav.top.scrolled { background:rgba(14,21,53,0.72); backdrop-filter:blur(14px);
                       -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--surface-border); }
-  .brand { font-family:var(--serif); font-size:22px; letter-spacing:0.04em; color:var(--cream); }
+  .brand { font-family:var(--serif); font-size:22px; letter-spacing:0.04em; color:var(--cream);
+    text-decoration:none; transition:opacity .2s; }
+  .brand:hover { opacity:.82; }
   .brand em { color:var(--gold-light); }
   .navlinks { display:flex; gap:30px; font-size:14px; color:var(--lavender); }
   .navlinks a { color:var(--lavender); text-decoration:none; transition:color .2s; }
@@ -273,7 +275,7 @@
 
 <nav class="top" id="navbar">
   <div class="wrap">
-    <div class="brand">Arvel<em>o</em>s</div>
+    <a class="brand" href="/" aria-label="Arvelos — home">Arvel<em>o</em>s</a>
     <div class="navlinks">
       <a href="#included">What's included</a>
       <a href="#pricing">Pricing</a>
