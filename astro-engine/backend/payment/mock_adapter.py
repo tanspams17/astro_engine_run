@@ -1,8 +1,8 @@
 """
 Mock payment adapter — makes the full flow testable end-to-end with dummy
-payments. Used automatically for any currency whose real gateway isn't
-configured yet (see app.py's get_adapter()) — stripe_adapter.py /
-razorpay_adapter.py implement the same interface for the real thing.
+payments. Used automatically when STRIPE_API_KEY isn't configured yet
+(see app.py's get_adapter()) — stripe_adapter.py implements the same
+interface for the real thing.
 """
 from __future__ import annotations
 

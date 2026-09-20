@@ -69,38 +69,35 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ------------------------------------------------------------ payment gateway
 #
-# Gateway is chosen per order by currency, not globally: INR -> Razorpay
-# (built for India), everything else -> Stripe. Either falls back to the
-# mock adapter automatically if its keys aren't configured, so the site
-# stays fully functional (dummy payment, real report) before go-live.
-# PAYMENT_PROVIDER=mock forces mock for every currency regardless of keys
-# (useful for staging).
+# Stripe only — USD is the only currency the site sells in. (There used
+# to be a second, INR/Razorpay path with its own regional pricing, picked
+# per order by a client-supplied currency; that let anyone — via the
+# frontend's currency toggle, or just by calling the API directly with
+# currency="INR" — check out at the India-specific discounted price
+# regardless of where they actually were. Removed, not just hidden:
+# OrderIn/CouponCheckIn below now only accept "USD".) Falls back to the
+# mock adapter automatically if STRIPE_API_KEY isn't configured, so the
+# site stays fully functional (dummy payment, real report) before go-live.
+# PAYMENT_PROVIDER=mock forces mock regardless (useful for staging).
 _FORCE_MOCK = os.environ.get("PAYMENT_PROVIDER", "").strip().lower() == "mock"
 _mock_adapter = MockAdapter()
-_adapter_cache: dict[str, object] = {}
+_stripe_adapter = None
 
 
-def _provider_name(currency: str) -> str:
+def _provider_name() -> str:
     if _FORCE_MOCK:
         return "mock"
-    if currency == "INR":
-        return ("razorpay" if os.environ.get("RAZORPAY_KEY_ID")
-                and os.environ.get("RAZORPAY_KEY_SECRET") else "mock")
     return "stripe" if os.environ.get("STRIPE_API_KEY") else "mock"
 
 
-def get_adapter(currency: str):
-    name = _provider_name(currency)
-    if name == "mock":
+def get_adapter():
+    global _stripe_adapter
+    if _provider_name() == "mock":
         return _mock_adapter
-    if name not in _adapter_cache:
-        if name == "razorpay":
-            from payment.razorpay_adapter import RazorpayAdapter
-            _adapter_cache[name] = RazorpayAdapter()
-        elif name == "stripe":
-            from payment.stripe_adapter import StripeAdapter
-            _adapter_cache[name] = StripeAdapter()
-    return _adapter_cache[name]
+    if _stripe_adapter is None:
+        from payment.stripe_adapter import StripeAdapter
+        _stripe_adapter = StripeAdapter()
+    return _stripe_adapter
 
 
 REPORT_DIR = os.environ.get(
@@ -145,7 +142,7 @@ class OrderIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     phone: str | None = Field(default=None, max_length=32)  # optional, support reference only
     tier: str = Field(pattern="^(western|vedic|mixed)$")
-    currency: str = Field(pattern="^(USD|INR)$")
+    currency: str = Field(pattern="^USD$")  # Stripe/USD only — see get_adapter() above
     coupon_code: str | None = Field(default=None, max_length=40)
     birth_date: str = Field(max_length=10)          # YYYY-MM-DD
     birth_time: str | None = Field(default=None, max_length=5)   # HH:MM, or None if unknown
@@ -170,7 +167,7 @@ class PayIn(BaseModel):
 
 class CouponCheckIn(BaseModel):
     tier: str = Field(pattern="^(western|vedic|mixed)$")
-    currency: str = Field(pattern="^(USD|INR)$")
+    currency: str = Field(pattern="^USD$")
     coupon_code: str = Field(min_length=1, max_length=40)
 
 
@@ -192,16 +189,18 @@ def health():
 
 @app.get("/api/config")
 def config():
-    providers = {cur: _provider_name(cur) for cur in ("USD", "INR")}
-    return {"providers": providers,
+    provider = _provider_name()
+    return {"provider": provider,
             # legacy field some older clients may still read
-            "payment_provider": providers["USD"]}
+            "payment_provider": provider}
 
 
 @app.get("/api/geo")
 def geo_lookup(request: Request):
+    # Country is still detected for the phone-country-code default in the
+    # order form — it no longer drives pricing/currency (see get_adapter()).
     country = geo.country_for_ip(geo.client_ip(request))
-    return {"country": country, "currency": "INR" if country == "IN" else "USD"}
+    return {"country": country}
 
 
 @app.get("/api/prices")
@@ -264,7 +263,7 @@ def create_order(o: OrderIn):
         zodiac_insights_opt_in=o.zodiac_insights_opt_in)
     session = None
     if amount_minor > 0:
-        adapter = get_adapter(order["currency"])
+        adapter = get_adapter()
         try:
             session = adapter.create_order(order["amount_minor"], order["currency"],
                                            order["tier"], order["email"],
@@ -339,7 +338,7 @@ def pay(p: PayIn, background: BackgroundTasks):
         background.add_task(_fulfil, p.order_id)
         return {"ok": True, "order_id": p.order_id, "status": "paid",
                 "message": "Your free report is being generated and will arrive by email within a few minutes."}
-    adapter = get_adapter(order["currency"])
+    adapter = get_adapter()
     try:
         session = adapter.create_order(order["amount_minor"], order["currency"],
                                        order["tier"], order["email"],
@@ -386,15 +385,7 @@ def _handle_webhook_event(event, background: BackgroundTasks):
 async def stripe_webhook(request: Request, background: BackgroundTasks):
     payload = await request.body()
     signature = request.headers.get("stripe-signature", "")
-    event = get_adapter("USD").verify_webhook(payload, signature)
-    return _handle_webhook_event(event, background)
-
-
-@app.post("/webhooks/razorpay")
-async def razorpay_webhook(request: Request, background: BackgroundTasks):
-    payload = await request.body()
-    signature = request.headers.get("x-razorpay-signature", "")
-    event = get_adapter("INR").verify_webhook(payload, signature)
+    event = get_adapter().verify_webhook(payload, signature)
     return _handle_webhook_event(event, background)
 
 

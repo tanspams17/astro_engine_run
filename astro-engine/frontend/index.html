@@ -138,11 +138,6 @@
   .badge { position:absolute; top:-12px; right:22px; background:linear-gradient(135deg,var(--gold),var(--gold-light));
     color:#241505; font-size:11px; font-weight:700; letter-spacing:.04em; padding:5px 12px;
     border-radius:999px; text-transform:uppercase; box-shadow:0 4px 14px rgba(212,146,10,0.4); }
-  .currency-toggle { display:flex; justify-content:center; gap:8px; margin-bottom:36px; }
-  .currency-toggle button { font-family:var(--sans); background:none; border:1px solid var(--surface-border);
-    color:var(--lavender); padding:8px 20px; border-radius:999px; cursor:pointer; font-size:13.5px; }
-  .currency-toggle button.on { border-color:var(--gold); color:var(--gold-light); background:rgba(212,146,10,0.1); }
-
   /* ---------- ORDER ---------- */
   .order-layout { display:grid; grid-template-columns:1fr 340px; gap:36px; align-items:start; }
   .order-card { padding:38px; }
@@ -348,10 +343,6 @@
       <span class="eyebrow">Choose your reading</span>
       <h2>Three lenses on the same sky</h2>
       <p>Two great traditions read the same chart differently. Pick one — or see both, compared.</p>
-    </div>
-    <div class="currency-toggle">
-      <button data-cur="USD" class="on" onclick="setCurrency('USD', true)">USD ($)</button>
-      <button data-cur="INR" onclick="setCurrency('INR', true)">INR (₹)</button>
     </div>
     <div class="pricing-grid" id="pricingGrid">
         <div class="card price-card" data-tier="western" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('western')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('western')}">
@@ -662,17 +653,16 @@ function scrollToOrder(){ document.getElementById('order').scrollIntoView({behav
 
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
-let quizSession = null, tier = null, currency = "USD", chosenPlace = null, quizCompleteSent = false;
+// USD only — no currency selection, client or server-side (a prior INR
+// toggle let anyone check out at the India-specific discounted price
+// regardless of where they actually were; see backend/payment/GATEWAYS.md).
+let quizSession = null, tier = null, chosenPlace = null, quizCompleteSent = false;
+const currency = "USD";
 let activeOrderId = null;
-// Gateway is picked per currency server-side (INR -> Razorpay, else ->
-// Stripe, falling back to mock when a gateway's keys aren't configured
-// yet) — PROVIDERS mirrors that so the checkout UI matches what /api/pay
-// will actually do for the selected currency.
-let PROVIDERS = {USD: "mock", INR: "mock"};
-let currencyAutoSet = true;   // false once the visitor picks a currency themselves
+let PROVIDER = "mock";
 
 function applyProviderUI() {
-  const hosted = PROVIDERS[currency] !== "mock";
+  const hosted = PROVIDER !== "mock";
   document.getElementById("cardfields").style.display = hosted ? "none" : "";
   document.getElementById("hostednote").style.display = hosted ? "block" : "none";
   document.getElementById("paybtn").textContent =
@@ -680,16 +670,14 @@ function applyProviderUI() {
 }
 
 fetch(API+"/api/config").then(r=>r.json()).then(c=>{
-  if (c.providers) PROVIDERS = c.providers;
+  if (c.provider) PROVIDER = c.provider;
   applyProviderUI();
 }).catch(()=>{});
 
-// Region default: detect the visitor's country server-side (IP-based, no
-// external call from the browser) and default the currency toggle to INR
-// for India / USD elsewhere. Only applies before the visitor touches the
-// toggle themselves, and never affects existing selections.
+// Country is still detected (IP-based, no external call from the browser)
+// purely to default the phone country-code dropdown — it no longer
+// affects pricing/currency at all.
 fetch(API+"/api/geo").then(r=>r.json()).then(g=>{
-  if (currencyAutoSet && g.currency && g.currency !== currency) setCurrency(g.currency);
   if (g.country) setDefaultPhoneCountry(g.country);
 }).catch(()=>{});
 
@@ -1021,30 +1009,20 @@ bplaceInput.addEventListener("focus", () => {
 
 const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
 
-/* ---- pricing ---- */
-let PRICES = {western:{USD:[19,"$"],INR:[999,"₹"]},
-                vedic:{USD:[19,"$"],INR:[999,"₹"]},
-                mixed:{USD:[29,"$"],INR:[1499,"₹"]}};
+/* ---- pricing (USD only) ---- */
+let PRICES = {western:[19,"$"], vedic:[19,"$"], mixed:[29,"$"]};
 const TIER_LABEL = {western:"Western", vedic:"Vedic", mixed:"Mixed"};
 
 fetch(API+"/api/prices").then(r=>r.json()).then(serverPrices=>{
-  const symbols = {USD:"$", INR:"₹"};
-  for (const [name, values] of Object.entries(serverPrices)) {
-    if (!PRICES[name]) PRICES[name] = {};
-    for (const [cur, minor] of Object.entries(values))
-      PRICES[name][cur] = [minor / 100, symbols[cur] || cur + " "];
-  }
-  setCurrency(currency);
+  for (const [name, values] of Object.entries(serverPrices))
+    if (values.USD !== undefined) PRICES[name] = [values.USD / 100, "$"];
+  paintPricing();
 }).catch(()=>{});
 
-function setCurrency(cur, fromUser) {
-  currency = cur;
-  if (fromUser) currencyAutoSet = false;
-  document.querySelectorAll(".currency-toggle button").forEach(b =>
-    b.classList.toggle("on", b.dataset.cur === cur));
+function paintPricing() {
   document.querySelectorAll("#pricingGrid .price-card").forEach(el => {
-    const [amt,sym] = PRICES[el.dataset.tier][cur];
-    el.querySelector("[data-amt]").textContent = sym + amt.toLocaleString(cur==="INR"?"en-IN":"en-US");
+    const [amt,sym] = PRICES[el.dataset.tier];
+    el.querySelector("[data-amt]").textContent = sym + amt.toLocaleString("en-US");
   });
   paintSummary();
   applyProviderUI();
@@ -1067,8 +1045,8 @@ let appliedCoupon = null;   // the code, once /api/coupon/check confirms it's va
 function paintSummary() {
   if (!tier) { document.getElementById("sumTier").textContent = "Select a report";
     document.getElementById("sumAmt").textContent = "—"; return; }
-  const [amt,sym] = PRICES[tier][currency];
-  const full = sym + amt.toLocaleString(currency==="INR"?"en-IN":"en-US");
+  const [amt,sym] = PRICES[tier];
+  const full = sym + amt.toLocaleString("en-US");
   document.getElementById("sumTier").textContent = TIER_LABEL[tier] + " report";
   document.getElementById("sumAmt").innerHTML = appliedCoupon
     ? `<span class="strike">${full}</span>FREE`
@@ -1153,7 +1131,7 @@ async function pay() {
       return;
     }
   }
-  if (PROVIDERS[currency] === "mock" && card.length > 0 && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
+  if (PROVIDER === "mock" && card.length > 0 && card.length < 12) { err.textContent = "Please enter a valid card number."; return; }
   if (!validatePhone()) { err.textContent = "Please enter a valid phone number, or leave it blank."; document.getElementById("phoneNumber").focus(); return; }
 
   document.getElementById("paybtn").disabled = true;

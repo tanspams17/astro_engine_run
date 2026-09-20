@@ -1,6 +1,6 @@
 """
-Stripe payment adapter — hosted Checkout flow. Used for every currency
-except INR (Razorpay handles India — see razorpay_adapter.py).
+Stripe payment adapter — hosted Checkout flow. The only real gateway in
+use; the site sells in USD only (see app.py's get_adapter()).
 
 Set env: STRIPE_API_KEY=sk_test_xxx (later sk_live_xxx, or preferably a
          restricted key rk_... scoped to Checkout Sessions + Refunds

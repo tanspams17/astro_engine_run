@@ -1,18 +1,19 @@
-# Going live: Stripe + Razorpay
+# Going live: Stripe
 
-Arvelos routes each order to a gateway **by currency**, automatically:
+Arvelos sells in **USD only**, via Stripe. `OrderIn.currency` and
+`CouponCheckIn.currency` in `app.py` are pinned to `"USD"` — the site used
+to also support INR via Razorpay with regional pricing, picked by a
+client-supplied currency (a frontend toggle, or any direct API call).
+That let anyone check out at the India-specific discounted price
+regardless of where they actually were, so it was removed rather than
+just hidden: there's no currency parameter left to tamper with, and
+`razorpay_adapter.py` no longer exists.
 
-| Currency | Gateway | Adapter |
-|---|---|---|
-| `INR` | Razorpay | `razorpay_adapter.py` |
-| `USD` (and any other currency added later) | Stripe | `stripe_adapter.py` |
+Falls back to `mock_adapter.py` (dummy payment, real report) automatically
+whenever `STRIPE_API_KEY` isn't set — there's no "flip a switch" step,
+adding the key activates it immediately.
 
-Either falls back to `mock_adapter.py` (dummy payment, real report — the
-site's current state) automatically whenever that gateway's keys aren't
-set. There is no "flip a switch" step — adding a gateway's keys activates
-it immediately for its currency, independent of the other gateway.
-
-## Stripe (non-India)
+## Stripe
 
 `stripe_adapter.py` uses the official `stripe` Python SDK (`StripeClient`,
 v1 namespace) — Stripe's own recommended pattern, not raw HTTP.
@@ -34,28 +35,15 @@ v1 namespace) — Stripe's own recommended pattern, not raw HTTP.
 3. Set on the server: `STRIPE_API_KEY` (works for either an `sk_` or `rk_`
    key — same env var), `STRIPE_WEBHOOK_SECRET`.
 
-## Razorpay (India)
-
-1. Create a Razorpay account (needs India business KYC to accept live
-   payments — test mode works without it). Grab the **Key ID** and **Key
-   Secret** from Settings → API Keys.
-2. Add a webhook in Settings → Webhooks pointing at
-   `https://astro.arvelos.cloud/webhooks/razorpay`, subscribed to
-   `payment_link.paid` (and `payment_link.expired`/`.cancelled` if
-   wanted). Set the same secret you'll use for `RAZORPAY_WEBHOOK_SECRET`
-   when creating the webhook — Razorpay doesn't generate this one for you.
-3. Set on the server: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`,
-   `RAZORPAY_WEBHOOK_SECRET`.
-
 ## Deploying the keys
 
 Copy `deploy/.env.example` to `deploy/.env` on the VPS and fill in the
 real values there — `.env` is gitignored, so secrets never enter version
 control; `docker-compose.yml` only references `${STRIPE_API_KEY}` etc.
 Then `docker compose up -d` — no rebuild needed, it's just an environment
-change. Test with each gateway's test-mode keys first; a test-mode order
-goes through the exact same code path as a live one, so it's a real
-end-to-end check before switching to live keys.
+change. Test with Stripe's test-mode keys first; a test-mode order goes
+through the exact same code path as a live one, so it's a real end-to-end
+check before switching to live keys.
 
 ## Why not Stripe Invoicing
 
@@ -72,10 +60,9 @@ businesses that specifically require invoice documents (e.g. a corporate
 bulk-report purchase with PO/NET terms) — that's a real Invoicing use
 case, this isn't it.
 
-## Region default (not payment routing)
+## Region detection (not payment routing)
 
 `/api/geo` does an offline IP→country lookup (via `geoip2fast`, no
-external API call) purely to default the currency toggle — India visitors
-see INR pre-selected, everyone else sees USD. It never decides which
-gateway actually gets used; the **currency the order is placed in** does
-that. A visitor can always switch currency manually before paying.
+external API call) purely to default the phone country-code dropdown in
+the order form. It doesn't affect pricing or currency at all — every
+order is USD, regardless of where the visitor is.

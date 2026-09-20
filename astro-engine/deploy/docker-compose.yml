@@ -16,18 +16,15 @@ services:
       - BASE_URL=https://astro.arvelos.cloud
       - ARVELOS_ALLOWED_ORIGINS=https://astro.arvelos.cloud
       - SUPPORT_EMAIL=support@arvelos.cloud
-      # Gateway is picked per order by currency (INR -> Razorpay, else ->
-      # Stripe) and falls back to the mock adapter automatically when a
-      # gateway's keys below are unset — so leaving all five blank in .env
-      # (or omitting .env entirely) keeps the whole site on dummy payments.
-      # Real values live in deploy/.env (untracked, see .env.example) —
-      # never commit secrets into this file, it's version controlled.
+      # Stripe (USD only — see backend/app.py's get_adapter()) falls back to
+      # the mock adapter automatically when STRIPE_API_KEY is unset, so
+      # leaving both blank in .env (or omitting .env entirely) keeps the
+      # whole site on dummy payments. Real values live in deploy/.env
+      # (untracked, see .env.example) — never commit secrets into this
+      # file, it's version controlled.
       - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-}
       - STRIPE_API_KEY=${STRIPE_API_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
-      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
-      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
       # Email: Resend (HTTP API) is the chosen provider — blank keeps
       # writing to the outbox instead of sending. Requires the sending
       # domain verified in the Resend dashboard first.

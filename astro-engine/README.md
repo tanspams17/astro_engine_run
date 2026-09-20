@@ -38,9 +38,9 @@ backend/            FastAPI app + engine
   chart_graphics.py chart wheels + Lo Shu SVGs
   orders.py         order lifecycle + the `customers` table
   delivery.py       email delivery (Resend HTTP API, legacy SMTP fallback, outbox in dev)
-  geo.py            offline IP -> country lookup, for the currency-toggle default only
+  geo.py            offline IP -> country lookup, for the phone country-code default only
   gdpr_tools.py      export/delete/optout CLI — request+approve, never automatic (see below)
-  payment/          gateway-agnostic adapter — Stripe + Razorpay (per currency) + mock fallback
+  payment/          Stripe adapter (USD only) + mock fallback
   requirements.txt
 frontend/           landing, quiz, checkout, delivery, terms, privacy, cities.json
 pdf_templates/      report.html + cover_emblem.png
@@ -72,7 +72,7 @@ cd astro-engine/deploy
 docker compose up -d --build      # rebuild + recreate whenever backend/frontend code changed
                                    # (env-only changes, e.g. a new API key in .env, just need `up -d`)
 ```
-Real secrets (Stripe/Razorpay/Resend keys) go in `deploy/.env` — copy
+Real secrets (Stripe/Resend keys) go in `deploy/.env` — copy
 `deploy/.env.example`, fill it in on the server, never commit it.
 `docker-compose.override.yml` carries the Traefik router labels (TLS via
 Let's Encrypt, canonical-domain redirect); Traefik itself runs as its own
@@ -90,9 +90,8 @@ the start command). Add a persistent volume mounted at `/data`.
 ## Environment variables
 | Var | Default | Purpose |
 |-----|---------|---------|
-| `PAYMENT_PROVIDER` | – | set to `mock` to force dummy payments for every currency regardless of the keys below (e.g. staging) |
-| `STRIPE_API_KEY` / `STRIPE_WEBHOOK_SECRET` | – | live gateway for every currency except INR; unset = mock |
-| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET` | – | live gateway for INR; unset = mock |
+| `PAYMENT_PROVIDER` | – | set to `mock` to force dummy payments regardless of the keys below (e.g. staging) |
+| `STRIPE_API_KEY` / `STRIPE_WEBHOOK_SECRET` | – | live gateway (USD only — see below); unset = mock |
 | `BASE_URL` | `https://astro.arvelos.cloud` | used in emails, gateway redirects, CORS |
 | `ARVELOS_ALLOWED_ORIGINS` | – | comma-separated CORS origins; falls back to `BASE_URL` |
 | `ARVELOS_FRONTEND` | – | path to `frontend/`; set to serve the site from the app |
@@ -101,12 +100,14 @@ the start command). Add a persistent volume mounted at `/data`.
 | `RESEND_API_KEY` / `RESEND_FROM` | – | email delivery (report link, and later opt-in emails) via Resend's HTTP API — the chosen provider. Needs the `RESEND_FROM` domain verified in the Resend dashboard first, or sending to real customers fails. Unset = write to outbox |
 | `SMTP_HOST/PORT/USER/PASS/FROM` | – | legacy plain-SMTP path, only used if `RESEND_API_KEY` is unset |
 
-Gateway selection is automatic and per-order: an INR order goes to Razorpay
-if its keys are set, a non-INR order goes to Stripe if its key is set;
-either falls back to the built-in mock adapter (dummy payment, real
-report) when its keys are absent — so the site works end-to-end with
-zero payment config, and each gateway activates independently the moment
-its keys are added.
+The site sells in USD only, via Stripe — there is no currency selection,
+client-side or server-side (see `backend/payment/GATEWAYS.md` for why:
+a prior INR/Razorpay path with regional pricing let anyone check out at
+the discounted price regardless of location, so it was removed rather
+than hidden). Falls back to the built-in mock adapter (dummy payment,
+real report) when `STRIPE_API_KEY` is absent — so the site works
+end-to-end with zero payment config, and Stripe activates the moment
+the key is added.
 
 Go-live checklist and the marketing/ads plan are in `DEPLOY_STEPS.md`,
 `ARVELOS_HANDOFF.md`, and `marketing/CAMPAIGN.md`.

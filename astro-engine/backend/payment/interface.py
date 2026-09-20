@@ -2,7 +2,7 @@
 Payment adapter interface — gateway-agnostic by design. A real gateway
 implements this ABC without touching the rest of the system. No card data
 ever touches this codebase — every live adapter uses a hosted checkout
-page (Stripe Checkout / Razorpay Payment Links), same pattern as MockAdapter.
+page (Stripe Checkout), same pattern as MockAdapter.
 """
 from __future__ import annotations
 
