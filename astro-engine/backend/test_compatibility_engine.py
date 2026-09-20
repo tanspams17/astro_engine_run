@@ -25,6 +25,35 @@ def test_zodiac_compare_same_element():
     assert "fire" in zodiac_section["body"].lower()
 
 
+def test_guna_milan_same_nakshatra_scores_high():
+    # Same nakshatra + same rashi: Varna/Vashya/Yoni/Gana degenerate to
+    # their same-group cases; total should be well above half of 36.
+    result = ce.guna_milan("Aries", "Ashwini", "Aries", "Ashwini")
+    assert result["max_total"] == 36
+    assert len(result["kootas"]) == 8
+    assert sum(k["max"] for k in result["kootas"]) == 36
+    assert result["total"] >= 18
+
+
+def test_guna_milan_nadi_same_group_scores_zero_on_that_koota():
+    # Ashwini and Ardra are both classically Aadi/Vata nadi — same nadi
+    # is the one koota that scores 0 regardless of anything else.
+    result = ce.guna_milan("Aries", "Ashwini", "Gemini", "Ardra")
+    nadi = next(k for k in result["kootas"] if k["name"] == "Nadi")
+    assert nadi["score"] == 0
+
+
+def test_guna_milan_varna_not_tautological():
+    # Regression check for the bug caught in plan self-review: Varna must
+    # actually discriminate, not always return full score.
+    hi = ce.guna_milan("Cancer", "Ashwini", "Cancer", "Ashwini")  # same varna
+    lo = ce.guna_milan("Cancer", "Ashwini", "Gemini", "Ashwini")  # Brahmin vs Shudra
+    hi_varna = next(k for k in hi["kootas"] if k["name"] == "Varna")["score"]
+    lo_varna = next(k for k in lo["kootas"] if k["name"] == "Varna")["score"]
+    assert hi_varna == 1
+    assert lo_varna == 0
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     failed = 0
