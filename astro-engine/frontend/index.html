@@ -765,11 +765,19 @@ let CITIES = [], citiesLoading = true;
 let WORD_INDEX = new Map(); // word length -> [[word, city], ...] — bucketed so the
                             // fuzzy fallback only compares words of a plausible length
                             // instead of scanning all ~375k words in the dataset
+// Strips diacritics ("São Paulo" -> "sao paulo", "Bogotá" -> "bogota") so a
+// plain-ASCII query (what most keyboards actually type) still matches an
+// accented city name — matching only, never changes what's displayed.
+function norm(s) {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
 fetch("/cities.json").then(r=>r.json()).then(d=>{
   // pre-tokenize once at load instead of re-splitting ~150k names on every
   // keystroke — this is what makes search over a dataset this size fast
   for (const c of d) {
-    c._w = c.n.toLowerCase().split(/[\s,]+/).filter(Boolean);
+    c._nn = norm(c.n);
+    c._w = c._nn.split(/[\s,]+/).filter(Boolean);
     for (const w of c._w) {
       let bucket = WORD_INDEX.get(w.length);
       if (!bucket) WORD_INDEX.set(w.length, bucket = []);
@@ -790,6 +798,10 @@ const CITY_ALIASES = {
   benares:"varanasi", allahabad:"prayagraj", mysore:"mysuru", gurgaon:"gurugram",
   peking:"beijing", canton:"guangzhou", saigon:"ho chi minh city",
   constantinople:"istanbul",
+  // English exonym -> the native-language spelling actually stored in
+  // cities.json for that entry (found by testing city search across
+  // continents — most exonyms already match directly, these two didn't)
+  geneva:"geneve", cologne:"koln",
 };
 
 // Levenshtein edit distance — used to tolerate typos ("viskhapatnam" -> "visakhapatnam")
@@ -821,7 +833,8 @@ function aliasesFor(word) {
 // is only findable by full-string prefix if you type it exactly, and what
 // makes "New York" findable by typing just "york". Cheap — safe to run
 // synchronously on every keystroke.
-function searchCitiesFast(query) {
+function searchCitiesFast(rawQuery) {
+  const query = norm(rawQuery);
   const qWords = query.split(/[\s,]+/).filter(Boolean);
   if (!qWords.length) return [];
   const qAliases = qWords.map(aliasesFor);
@@ -829,7 +842,7 @@ function searchCitiesFast(query) {
   const startsMatch = [], wordMatch = [];
   for (const c of CITIES) {
     if (!qAliases.every(alts => c._w.some(cw => alts.some(a => cw.startsWith(a))))) continue;
-    if (c.n.toLowerCase().startsWith(query) || c._w[0].startsWith(qWords[0])) startsMatch.push(c);
+    if (c._nn.startsWith(query) || c._w[0].startsWith(qWords[0])) startsMatch.push(c);
     else wordMatch.push(c);
   }
   return startsMatch.concat(wordMatch);
@@ -839,7 +852,8 @@ function searchCitiesFast(query) {
 // more expensive (can take several hundred ms over ~150k cities), so callers
 // should only invoke it after showing a "searching" state and yielding a
 // frame, not synchronously on every keystroke.
-function searchCitiesFuzzy(query) {
+function searchCitiesFuzzy(rawQuery) {
+  const query = norm(rawQuery);
   const qWords = query.split(/[\s,]+/).filter(Boolean);
   if (!qWords.length) return [];
 
@@ -1099,7 +1113,7 @@ async function pay() {
   if (!/.+@.+\..+/.test(email)) { err.textContent = "Please enter a valid email — your report is delivered there."; return; }
   if (!chosenPlace) {
     const pl = p.toLowerCase();
-    chosenPlace = CITIES.find(c => c.n.toLowerCase() === pl);
+    chosenPlace = CITIES.find(c => c._nn === norm(p));
     if (!chosenPlace) {
       const results = searchCities(pl);
       if (results.length === 1) chosenPlace = results[0];
