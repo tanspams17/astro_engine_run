@@ -32,13 +32,13 @@ services:
       # writing to the outbox instead of sending. Requires the sending
       # domain verified in the Resend dashboard first.
       - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - RESEND_FROM=${RESEND_FROM:-Arvelos <reports@astro.arvelos.cloud>}
+      - RESEND_FROM=${RESEND_FROM:-Arvelos <reports@arvelos.cloud>}
       # Legacy SMTP path (only used if RESEND_API_KEY is unset):
       # - SMTP_HOST=smtp.postmarkapp.com
       # - SMTP_PORT=587
       # - SMTP_USER=...
       # - SMTP_PASS=...
-      # - SMTP_FROM=Arvelos <reports@astro.arvelos.cloud>
+      # - SMTP_FROM=Arvelos <reports@arvelos.cloud>
 
 volumes:
   arvelos_data:

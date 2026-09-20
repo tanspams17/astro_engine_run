@@ -9,7 +9,7 @@ SMTP_HOST (plain SMTP, any provider) -> outbox (dev mode, writes to
 container path), otherwise the repo-local data/ directory.
 
 Env (Resend):
-  RESEND_API_KEY, RESEND_FROM (default: reports@astro.arvelos.cloud —
+  RESEND_API_KEY, RESEND_FROM (default: reports@arvelos.cloud —
   must be on a domain verified in the Resend dashboard; sending from an
   unverified domain either fails outright or, on the default
   onboarding@resend.dev sender, only delivers to your own Resend
@@ -84,7 +84,7 @@ just reply to this email and we'll fix it: {SUPPORT_EMAIL}</p>
 
 def _send_via_resend(to_email: str, subject: str, html: str, text: str):
     api_key = os.environ["RESEND_API_KEY"]
-    sender = os.environ.get("RESEND_FROM", f"Arvelos <reports@astro.arvelos.cloud>")
+    sender = os.environ.get("RESEND_FROM", f"Arvelos <reports@arvelos.cloud>")
     payload = json.dumps({
         "from": sender, "to": [to_email], "subject": subject,
         "html": html, "text": text,
@@ -92,7 +92,11 @@ def _send_via_resend(to_email: str, subject: str, html: str, text: str):
     req = urllib.request.Request(
         RESEND_API, data=payload, method="POST",
         headers={"Authorization": f"Bearer {api_key}",
-                 "Content-Type": "application/json"})
+                 "Content-Type": "application/json",
+                 # Cloudflare (in front of api.resend.com) blocks
+                 # urllib's default User-Agent as a bot signature
+                 # (error code 1010) — a real UA is required.
+                 "User-Agent": "Arvelos/1.0 (+https://astro.arvelos.cloud)"})
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
             json.loads(r.read())
