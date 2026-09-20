@@ -28,7 +28,12 @@ services:
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
       - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
       - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
-      # SMTP — set these when the mail provider is chosen:
+      # Email: Resend (HTTP API) is the chosen provider — blank keeps
+      # writing to the outbox instead of sending. Requires the sending
+      # domain verified in the Resend dashboard first.
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - RESEND_FROM=${RESEND_FROM:-Arvelos <reports@astro.arvelos.cloud>}
+      # Legacy SMTP path (only used if RESEND_API_KEY is unset):
       # - SMTP_HOST=smtp.postmarkapp.com
       # - SMTP_PORT=587
       # - SMTP_USER=...

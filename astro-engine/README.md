@@ -83,7 +83,8 @@ docker run -d --name arvelos -p 127.0.0.1:8801:8000 -v arvelos_data:/data arvelo
 | `ARVELOS_FRONTEND` | – | path to `frontend/`; set to serve the site from the app |
 | `ARVELOS_DB` | `../data/arvelos.db` | SQLite path (use `/data/...` on hosts) |
 | `ARVELOS_DATA_DIR` | `../data` | base dir for the DB, generated reports, and the dev-mode email outbox — set to a persistent volume on hosts |
-| `SMTP_HOST/PORT/USER/PASS/FROM` | – | email delivery; unset = write to outbox |
+| `RESEND_API_KEY` / `RESEND_FROM` | – | email delivery (report link, and later opt-in emails) via Resend's HTTP API — the chosen provider. Needs the `RESEND_FROM` domain verified in the Resend dashboard first, or sending to real customers fails. Unset = write to outbox |
+| `SMTP_HOST/PORT/USER/PASS/FROM` | – | legacy plain-SMTP path, only used if `RESEND_API_KEY` is unset |
 
 Gateway selection is automatic and per-order: an INR order goes to Razorpay
 if its keys are set, a non-INR order goes to Stripe if its key is set;
