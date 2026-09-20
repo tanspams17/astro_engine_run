@@ -135,6 +135,12 @@ class PayIn(BaseModel):
     payment_details: dict = Field(default_factory=dict)
 
 
+class CouponCheckIn(BaseModel):
+    tier: str = Field(pattern="^(western|vedic|mixed)$")
+    currency: str = Field(pattern="^(USD|INR)$")
+    coupon_code: str = Field(min_length=1)
+
+
 # ------------------------------------------------------------ endpoints
 
 
@@ -168,6 +174,18 @@ def geo_lookup(request: Request):
 @app.get("/api/prices")
 def prices():
     return orders.PRICES
+
+
+@app.post("/api/coupon/check")
+def coupon_check(c: CouponCheckIn):
+    """Read-only — lets the checkout form validate a code and preview the
+    resulting price before the customer commits to an order."""
+    base = orders.PRICES[c.tier][c.currency]
+    try:
+        amount_minor = _apply_coupon(base, c.coupon_code)
+    except ValueError:
+        return {"valid": False, "amount_minor": base}
+    return {"valid": True, "amount_minor": amount_minor}
 
 
 @app.post("/api/quiz/start")

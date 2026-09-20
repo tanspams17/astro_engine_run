@@ -158,6 +158,11 @@
   .phone-row { display:flex; gap:8px; }
   .phone-row select { flex:0 0 108px; width:108px; }
   .phone-row input { flex:1; min-width:0; }
+  .coupon-row { display:flex; gap:8px; }
+  .coupon-row input { flex:1; min-width:0; }
+  .coupon-row .btn-ghost { padding:0 24px; font-size:14px; white-space:nowrap; }
+  #couponResult.ok { color:#7fcf9e; }
+  #couponResult.bad { color:#e08a8a; }
   input:focus, select:focus { outline:none; border-color:var(--gold); background:rgba(255,255,255,0.05); }
   select option { background:#1c1a3e; color:var(--cream); }
   .timeoff { display:flex; gap:9px; align-items:flex-start; margin-top:9px; font-size:12.5px; color:var(--lavender); }
@@ -192,7 +197,9 @@
     padding:14px 0; border-top:1px solid var(--surface-border); }
   .summary-row:first-of-type { border-top:none; }
   .summary-row .name { font-family:var(--serif); font-size:19px; color:var(--cream); }
-  .summary-row .amt { font-family:var(--serif); font-size:22px; color:var(--gold-light); }
+  .summary-row .amt { font-family:var(--serif); font-size:26px; color:var(--gold-light); }
+  .summary-row .amt .strike { font-size:16px; color:var(--lavender); text-decoration:line-through;
+    margin-right:8px; opacity:.7; }
   .summary-note { font-size:12px; color:var(--lavender); margin:6px 0 20px; }
   .paypills { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
   .paypills span { font-size:11px; border:1px solid var(--surface-border); color:var(--lavender);
@@ -418,8 +425,11 @@
 
           <div class="full">
             <label for="coupon">Coupon code <span class="opt">optional</span></label>
-            <input type="text" id="coupon" placeholder="ASTRO100">
-            <p class="hint">Enter ASTRO100 for a free report, or leave blank for the regular price.</p>
+            <div class="coupon-row">
+              <input type="text" id="coupon" placeholder="Enter code" autocapitalize="characters">
+              <button type="button" class="btn-ghost" id="applyCouponBtn" onclick="applyCoupon()">Apply</button>
+            </div>
+            <p class="hint" id="couponResult">Apply a coupon code if you have one, or leave blank for the regular price.</p>
           </div>
 
           <div class="full" id="cardfields">
@@ -459,7 +469,7 @@
         <h4>Order summary</h4>
         <div class="summary-row"><span class="name" id="sumTier">Select a report</span>
           <span class="amt" id="sumAmt">—</span></div>
-        <div class="summary-note">Delivered as PDF within minutes · nothing to cancel · card details optional while payments are in preview</div>
+        <div class="summary-note">Instant PDF delivery by email · Secure checkout · One-time payment — no subscription, nothing to cancel</div>
         <div class="paypills">
           <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span>
         </div>
@@ -1011,13 +1021,62 @@ function chooseTier(t, fromSelect) {
   if (!fromSelect) scrollToOrder();
 }
 
+let appliedCoupon = null;   // the code, once /api/coupon/check confirms it's valid+free
+
 function paintSummary() {
   if (!tier) { document.getElementById("sumTier").textContent = "Select a report";
     document.getElementById("sumAmt").textContent = "—"; return; }
   const [amt,sym] = PRICES[tier][currency];
+  const full = sym + amt.toLocaleString(currency==="INR"?"en-IN":"en-US");
   document.getElementById("sumTier").textContent = TIER_LABEL[tier] + " report";
-  document.getElementById("sumAmt").textContent = sym + amt.toLocaleString(currency==="INR"?"en-IN":"en-US");
+  document.getElementById("sumAmt").innerHTML = appliedCoupon
+    ? `<span class="strike">${full}</span>FREE`
+    : full;
 }
+
+async function applyCoupon() {
+  const code = document.getElementById("coupon").value.trim();
+  const result = document.getElementById("couponResult");
+  result.classList.remove("ok", "bad");
+  if (!code) { result.textContent = "Enter a code first."; result.classList.add("bad"); return; }
+  if (!tier) { result.textContent = "Choose a report above, then apply your code."; result.classList.add("bad"); return; }
+  const btn = document.getElementById("applyCouponBtn");
+  btn.disabled = true; btn.textContent = "Checking…";
+  try {
+    const r = await fetch(API+"/api/coupon/check", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({tier, currency, coupon_code: code})});
+    const data = await r.json();
+    if (data.valid && data.amount_minor === 0) {
+      appliedCoupon = code;
+      result.textContent = "✓ Coupon applied — this report is free.";
+      result.classList.add("ok");
+    } else if (data.valid) {
+      appliedCoupon = null;
+      result.textContent = "Coupon applied.";
+      result.classList.add("ok");
+    } else {
+      appliedCoupon = null;
+      result.textContent = "That coupon code isn't valid.";
+      result.classList.add("bad");
+    }
+  } catch (e) {
+    appliedCoupon = null;
+    result.textContent = "Couldn't check that code — please try again.";
+    result.classList.add("bad");
+  }
+  btn.disabled = false; btn.textContent = "Apply";
+  paintSummary();
+}
+
+document.getElementById("coupon").addEventListener("input", () => {
+  if (!appliedCoupon) return;
+  appliedCoupon = null;
+  const result = document.getElementById("couponResult");
+  result.textContent = "Apply a coupon code if you have one, or leave blank for the regular price.";
+  result.classList.remove("ok", "bad");
+  paintSummary();
+});
 
 /* ================= checkout ================= */
 async function pay() {
