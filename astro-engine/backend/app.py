@@ -373,6 +373,7 @@ def order_status(order_id: str):
     out = {"order_id": order_id, "status": order["status"]}
     if order["status"] == "delivered":
         out["download_url"] = f"/download/{order['download_token']}"
+        out["tier"] = order["tier"]
     if order["status"] == "fulfilment_failed":
         out["retryable"] = True
         out["error"] = order.get("fulfilment_error") or "report generation failed"

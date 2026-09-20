@@ -214,6 +214,31 @@
   .order-state p { color:var(--lavender); font-size:14.5px; margin-bottom:26px; }
   .order-state .glyph { font-size:40px; color:var(--gold); margin-bottom:18px; }
 
+  /* ---------- SUCCESS (order delivered) ---------- */
+  .success-state { padding:56px 20px 48px; animation:successIn .5s cubic-bezier(.2,.9,.3,1); }
+  @keyframes successIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  .success-badge { width:84px; height:84px; margin:0 auto 22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle, rgba(212,146,10,0.22), rgba(212,146,10,0.04) 70%);
+    box-shadow:0 0 0 1px var(--surface-border), 0 0 40px rgba(212,146,10,0.25);
+    animation:badgePulse 2.4s ease-in-out infinite; }
+  .success-badge span { font-size:34px; color:var(--gold-light); }
+  @keyframes badgePulse { 0%,100% { box-shadow:0 0 0 1px var(--surface-border), 0 0 40px rgba(212,146,10,0.25); }
+    50% { box-shadow:0 0 0 1px var(--surface-border-strong), 0 0 56px rgba(212,146,10,0.4); } }
+  .success-state .eyebrow { display:block; margin:2px 0 12px; }
+  .success-state h3 { font-size:32px; margin-bottom:14px; }
+  .success-tier-pill { display:inline-block; font-family:var(--sans); font-size:12.5px;
+    letter-spacing:.03em; color:var(--gold-light); border:1px solid var(--surface-border);
+    background:rgba(212,146,10,0.08); padding:6px 16px; border-radius:999px; margin-bottom:20px; }
+  .success-lede { font-size:16.5px; color:var(--cream); margin-bottom:30px; max-width:440px;
+    margin-left:auto; margin-right:auto; }
+  .success-download { font-size:17px; padding:18px 44px; margin-bottom:22px; }
+  .success-sub { font-size:14.5px; color:var(--lavender); margin-bottom:6px; }
+  .success-footnote { font-size:12.5px; color:var(--lavender); opacity:.75; margin-bottom:28px; }
+  .success-secondary { display:inline-block; font-family:var(--sans); font-size:13.5px;
+    color:var(--lavender); border-top:1px solid var(--surface-border); padding-top:20px; }
+  .success-secondary:hover { color:var(--gold-light); }
+
   /* ---------- FAQ ---------- */
   .faq-grid { max-width:720px; margin:0 auto; display:grid; gap:22px; }
   .faq-grid .card { padding:22px 26px; }
@@ -483,7 +508,6 @@
       <h3>Calculating your sky…</h3>
       <p id="procmsg" aria-live="polite">Computing planetary positions from your exact birth moment.</p>
     </div>
-    </div>
 
     <div class="order-state card" id="orderFailed">
       <div class="glyph" style="font-size:64px">!</div>
@@ -492,13 +516,16 @@
       <button class="btn-primary" id="retrybtn" onclick="retryFulfilment()" style="margin-top:24px">Try again</button>
     </div>
 
-    <div class="order-state card" id="orderDelivered">
-      <div class="glyph" style="font-size:64px">✦</div>
+    <div class="order-state card success-state" id="orderDelivered">
+      <div class="success-badge"><span>✦</span></div>
+      <span class="eyebrow">Payment confirmed</span>
       <h3>Your report is ready!</h3>
-      <p style="font-size:16px; color:var(--gold-light); margin-bottom:24px">Your personalized astrology report has been generated and is ready to download.</p>
-      <p>We've also emailed the download link to you, so you can come back to it anytime.</p>
-      <a class="btn-primary" id="dl" href="#" style="margin-top:24px">⬇ Download your report (PDF)</a>
-      <p style="font-size:13px; color:var(--lavender); margin-top:20px">Didn't receive the email? Check your spam folder, or download using the button above.</p>
+      <span class="success-tier-pill" id="deliveredTier" style="display:none"></span>
+      <p class="success-lede">Your personalized astrology report has been calculated and generated.</p>
+      <a class="btn-primary success-download" id="dl" href="#">⬇ Download your report (PDF)</a>
+      <p class="success-sub">We've also emailed the download link to you, so you can come back to it anytime.</p>
+      <p class="success-footnote">Didn't receive the email? Check your spam folder, or download using the button above.</p>
+      <a class="success-secondary" href="#faq">Have a question? See our FAQ →</a>
     </div>
   </div>
 </section>
@@ -1166,6 +1193,18 @@ async function pay() {
 }
 function scrollIntoView1(id){ document.getElementById(id).scrollIntoView({behavior:'smooth'}); }
 
+// Scrolls only once the browser has actually settled the current layout —
+// a single synchronous call right after a display/class change can still
+// race the paint and land against stale geometry (confirmed empirically:
+// the "instant" behavior alone wasn't enough here). A short setTimeout
+// clears that race; requestAnimationFrame would too, EXCEPT rAF is
+// suspended for a backgrounded/hidden tab (also confirmed empirically),
+// which a real customer can absolutely have happen mid-checkout —
+// setTimeout keeps firing regardless of tab visibility.
+function scrollIntoViewSettled(el) {
+  setTimeout(() => el.scrollIntoView({block: "start", behavior: "instant"}), 50);
+}
+
 function showOrderState(state) {
   document.getElementById("orderFormView").style.display = state === "form" ? "grid" : "none";
   document.getElementById("orderProcessing").classList.toggle("on", state === "processing");
@@ -1202,7 +1241,16 @@ async function poll(orderId, n) {
       console.log("Report delivered! Setting download URL:", s.download_url);
       const dlBtn = document.getElementById("dl");
       if (dlBtn) dlBtn.href = s.download_url;
+      const tierPill = document.getElementById("deliveredTier");
+      if (s.tier && TIER_LABEL[s.tier]) {
+        tierPill.textContent = TIER_LABEL[s.tier] + " Report";
+        tierPill.style.display = "inline-block";
+      }
       showOrderState("delivered");
+      // layout height just changed (processing spinner -> full success card);
+      // re-settle the scroll against the final geometry, instantly, so it
+      // can't overshoot into whatever section now sits below.
+      scrollIntoViewSettled(document.getElementById("orderDelivered"));
       return;
     }
     if (s.status === "failed") {
@@ -1233,8 +1281,14 @@ async function poll(orderId, n) {
 const returnOrder = new URLSearchParams(location.search).get("order");
 if (returnOrder) window.addEventListener("DOMContentLoaded", () => {
   activeOrderId = returnOrder;
-  scrollIntoView1("order");
-  showOrderState("processing"); poll(returnOrder, 0);
+  // Show the (much shorter) processing state FIRST, so the layout has
+  // already settled to its final height before we scroll — scrolling
+  // first and hiding the form second raced a smooth-scroll animation
+  // against the resulting layout collapse and could overshoot straight
+  // past this section into whatever comes after it on the page.
+  showOrderState("processing");
+  scrollIntoViewSettled(document.getElementById("orderProcessing"));
+  poll(returnOrder, 0);
 });
 </script>
 </body>
