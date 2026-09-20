@@ -666,7 +666,16 @@ def _core_three_no_asc(chart: Chart) -> list[dict]:
 
 def render_pdf(context: dict, out_path: str) -> str:
     from weasyprint import HTML
-    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+    # autoescape=True is load-bearing, not a default: `name` and
+    # `birth_place` are free-text customer input (the frontend's city
+    # picker is UI only — the API never validates birth_place against a
+    # real city) rendered straight into this HTML before WeasyPrint turns
+    # it into a PDF server-side. Without escaping, a crafted name like
+    # `<img src="http://169.254.169.254/...">` would have WeasyPrint fetch
+    # that URL from this server at PDF-generation time (SSRF). Chart SVGs
+    # and body paragraphs that need raw markup are explicitly `| safe` in
+    # the template and are unaffected by this.
+    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=True)
     tpl = env.get_template("report.html")
     html = tpl.render(**context)
     HTML(string=html, base_url=TEMPLATE_DIR).write_pdf(out_path)

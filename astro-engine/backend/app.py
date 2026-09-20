@@ -27,7 +27,32 @@ except ImportError:
     from report_generator import generate_report, TIER_NAMES
     from payment.mock_adapter import MockAdapter
 
-app = FastAPI(title="Arvelos API", docs_url=None, redoc_url=None)
+# openapi_url=None too: /docs and /redoc were already disabled, but the raw
+# schema was still served at /openapi.json regardless — same information
+# disclosure via a different door.
+app = FastAPI(title="Arvelos API", docs_url=None, redoc_url=None, openapi_url=None)
+
+
+# Reject oversized request bodies before they're parsed — checked from
+# Content-Length so it costs nothing to enforce. Every real payload here
+# (an order, a coupon check) is at most a few KB; this caps it two orders
+# of magnitude above that, purely to stop someone lobbing multi-MB/GB
+# bodies at a JSON endpoint. Not a substitute for a reverse-proxy body
+# limit (a client can omit/lie about Content-Length with chunked
+# transfer), but it's a free, cheap first line of defense.
+_MAX_BODY_BYTES = 256_000
+
+
+@app.middleware("http")
+async def _limit_body_size(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            if int(content_length) > _MAX_BODY_BYTES:
+                return JSONResponse({"detail": "request body too large"}, status_code=413)
+        except ValueError:
+            pass
+    return await call_next(request)
 _local_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 _data_dir = os.environ.get("ARVELOS_DATA_DIR", _local_data_dir)
 _allowed_origins = [origin.strip() for origin in os.environ.get(
@@ -115,35 +140,38 @@ class QuizStart(BaseModel):
 
 
 class OrderIn(BaseModel):
-    quiz_session_id: str | None = None
+    quiz_session_id: str | None = Field(default=None, max_length=64)
     email: EmailStr
     name: str = Field(min_length=1, max_length=80)
     phone: str | None = Field(default=None, max_length=32)  # optional, support reference only
     tier: str = Field(pattern="^(western|vedic|mixed)$")
     currency: str = Field(pattern="^(USD|INR)$")
-    coupon_code: str | None = None
-    birth_date: str            # YYYY-MM-DD
-    birth_time: str | None = None   # HH:MM, or None if unknown
+    coupon_code: str | None = Field(default=None, max_length=40)
+    birth_date: str = Field(max_length=10)          # YYYY-MM-DD
+    birth_time: str | None = Field(default=None, max_length=5)   # HH:MM, or None if unknown
     gender: str = Field(default="unspecified",
                         pattern="^(male|female|unspecified)$")
-    birth_place: str
+    # Free text — the frontend's city picker is UI only, never enforced
+    # server-side, so this stays a plain string; capped only to keep a
+    # malicious/junk payload from bloating storage and the generated PDF.
+    birth_place: str = Field(max_length=200)
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
-    tz: str                    # IANA name, e.g. Asia/Kolkata
-    focus_areas: list[str] = Field(default_factory=list)
+    tz: str = Field(max_length=64)                  # IANA name, e.g. Asia/Kolkata
+    focus_areas: list[str] = Field(default_factory=list, max_length=8)
     marketing_opt_in: bool = False   # MUST default False (GDPR/PECR)
     zodiac_insights_opt_in: bool = False   # separate consent, MUST default False
 
 
 class PayIn(BaseModel):
-    order_id: str
+    order_id: str = Field(max_length=64)
     payment_details: dict = Field(default_factory=dict)
 
 
 class CouponCheckIn(BaseModel):
     tier: str = Field(pattern="^(western|vedic|mixed)$")
     currency: str = Field(pattern="^(USD|INR)$")
-    coupon_code: str = Field(min_length=1)
+    coupon_code: str = Field(min_length=1, max_length=40)
 
 
 # ------------------------------------------------------------ endpoints

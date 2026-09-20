@@ -1,8 +1,15 @@
-fastapi>=0.115
-uvicorn[standard]>=0.30
-pydantic[email]>=2.7
-jinja2>=3.1
-pyswisseph>=2.10
-weasyprint>=62
-geoip2fast>=1.2
-stripe>=15.6
+# Pinned to the exact versions currently built, tested, and running in
+# production (astro.arvelos.cloud) — verified via `pip freeze` on the live
+# container. Unbounded `>=` ranges meant every `docker compose up -d
+# --build` could silently pull a newer, unvetted release (a breaking
+# change or a compromised upstream package) with no lockfile and no CI to
+# catch it. Bump deliberately (test locally, update the pin) rather than
+# floating.
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic[email]==2.13.5
+jinja2==3.1.6
+pyswisseph==2.10.3.2
+weasyprint==70.0
+geoip2fast==1.2.2
+stripe==15.6.1

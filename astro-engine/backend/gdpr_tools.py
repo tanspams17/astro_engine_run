@@ -84,7 +84,7 @@ def export(email: str) -> dict:
         pdf = os.path.join(REPORT_DIR, f"{o['id']}.pdf")
         if os.path.exists(pdf):
             files.append(pdf)
-    files += glob.glob(os.path.join(OUTBOX, f"*_{email}.eml"))
+    files += glob.glob(os.path.join(OUTBOX, f"*_{glob.escape(email)}.eml"))
     return {
         "customer": dict(customer) if customer else None,
         "orders": order_rows,
@@ -175,7 +175,7 @@ def _execute_delete(email: str) -> dict:
         if os.path.exists(pdf):
             os.remove(pdf)
             removed_files.append(pdf)
-    for path in glob.glob(os.path.join(OUTBOX, f"*_{email}.eml")):
+    for path in glob.glob(os.path.join(OUTBOX, f"*_{glob.escape(email)}.eml")):
         os.remove(path)
         removed_files.append(path)
 

@@ -20,6 +20,7 @@ Env (legacy SMTP, only used if RESEND_API_KEY is unset):
 """
 from __future__ import annotations
 
+import html
 import json
 import os
 import smtplib
@@ -58,6 +59,15 @@ Arvelos
 
 
 def _email_html(name: str, tier_name: str, token: str) -> str:
+    # `name` is free-text customer input (checkout puts no charset limits on
+    # it beyond length) and this HTML goes straight to a real inbox via
+    # Resend — without escaping, a name like `<a href=evil>click</a>` would
+    # render as a live phishing link inside an email sent from a domain
+    # Arvelos' own verified sender, to whatever address the orderer typed
+    # in (not necessarily their own). tier_name is always one of our own
+    # fixed TIER_NAMES strings, but escaping it too costs nothing.
+    safe_name = html.escape(name)
+    safe_tier_name = html.escape(tier_name)
     link = f"{BASE_URL}/download/{token}"
     return f"""<!DOCTYPE html>
 <html><body style="margin:0;padding:32px 20px;background:#191735;
@@ -65,8 +75,8 @@ font-family:Georgia,serif;color:#e9e4f5;">
 <div style="max-width:480px;margin:0 auto;">
 <p style="color:#d4920a;font-size:13px;letter-spacing:.08em;
 text-transform:uppercase;margin:0 0 20px;">Arvelos</p>
-<p style="font-size:16px;">Hi {name},</p>
-<p style="font-size:16px;">Your Arvelos <strong>{tier_name}</strong> is ready.</p>
+<p style="font-size:16px;">Hi {safe_name},</p>
+<p style="font-size:16px;">Your Arvelos <strong>{safe_tier_name}</strong> is ready.</p>
 <p style="margin:28px 0;">
 <a href="{link}" style="background:#d4920a;color:#191735;text-decoration:none;
 padding:14px 28px;border-radius:8px;font-weight:bold;display:inline-block;">
