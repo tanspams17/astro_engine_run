@@ -60,7 +60,7 @@ class StripeAdapter(PaymentAdapter):
             session = self.client.v1.checkout.sessions.create({
                 "mode": "payment",
                 "success_url": f"{self.base_url}/?order={order_id or ''}",
-                "cancel_url": f"{self.base_url}/?order={order_id or ''}",
+                "cancel_url": f"{self.base_url}/?cancelled={order_id or ''}",
                 "customer_email": customer_email,
                 "line_items": [{
                     "quantity": 1,

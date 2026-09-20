@@ -1235,10 +1235,8 @@ async function poll(orderId, n) {
     const r = await fetch(API+`/api/orders/${orderId}/status`);
     if (!r.ok) throw new Error("Status check failed");
     const s = await r.json();
-    console.log(`[Poll ${n}] Order ${orderId} status:`, s.status);
 
     if (s.status === "delivered") {
-      console.log("Report delivered! Setting download URL:", s.download_url);
       const dlBtn = document.getElementById("dl");
       if (dlBtn) dlBtn.href = s.download_url;
       const tierPill = document.getElementById("deliveredTier");
@@ -1276,6 +1274,18 @@ async function poll(orderId, n) {
     if (n < 40) setTimeout(()=>poll(orderId, n+1), 3000);
   }
 }
+
+/* returning from hosted checkout, cancelled before paying (?cancelled=...) —
+   distinct from a successful return so we never show the "processing" spinner
+   for a payment that never happened (Stripe's cancel_url points here, not at
+   the same URL as success_url). */
+const cancelledOrder = new URLSearchParams(location.search).get("cancelled");
+if (cancelledOrder) window.addEventListener("DOMContentLoaded", () => {
+  history.replaceState(null, "", location.pathname);
+  document.getElementById("e1").textContent =
+    "Checkout was cancelled — no payment was taken. You're welcome to try again whenever you're ready.";
+  scrollIntoViewSettled(document.getElementById("orderFormView"));
+});
 
 /* returning from hosted checkout (?order=...) */
 const returnOrder = new URLSearchParams(location.search).get("order");

@@ -219,10 +219,15 @@ def create_order(o: OrderIn):
         raise HTTPException(400, "invalid birth date/time/timezone")
     focus = [f for f in o.focus_areas
              if f in ("personality", "love", "career", "growth")]
+    # An unrecognized coupon code shouldn't block checkout: the field is
+    # optional and its text is submitted as-is even if the visitor never
+    # pressed "Apply" (see the coupon UI in the frontend), so anything
+    # invalid here just falls back to full price rather than erroring out
+    # the whole order.
     try:
         amount_minor = _apply_coupon(orders.PRICES[o.tier][o.currency], o.coupon_code)
-    except ValueError as exc:
-        raise HTTPException(400, str(exc))
+    except ValueError:
+        amount_minor = orders.PRICES[o.tier][o.currency]
     order = orders.create_order(
         o.quiz_session_id, o.email, o.name, o.tier, o.currency,
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
