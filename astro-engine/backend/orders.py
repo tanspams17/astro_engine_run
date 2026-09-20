@@ -19,6 +19,9 @@ PRICES = {  # minor units, fixed at order creation — never recomputed mid-chec
     "western": {"USD": 1900},
     "vedic": {"USD": 1900},
     "mixed": {"USD": 2900},
+    "zodiac_compat": {"USD": 2400},
+    "vedic_compat": {"USD": 3000},
+    "mixed_compat": {"USD": 3900},
 }
 
 VALID_STATES = {"pending", "paid", "delivered", "fulfilment_failed", "failed", "refunded"}
@@ -56,6 +59,15 @@ CREATE TABLE IF NOT EXISTS orders (
     focus_areas TEXT NOT NULL,           -- comma-separated
     marketing_opt_in INTEGER NOT NULL DEFAULT 0,  -- unticked by default (GDPR/PECR)
     zodiac_insights_opt_in INTEGER NOT NULL DEFAULT 0,  -- separate consent, unticked by default
+    product_type TEXT NOT NULL DEFAULT 'individual',  -- 'individual' | 'compatibility'
+    partner_name TEXT,
+    partner_birth_date TEXT,
+    partner_birth_time TEXT,
+    partner_birth_place TEXT,
+    partner_lat REAL,
+    partner_lon REAL,
+    partner_tz TEXT,
+    partner_gender TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     payment_session_id TEXT, charge_id TEXT,
     download_token TEXT, pdf_path TEXT,
@@ -119,12 +131,20 @@ def init_db():
     with _conn() as c:
         c.executescript(SCHEMA)
         columns = {row[1] for row in c.execute("PRAGMA table_info(orders)")}
-        for column in ("fulfilment_error", "email_error", "phone"):
+        for column in ("fulfilment_error", "email_error", "phone",
+                       "partner_name", "partner_birth_date", "partner_birth_time",
+                       "partner_birth_place", "partner_tz", "partner_gender"):
             if column not in columns:
                 c.execute(f"ALTER TABLE orders ADD COLUMN {column} TEXT")
         if "zodiac_insights_opt_in" not in columns:
             c.execute("ALTER TABLE orders ADD COLUMN zodiac_insights_opt_in"
                       " INTEGER NOT NULL DEFAULT 0")
+        if "product_type" not in columns:
+            c.execute("ALTER TABLE orders ADD COLUMN product_type TEXT NOT NULL DEFAULT 'individual'")
+        if "partner_lat" not in columns:
+            c.execute("ALTER TABLE orders ADD COLUMN partner_lat REAL")
+        if "partner_lon" not in columns:
+            c.execute("ALTER TABLE orders ADD COLUMN partner_lon REAL")
 
 
 def _now() -> str:
@@ -165,7 +185,16 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
                  focus_areas: list[str], marketing_opt_in: bool,
                  gender: str = "unspecified", amount_minor: int | None = None,
                  phone: str | None = None,
-                 zodiac_insights_opt_in: bool = False) -> dict:
+                 zodiac_insights_opt_in: bool = False,
+                 product_type: str = "individual",
+                 partner_name: str | None = None,
+                 partner_birth_date: str | None = None,
+                 partner_birth_time: str | None = None,
+                 partner_birth_place: str | None = None,
+                 partner_lat: float | None = None,
+                 partner_lon: float | None = None,
+                 partner_tz: str | None = None,
+                 partner_gender: str | None = None) -> dict:
     if tier not in PRICES:
         raise ValueError(f"unknown tier {tier}")
     if currency not in PRICES[tier]:
@@ -179,12 +208,18 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
             "INSERT INTO orders (id, quiz_session_id, created_at, email, name,"
             " phone, tier, currency, amount_minor, birth_date, birth_time,"
             " gender, birth_place, lat, lon, tz, focus_areas,"
-            " marketing_opt_in, zodiac_insights_opt_in)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " marketing_opt_in, zodiac_insights_opt_in, product_type,"
+            " partner_name, partner_birth_date, partner_birth_time,"
+            " partner_birth_place, partner_lat, partner_lon, partner_tz,"
+            " partner_gender)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (oid, quiz_session_id, _now(), email, name, phone, tier, currency,
              amount, birth_date, birth_time, gender, birth_place, lat, lon,
              tz, ",".join(focus_areas), int(marketing_opt_in),
-             int(zodiac_insights_opt_in)))
+             int(zodiac_insights_opt_in), product_type,
+             partner_name, partner_birth_date, partner_birth_time,
+             partner_birth_place, partner_lat, partner_lon, partner_tz,
+             partner_gender))
         _upsert_customer(c, email, name, phone, marketing_opt_in,
                          zodiac_insights_opt_in)
     return get_order(oid)
