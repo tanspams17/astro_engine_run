@@ -697,6 +697,49 @@ def generate_report(name, birth_dt_local, tz_name, place_label, lat, lon,
 # ------------------------------------------------------------ compatibility
 
 
+def _compat_brief_profile(charts: dict[str, Chart], num: dict,
+                          needs_western: bool, needs_vedic: bool,
+                          time_known: bool) -> list[dict]:
+    """Condensed, single-paragraph-per-topic profile for one person inside
+    a compatibility report — deliberately not the full individual report:
+    core signs + core numbers only, reusing the same content library so the
+    tone matches the full reports."""
+    out: list[dict] = []
+    if needs_western and "western" in charts:
+        w = charts["western"]
+        sun, moon = w.get("Sun"), w.get("Moon")
+        out.append({"title": f"Sun in {sun.sign}", "body": cl.SUN_SIGNS[sun.sign]})
+        out.append({"title": f"Moon in {moon.sign}", "body": cl.MOON_SIGNS[moon.sign]})
+        if time_known and w.ascendant:
+            out.append({"title": f"Rising — {w.ascendant.sign}",
+                        "body": cl.RISING_SIGNS[w.ascendant.sign]})
+    if needs_vedic and "vedic" in charts:
+        v = charts["vedic"]
+        out.append({"title": f"Moon in {v.get('Moon').sign} (Vedic)",
+                    "body": cl.MOON_SIGNS[v.get("Moon").sign]})
+        if v.moon_nakshatra:
+            _, lord, passage = cv.NAKSHATRAS[v.moon_nakshatra]
+            out.append({"title": f"Birth Star — {v.moon_nakshatra} "
+                                 f"(ruled by {lord})", "body": passage})
+        current = next((d for d in v.dashas if d.current), None)
+        if current:
+            out.append({"title": f"Current Chapter — {current.lord} Mahadasha",
+                        "body": cv.DASHA_LORDS[current.lord]})
+    out.append({"title": f"Mulank {num['mulank']} — Psychic Number",
+               "body": cn_essence(num["mulank"])})
+    out.append({"title": f"Bhagyank {num['bhagyank']} — Destiny Number",
+               "body": cn_essence(num["bhagyank"])})
+    return out
+
+
+def cn_essence(n):
+    try:
+        from . import content_numerology as cn
+    except ImportError:
+        import content_numerology as cn
+    return cn.NUMBER_ESSENCE[n]
+
+
 def build_compatibility_report_context(order: dict) -> dict:
     try:
         from .numerology import compute_numerology
@@ -706,6 +749,8 @@ def build_compatibility_report_context(order: dict) -> dict:
         from compatibility_engine import zodiac_compare, guna_milan
 
     tier = order["tier"]
+    time_known_a = bool(order["birth_time"])
+    time_known_b = bool(order["partner_birth_time"])
     a_birth = dt.datetime.strptime(
         order["birth_date"] + " " + (order["birth_time"] or "12:00"), "%Y-%m-%d %H:%M")
     b_birth = dt.datetime.strptime(
@@ -719,15 +764,45 @@ def build_compatibility_report_context(order: dict) -> dict:
     b_charts = compute_charts(system, b_birth, order["partner_tz"],
                               order["partner_lat"], order["partner_lon"])
 
-    sections = []
+    num_a = compute_numerology(order["name"], a_birth.date(), order.get("gender", "unspecified"))
+    num_b = compute_numerology(order["partner_name"], b_birth.date(),
+                               order.get("partner_gender", "unspecified"))
 
+    sections = []
+    toc = []
+    sec_no = [0]
+
+    def h1(title, desc):
+        sec_no[0] += 1
+        toc.append({"title": title, "desc": desc})
+        return {"h1": title, "no": f"{sec_no[0]:02d}"}
+
+    # 01 at a glance
+    sections.append(h1("At a Glance", "Key placements and numbers, side by side"))
+    cmp_rows = []
     if needs_western:
-        num_a = compute_numerology(order["name"], a_birth.date(), order.get("gender", "unspecified"))
-        num_b = compute_numerology(order["partner_name"], b_birth.date(),
-                                   order.get("partner_gender", "unspecified"))
+        cmp_rows.append({"label": "Sun sign", "a": a_charts["western"].get("Sun").sign,
+                         "b": b_charts["western"].get("Sun").sign})
+    if needs_vedic:
+        vc_a, vc_b = a_charts["vedic"], b_charts["vedic"]
+        cmp_rows.append({"label": "Moon sign (Vedic)", "a": vc_a.get("Moon").sign,
+                         "b": vc_b.get("Moon").sign})
+        if vc_a.moon_nakshatra and vc_b.moon_nakshatra:
+            cmp_rows.append({"label": "Nakshatra", "a": vc_a.moon_nakshatra,
+                             "b": vc_b.moon_nakshatra})
+    else:
+        cmp_rows.append({"label": "Moon sign", "a": a_charts["western"].get("Moon").sign,
+                         "b": b_charts["western"].get("Moon").sign})
+    cmp_rows.append({"label": "Mulank", "a": str(num_a["mulank"]), "b": str(num_b["mulank"])})
+    cmp_rows.append({"label": "Bhagyank", "a": str(num_a["bhagyank"]), "b": str(num_b["bhagyank"])})
+    sections.append({"cmp": cmp_rows, "title": ""})
+
+    # 02 compatibility analysis
+    sections.append(h1("Compatibility Analysis",
+                       "How your signs, numbers, and stars interact"))
+    if needs_western:
         sun_a = a_charts["western"].get("Sun").sign
         sun_b = b_charts["western"].get("Sun").sign
-        sections.append({"h1": "Zodiac & Numerology Compatibility", "no": "01"})
         sections += zodiac_compare(num_a, sun_a, num_b, sun_b)
 
     guna = None
@@ -735,17 +810,23 @@ def build_compatibility_report_context(order: dict) -> dict:
         vc_a, vc_b = a_charts["vedic"], b_charts["vedic"]
         guna = guna_milan(vc_a.get("Moon").sign, vc_a.moon_nakshatra,
                           vc_b.get("Moon").sign, vc_b.moon_nakshatra)
-        sections.append({"h1": "Vedic Guna Milan (Ashtakoota Matching)",
-                         "no": "02" if needs_western else "01"})
-        sections.append({"guna": guna, "title": "Your Compatibility Score"})
-        for k in guna["kootas"]:
-            sections.append({"title": f"{k['name']} ({k['score']}/{k['max']})", "body": k["note"]})
+        sections.append({"guna": guna, "title": "Vedic Guna Milan (Ashtakoota Matching)"})
+
+    # 03/04 brief individual profiles
+    sections.append(h1(f"Brief Profile — {order['name']}",
+                       "Their core signs and numbers"))
+    sections += _compat_brief_profile(a_charts, num_a, needs_western, needs_vedic, time_known_a)
+
+    sections.append(h1(f"Brief Profile — {order['partner_name']}",
+                       "Their core signs and numbers"))
+    sections += _compat_brief_profile(b_charts, num_b, needs_western, needs_vedic, time_known_b)
 
     return {
         "tier": tier, "tier_name": COMPAT_TIER_NAMES[tier],
         "name": order["name"], "partner_name": order["partner_name"],
         "generated": dt.date.today().strftime("%d %B %Y"),
-        "sections": sections, "guna_summary": guna,
+        "sections": sections, "toc": toc, "guna_summary": guna,
+        "closing": cl.CLOSING,
     }
 
 
