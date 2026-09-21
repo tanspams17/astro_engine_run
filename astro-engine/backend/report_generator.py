@@ -726,13 +726,16 @@ def _compat_brief_profile(charts: dict[str, Chart], num: dict,
             out.append({"title": f"Current Chapter — {current.lord} Mahadasha",
                         "body": cv.DASHA_LORDS[current.lord]})
     out.append({"title": f"Mulank {num['mulank']} — Psychic Number",
-               "body": cn_essence(num["mulank"])})
+               "body": f"Yours is {num['mulank']}, " + cn_essence(num["mulank"])})
     out.append({"title": f"Bhagyank {num['bhagyank']} — Destiny Number",
-               "body": cn_essence(num["bhagyank"])})
+               "body": f"Yours is {num['bhagyank']}, " + cn_essence(num["bhagyank"])})
     return out
 
 
 def cn_essence(n):
+    # NUMBER_ESSENCE entries are written to continue a "Yours is N, "
+    # lead-in (some start lowercase, e.g. "the Moon's number...") — never
+    # used standalone as a sentence opener.
     try:
         from . import content_numerology as cn
     except ImportError:

@@ -76,6 +76,13 @@
   .lucky-card .total { text-align: center; font-family: Georgia, serif; font-size: 26pt;
                         color: #c9b458; margin: 2mm 0 4mm; }
   .lucky-card .total .max { font-size: 12pt; color: #cfc4ec; }
+  /* dark-card table override: the page-level zebra striping (light
+     background for even rows) is meant for the beige body pages and is
+     unreadable against this card's dark gradient — light text on a near-
+     white row. Restyle the table fully for the dark context instead. */
+  .lucky-card table.kootas th { background: rgba(0,0,0,0.22); color: #c9b458; }
+  .lucky-card table.kootas td { color: #efe9fc; border-bottom: 0.5pt solid rgba(255,255,255,0.18); }
+  .lucky-card table.kootas tr:nth-child(even) td { background: rgba(255,255,255,0.06); }
   .closing { background: #1a1333; color: #efe9fc; padding: 6mm 7mm; margin-top: 8mm;
              border-radius: 2mm; }
   .closing h2 { color: #c9b458; margin-top: 0; }
@@ -89,7 +96,7 @@
   <div class="cover-frame"></div><div class="cover-frame2"></div>
   <div class="cover-inner">
     <div class="brand">A R V E L O S</div>
-    <div class="om">॥ Two Charts · One Question ॥</div>
+    <div class="om">✦ Two Charts · One Question ✦</div>
     <h1>Compatibility<br>Report</h1>
     <div class="sub">{{ tier_name }}</div>
     <img class="ring" src="cover_emblem.png">
