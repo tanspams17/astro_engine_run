@@ -10,14 +10,17 @@
   .cover h1 { font-size: 30pt; margin: 8mm 0; }
   .cover .names { font-size: 18pt; color: #5a3c1a; margin-top: 6mm; }
   .cover .sub { font-size: 11pt; color: #7a6a52; margin-top: 4mm; }
-  h1.section { font-size: 18pt; color: #5a3c1a; border-bottom: 1pt solid #d4920a; padding-bottom: 3mm; margin-top: 14mm; }
-  .section-body { margin: 6mm 0; }
+  h1.section { font-size: 18pt; color: #5a3c1a; border-bottom: 1pt solid #d4920a; padding-bottom: 3mm; margin-top: 14mm; page-break-after: avoid; }
+  .section-body { margin: 6mm 0; page-break-inside: avoid; }
   .section-body h2 { font-size: 13pt; margin-bottom: 2mm; }
   .section-body p { font-size: 10.5pt; line-height: 1.5; }
   .guna-total { text-align: center; font-size: 22pt; color: #d4920a; margin: 8mm 0; }
   .guna-total .max { font-size: 12pt; color: #7a6a52; }
-  table.kootas { width: 100%; border-collapse: collapse; margin: 6mm 0; }
+  table.kootas { width: 100%; border-collapse: collapse; margin: 6mm 0; table-layout: fixed; }
   table.kootas th, table.kootas td { border: 0.5pt solid #d9cbb0; padding: 2mm 3mm; font-size: 9.5pt; text-align: left; }
+  table.kootas th:first-child, table.kootas td:first-child { width: 24mm; white-space: nowrap; }
+  table.kootas th:nth-child(2), table.kootas td:nth-child(2) { width: 18mm; }
+  table.kootas tr { page-break-inside: avoid; }
 </style>
 </head>
 <body>

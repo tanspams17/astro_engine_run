@@ -51,6 +51,10 @@ ELEMENT_HARMONY = {
 }
 
 
+def _article(sign: str) -> str:
+    return "an" if sign[0] in "AEIOU" else "a"
+
+
 def zodiac_compare(num_a: dict, sun_sign_a: str, num_b: dict, sun_sign_b: str) -> list[dict]:
     out = []
 
@@ -72,8 +76,9 @@ def zodiac_compare(num_a: dict, sun_sign_a: str, num_b: dict, sun_sign_b: str) -
     harmony = ELEMENT_HARMONY[frozenset({elem_a, elem_b})]
     out.append({
         "title": "Zodiac — Elemental Compatibility",
-        "body": (f"You're a {sun_sign_a} Sun ({elem_a}), they're a {sun_sign_b} Sun "
-                 f"({elem_b}). {harmony.capitalize()}."),
+        "body": (f"You're {_article(sun_sign_a)} {sun_sign_a} Sun ({elem_a}), "
+                 f"they're {_article(sun_sign_b)} {sun_sign_b} Sun ({elem_b}). "
+                 f"{harmony.capitalize()}."),
     })
 
     mode_a, mode_b = MODES[sun_sign_a], MODES[sun_sign_b]
