@@ -79,10 +79,12 @@
   /* dark-card table override: the page-level zebra striping (light
      background for even rows) is meant for the beige body pages and is
      unreadable against this card's dark gradient — light text on a near-
-     white row. Restyle the table fully for the dark context instead. */
-  .lucky-card table.kootas th { background: rgba(0,0,0,0.22); color: #c9b458; }
-  .lucky-card table.kootas td { color: #efe9fc; border-bottom: 0.5pt solid rgba(255,255,255,0.18); }
-  .lucky-card table.kootas tr:nth-child(even) td { background: rgba(255,255,255,0.06); }
+     white row. Restyle every table inside a lucky-card for the dark
+     context instead (not just .kootas — the zodiac score card uses a
+     plain table here too and hits the exact same contrast bug). */
+  .lucky-card table th { background: rgba(0,0,0,0.22); color: #c9b458; }
+  .lucky-card table td { color: #efe9fc; border-bottom: 0.5pt solid rgba(255,255,255,0.18); }
+  .lucky-card table tr:nth-child(even) td { background: rgba(255,255,255,0.06); }
   .closing { background: #1a1333; color: #efe9fc; padding: 6mm 7mm; margin-top: 8mm;
              border-radius: 2mm; }
   .closing h2 { color: #c9b458; margin-top: 0; }
@@ -138,14 +140,14 @@
         {% for r in s.cmp %}<tr><td class="k">{{ r.label }}</td><td>{{ r.a }}</td><td>{{ r.b }}</td></tr>{% endfor %}
       </table>
     </div>
-  {% elif s.guna is defined %}
+  {% elif s.score_card is defined %}
     <div class="lucky-card">
       <h2>{{ s.title }}</h2>
-      <div class="total">{{ s.guna.total }} <span class="max">/ {{ s.guna.max_total }}</span></div>
-      <table class="kootas">
-        <tr><th>Koota</th><th>Score</th><th>Note</th></tr>
-        {% for k in s.guna.kootas %}
-        <tr><td>{{ k.name }}</td><td>{{ k.score }}/{{ k.max }}</td><td>{{ k.note }}</td></tr>
+      <div class="total">{{ s.score_card.total }} <span class="max">/ {{ s.score_card.max }}</span></div>
+      <table class="{{ 'kootas' if s.score_card.rows[0].note is defined else '' }}">
+        <tr><th>{{ "Koota" if s.score_card.rows[0].note is defined else "" }}</th><th>Score</th>{% if s.score_card.rows[0].note is defined %}<th>Note</th>{% endif %}</tr>
+        {% for r in s.score_card.rows %}
+        <tr><td>{{ r.label }}</td><td>{{ r.value }}</td>{% if r.note is defined %}<td>{{ r.note }}</td>{% endif %}</tr>
         {% endfor %}
       </table>
     </div>

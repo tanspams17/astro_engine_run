@@ -782,7 +782,8 @@ def build_compatibility_report_context(order: dict) -> dict:
 
     # 01 at a glance
     sections.append(h1("At a Glance", "Key placements and numbers, side by side"))
-    cmp_rows = []
+    cmp_rows = [{"label": "Date of birth", "a": a_birth.strftime("%d %B %Y"),
+                "b": b_birth.strftime("%d %B %Y")}]
     if needs_western:
         cmp_rows.append({"label": "Sun sign", "a": a_charts["western"].get("Sun").sign,
                          "b": b_charts["western"].get("Sun").sign})
@@ -806,14 +807,22 @@ def build_compatibility_report_context(order: dict) -> dict:
     if needs_western:
         sun_a = a_charts["western"].get("Sun").sign
         sun_b = b_charts["western"].get("Sun").sign
-        sections += zodiac_compare(num_a, sun_a, num_b, sun_b)
+        zodiac_sections, zodiac_score = zodiac_compare(
+            order["name"], num_a, sun_a, order["partner_name"], num_b, sun_b)
+        sections.append({"score_card": zodiac_score,
+                         "title": "Numerology & Zodiac Match"})
+        sections += zodiac_sections
 
     guna = None
     if needs_vedic:
         vc_a, vc_b = a_charts["vedic"], b_charts["vedic"]
         guna = guna_milan(vc_a.get("Moon").sign, vc_a.moon_nakshatra,
                           vc_b.get("Moon").sign, vc_b.moon_nakshatra)
-        sections.append({"guna": guna, "title": "Vedic Guna Milan (Ashtakoota Matching)"})
+        guna_score = {"total": guna["total"], "max": guna["max_total"],
+                     "rows": [{"label": k["name"], "value": f"{k['score']}/{k['max']}",
+                              "note": k["note"]} for k in guna["kootas"]]}
+        sections.append({"score_card": guna_score,
+                         "title": "Vedic Guna Milan (Ashtakoota Matching)"})
 
     # 03/04 brief individual profiles
     sections.append(h1(f"Brief Profile — {order['name']}",

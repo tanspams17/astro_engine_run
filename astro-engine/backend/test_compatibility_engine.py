@@ -11,18 +11,23 @@ except ImportError:
 def test_zodiac_compare_friendly_numbers():
     num_a = {"mulank": 1, "bhagyank": 3}   # 3 is in FRIENDS[1]
     num_b = {"mulank": 3, "bhagyank": 1}
-    sections = ce.zodiac_compare(num_a, "Aries", num_b, "Leo")
+    sections, score = ce.zodiac_compare("Ava", num_a, "Aries", "Rahul", num_b, "Leo")
     assert any("numerology" in s["title"].lower() for s in sections)
     numerology_section = next(s for s in sections if "numerology" in s["title"].lower())
     assert "harmoni" in numerology_section["body"].lower() or "friend" in numerology_section["body"].lower()
+    assert "Ava" in numerology_section["body"] and "Rahul" in numerology_section["body"]
+    assert 0 < score["total"] <= score["max"]
 
 
 def test_zodiac_compare_same_element():
     num_a = {"mulank": 1, "bhagyank": 1}
     num_b = {"mulank": 1, "bhagyank": 1}
-    sections = ce.zodiac_compare(num_a, "Aries", num_b, "Leo")  # both Fire
+    sections, score = ce.zodiac_compare("Ava", num_a, "Aries", "Rahul", num_b, "Leo")  # both Fire
     zodiac_section = next(s for s in sections if "zodiac" in s["title"].lower())
     assert "fire" in zodiac_section["body"].lower()
+    assert "Ava" in zodiac_section["body"] and "Rahul" in zodiac_section["body"]
+    # same mulank + same element should score at the top of the scale
+    assert score["total"] == score["max"]
 
 
 def test_guna_milan_same_nakshatra_scores_high():

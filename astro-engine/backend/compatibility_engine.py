@@ -55,15 +55,31 @@ def _article(sign: str) -> str:
     return "an" if sign[0] in "AEIOU" else "a"
 
 
-def zodiac_compare(num_a: dict, sun_sign_a: str, num_b: dict, sun_sign_b: str) -> list[dict]:
+# Numeric scoring so the Western side has a headline number of its own,
+# the same way Guna Milan does for the Vedic side. Not a classical
+# tradition (Western astrology doesn't score compatibility numerically the
+# way Vedic matching does) — a transparent, documented point system over
+# the same two comparisons already described in prose below.
+ELEMENT_SCORE = {
+    frozenset({"Fire", "Fire"}): 5, frozenset({"Air", "Air"}): 5,
+    frozenset({"Earth", "Earth"}): 5, frozenset({"Water", "Water"}): 5,
+    frozenset({"Fire", "Air"}): 4, frozenset({"Earth", "Water"}): 4,
+    frozenset({"Fire", "Water"}): 2, frozenset({"Fire", "Earth"}): 2,
+    frozenset({"Air", "Water"}): 2, frozenset({"Air", "Earth"}): 2,
+}
+
+
+def zodiac_compare(name_a: str, num_a: dict, sun_sign_a: str,
+                   name_b: str, num_b: dict, sun_sign_b: str) -> tuple[list[dict], dict]:
     out = []
 
     friends_a = FRIENDS[num_a["mulank"]]
-    numerology_friendly = (num_b["mulank"] in friends_a
-                           or num_b["mulank"] == num_a["mulank"])
+    same_mulank = num_b["mulank"] == num_a["mulank"]
+    numerology_friendly = same_mulank or num_b["mulank"] in friends_a
+    numerology_score = 5 if same_mulank else (4 if numerology_friendly else 2)
     out.append({
-        "title": "Numerology — Your Core Numbers",
-        "body": (f"Your Mulank is {num_a['mulank']}, theirs is {num_b['mulank']}. "
+        "title": "Numerology — Core Numbers",
+        "body": (f"{name_a}'s Mulank is {num_a['mulank']}, {name_b}'s is {num_b['mulank']}. "
                  + ("These numbers are traditionally friendly with each other — a "
                     "harmonious pairing that tends to work with less friction than most."
                     if numerology_friendly else
@@ -74,25 +90,34 @@ def zodiac_compare(num_a: dict, sun_sign_a: str, num_b: dict, sun_sign_b: str) -
 
     elem_a, elem_b = ELEMENTS[sun_sign_a], ELEMENTS[sun_sign_b]
     harmony = ELEMENT_HARMONY[frozenset({elem_a, elem_b})]
+    elemental_score = ELEMENT_SCORE[frozenset({elem_a, elem_b})]
     out.append({
         "title": "Zodiac — Elemental Compatibility",
-        "body": (f"You're {_article(sun_sign_a)} {sun_sign_a} Sun ({elem_a}), "
-                 f"they're {_article(sun_sign_b)} {sun_sign_b} Sun ({elem_b}). "
+        "body": (f"{name_a} is {_article(sun_sign_a)} {sun_sign_a} Sun ({elem_a}), "
+                 f"{name_b} is {_article(sun_sign_b)} {sun_sign_b} Sun ({elem_b}). "
                  f"{harmony.capitalize()}."),
     })
 
     mode_a, mode_b = MODES[sun_sign_a], MODES[sun_sign_b]
     if mode_a == mode_b:
-        mode_text = (f"You're both {mode_a} signs, which means you tend to move through "
-                     f"life the same way — {'both natural starters' if mode_a=='Cardinal' else ('both built for the long haul' if mode_a=='Fixed' else 'both comfortable adapting as you go')}. "
+        mode_text = (f"{name_a} and {name_b} are both {mode_a} signs, which means they tend "
+                     f"to move through life the same way — "
+                     f"{'both natural starters' if mode_a=='Cardinal' else ('both built for the long haul' if mode_a=='Fixed' else 'both comfortable adapting as you go')}. "
                      "Comfortable, though two people pulling the same direction can also mean "
                      "nobody's covering the other approach.")
     else:
-        mode_text = (f"You're {mode_a}, they're {mode_b} — different operating rhythms "
-                     "that, read well, cover each other's blind spots rather than clash.")
-    out.append({"title": "Zodiac — How You Each Move Through Life", "body": mode_text})
+        mode_text = (f"{name_a} is {mode_a}, {name_b} is {mode_b} — different operating "
+                     "rhythms that, read well, cover each other's blind spots rather than clash.")
+    out.append({"title": "Zodiac — How They Each Move Through Life", "body": mode_text})
 
-    return out
+    score = {
+        "total": numerology_score + elemental_score, "max": 10,
+        "rows": [
+            {"label": "Numerology (Mulank)", "value": f"{numerology_score}/5"},
+            {"label": "Elemental harmony", "value": f"{elemental_score}/5"},
+        ],
+    }
+    return out, score
 
 
 # ---------------------------------------------------------------- Guna Milan
