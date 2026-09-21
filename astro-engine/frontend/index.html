@@ -137,6 +137,9 @@
     border-radius:999px; border:1px solid var(--surface-border-strong); color:var(--gold-light); }
   .price-card.sel .choose { background:linear-gradient(135deg,var(--gold),var(--gold-light));
     color:#241505; border-color:transparent; }
+  .price-card .compat-upsell { display:block; text-align:center; margin-top:14px;
+    font-family:var(--sans); font-size:12.5px; color:var(--lavender); text-decoration:none; }
+  .price-card .compat-upsell:hover { color:var(--gold-light); }
   .badge { position:absolute; top:-12px; right:22px; background:linear-gradient(135deg,var(--gold),var(--gold-light));
     color:#241505; font-size:11px; font-weight:700; letter-spacing:.04em; padding:5px 12px;
     border-radius:999px; text-transform:uppercase; box-shadow:0 4px 14px rgba(212,146,10,0.4); }
@@ -357,6 +360,7 @@
           <li>18–22 page report</li>
         </ul>
         <div class="choose">Choose Western</div>
+        <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)">+ Add a Partner Compatibility Check →</a>
       </div>
         <div class="card price-card" data-tier="vedic" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('vedic')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('vedic')}">
         <h3>Vedic</h3>
@@ -368,6 +372,7 @@
           <li>20–25 page report</li>
         </ul>
         <div class="choose">Choose Vedic</div>
+        <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)">+ Add a Partner Compatibility Check →</a>
       </div>
         <div class="card price-card" data-tier="mixed" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('mixed')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('mixed')}">
         <span class="badge">Most chosen</span>
@@ -380,6 +385,7 @@
           <li>32+ page report</li>
         </ul>
         <div class="choose">Choose Mixed</div>
+        <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)">+ Add a Partner Compatibility Check →</a>
       </div>
     </div>
   </div>
@@ -808,6 +814,10 @@ addEventListener('scroll', () => {
 });
 
 function scrollToOrder(){ document.getElementById('order').scrollIntoView({behavior:'smooth'}); }
+function scrollToCompatibility(ev){
+  if (ev) ev.stopPropagation();  // don't also trigger the pricing card's own onclick
+  document.getElementById('compatibility').scrollIntoView({behavior:'smooth'});
+}
 
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
