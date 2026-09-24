@@ -17,14 +17,14 @@ DB_PATH = os.environ.get("ARVELOS_DB", os.path.join(
 
 PRICES = {  # minor units, fixed at order creation — never recomputed mid-checkout
     # GBP set 2026-09-24 per the account owner's fixed price list (own
-    # currency, no FX conversion for UK visitors). Note the owner's list
-    # gives one GBP price per row regardless of Western/Vedic, so
-    # zodiac_compat and vedic_compat share a GBP price even though their
-    # USD/INR prices differ from each other.
+    # currency, no FX conversion for UK visitors): one price per row
+    # regardless of Western/Vedic, so zodiac_compat and vedic_compat
+    # share a GBP price (and, per the same 2026-09-24 decision, an INR
+    # price too) — only USD still prices them apart ($24 / $30).
     "western": {"USD": 1900, "INR": 99900, "GBP": 799},
     "vedic": {"USD": 1900, "INR": 99900, "GBP": 799},
     "mixed": {"USD": 2900, "INR": 149900, "GBP": 1199},
-    "zodiac_compat": {"USD": 2400, "INR": 99900, "GBP": 1499},
+    "zodiac_compat": {"USD": 2400, "INR": 149900, "GBP": 1499},
     "vedic_compat": {"USD": 3000, "INR": 149900, "GBP": 1499},
     "mixed_compat": {"USD": 3900, "INR": 199900, "GBP": 1999},
 }
