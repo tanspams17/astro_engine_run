@@ -1384,13 +1384,16 @@ if ("IntersectionObserver" in window) {
   const listSeen = new IntersectionObserver(entries => entries.forEach(e => {
     if (!e.isIntersecting) return;
     listSeen.unobserve(e.target);
-    const compat = e.target.id === "compatibility";
+    const compat = e.target.closest("#compatibility") !== null;
     const tiers = compat ? ["zodiac_compat","vedic_compat","mixed_compat"] : ["western","vedic","mixed"];
     track("view_item_list", {item_list_id: compat ? "compatibility" : "individual",
                              currency, items: tiers.map(gaItem)});
-  }), {threshold: 0.3});
+  }), {threshold: 0.5});
+  // watch the first price card of each grid: whole sections can be taller
+  // than a phone screen, so a section-level threshold might never be met
   window.addEventListener("DOMContentLoaded", () =>
-    ["pricing","compatibility"].forEach(id => listSeen.observe(document.getElementById(id))));
+    ["#pricingGrid .price-card", "#compatPricingGrid .price-card"].forEach(sel =>
+      listSeen.observe(document.querySelector(sel))));
 }
 
 fetch(API+"/api/prices").then(r=>r.json()).then(data=>{
