@@ -16,12 +16,12 @@ DB_PATH = os.environ.get("ARVELOS_DB", os.path.join(
     os.path.dirname(__file__), "..", "data", "arvelos.db"))
 
 PRICES = {  # minor units, fixed at order creation — never recomputed mid-checkout
-    "western": {"USD": 1900},
-    "vedic": {"USD": 1900},
-    "mixed": {"USD": 2900},
-    "zodiac_compat": {"USD": 2400},
-    "vedic_compat": {"USD": 3000},
-    "mixed_compat": {"USD": 3900},
+    "western": {"USD": 1900, "INR": 99900},
+    "vedic": {"USD": 1900, "INR": 99900},
+    "mixed": {"USD": 2900, "INR": 149900},
+    "zodiac_compat": {"USD": 2400, "INR": 99900},
+    "vedic_compat": {"USD": 3000, "INR": 149900},
+    "mixed_compat": {"USD": 3900, "INR": 199900},
 }
 
 VALID_STATES = {"pending", "paid", "delivered", "fulfilment_failed", "failed", "refunded"}

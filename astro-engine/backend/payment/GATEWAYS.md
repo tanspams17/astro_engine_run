@@ -1,17 +1,20 @@
 # Going live: Stripe
 
-Arvelos sells in **USD only**, via Stripe. `OrderIn.currency` and
-`CouponCheckIn.currency` in `app.py` are pinned to `"USD"` — the site used
-to also support INR via Razorpay with regional pricing, picked by a
-client-supplied currency (a frontend toggle, or any direct API call).
-That let anyone check out at the India-specific discounted price
-regardless of where they actually were, so it was removed rather than
-just hidden: there's no currency parameter left to tamper with, and
-`razorpay_adapter.py` no longer exists.
+Arvelos sells via Stripe in **USD, or INR for visitors in India**. The
+currency is chosen on the server from the visitor's IP
+(`geo.pricing_currency()`); `/api/prices`, `/api/coupon/check` and
+`/api/orders` all use it and ignore any `currency` the client sends. INR
+prices live next to USD in `orders.PRICES`.
+
+History: the site once had an INR/Razorpay path where the *client* picked
+the currency (a frontend toggle, or any direct API call), so anyone could
+check out at the India price. That was removed on 2026-09-20; INR came back
+on 2026-09-24 as a server-decided currency on Stripe, with no toggle.
+Razorpay is not used. Indian cards need international/online transactions
+enabled, since the charge is processed by a UK company.
 
 Falls back to `mock_adapter.py` (dummy payment, real report) automatically
-whenever `STRIPE_API_KEY` isn't set — there's no "flip a switch" step,
-adding the key activates it immediately.
+whenever `STRIPE_API_KEY` isn't set.
 
 ## Stripe
 

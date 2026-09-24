@@ -71,13 +71,12 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ------------------------------------------------------------ payment gateway
 #
-# Stripe only — USD is the only currency the site sells in. (There used
-# to be a second, INR/Razorpay path with its own regional pricing, picked
-# per order by a client-supplied currency; that let anyone — via the
-# frontend's currency toggle, or just by calling the API directly with
-# currency="INR" — check out at the India-specific discounted price
-# regardless of where they actually were. Removed, not just hidden:
-# OrderIn/CouponCheckIn below now only accept "USD".) Falls back to the
+# Stripe only. Visitors in India are priced and charged in INR, everyone
+# else in USD; the currency is decided server-side from the visitor's IP
+# (geo.pricing_currency) and never taken from the client. (An earlier
+# INR/Razorpay path let the client pick the currency, so anyone could
+# check out at the India price; any `currency` a client still sends is
+# now ignored.) Falls back to the
 # mock adapter automatically if STRIPE_API_KEY isn't configured, so the
 # site stays fully functional (dummy payment, real report) before go-live.
 # PAYMENT_PROVIDER=mock forces mock regardless (useful for staging).
@@ -148,7 +147,9 @@ class OrderIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     phone: str | None = Field(default=None, max_length=32)  # optional, support reference only
     tier: str = Field(pattern=ALL_TIERS_PATTERN)
-    currency: str = Field(pattern="^USD$")  # Stripe/USD only — see get_adapter() above
+    # Ignored: currency is set server-side from the visitor's IP (see
+    # geo.pricing_currency). Kept optional so older clients don't break.
+    currency: str | None = Field(default=None, max_length=3)
     coupon_code: str | None = Field(default=None, max_length=40)
     birth_date: str = Field(max_length=10)          # YYYY-MM-DD
     birth_time: str | None = Field(default=None, max_length=5)   # HH:MM, or None if unknown
@@ -198,7 +199,7 @@ class PayIn(BaseModel):
 
 class CouponCheckIn(BaseModel):
     tier: str = Field(pattern=ALL_TIERS_PATTERN)
-    currency: str = Field(pattern="^USD$")
+    currency: str | None = Field(default=None, max_length=3)  # ignored, see OrderIn
     coupon_code: str = Field(min_length=1, max_length=40)
 
 
@@ -228,22 +229,28 @@ def config():
 
 @app.get("/api/geo")
 def geo_lookup(request: Request):
-    # Country is still detected for the phone-country-code default in the
-    # order form — it no longer drives pricing/currency (see get_adapter()).
+    # Phone-country-code default in the order form. Pricing currency comes
+    # from /api/prices, decided by the same IP lookup.
     country = geo.country_for_ip(geo.client_ip(request))
     return {"country": country}
 
 
+CURRENCY_SYMBOL = {"USD": "$", "INR": "₹"}
+
+
 @app.get("/api/prices")
-def prices():
-    return orders.PRICES
+def prices(request: Request):
+    currency = geo.pricing_currency(request)
+    return {"currency": currency, "symbol": CURRENCY_SYMBOL[currency],
+            "prices": {tier: by_cur[currency]
+                       for tier, by_cur in orders.PRICES.items()}}
 
 
 @app.post("/api/coupon/check")
-def coupon_check(c: CouponCheckIn):
-    """Read-only — lets the checkout form validate a code and preview the
+def coupon_check(c: CouponCheckIn, request: Request):
+    """Read-only: lets the checkout form validate a code and preview the
     resulting price before the customer commits to an order."""
-    base = orders.PRICES[c.tier][c.currency]
+    base = orders.PRICES[c.tier][geo.pricing_currency(request)]
     try:
         amount_minor = _apply_coupon(base, c.coupon_code)
     except ValueError:
@@ -264,7 +271,7 @@ def quiz_complete(session_id: str):
 
 
 @app.post("/api/orders")
-def create_order(o: OrderIn):
+def create_order(o: OrderIn, request: Request):
     # validate birth datetime + tz early, so payment never precedes a
     # chart we can't calculate
     try:
@@ -296,12 +303,13 @@ def create_order(o: OrderIn):
     # pressed "Apply" (see the coupon UI in the frontend), so anything
     # invalid here just falls back to full price rather than erroring out
     # the whole order.
+    currency = geo.pricing_currency(request)
     try:
-        amount_minor = _apply_coupon(orders.PRICES[o.tier][o.currency], o.coupon_code)
+        amount_minor = _apply_coupon(orders.PRICES[o.tier][currency], o.coupon_code)
     except ValueError:
-        amount_minor = orders.PRICES[o.tier][o.currency]
+        amount_minor = orders.PRICES[o.tier][currency]
     order = orders.create_order(
-        o.quiz_session_id, o.email, o.name, o.tier, o.currency,
+        o.quiz_session_id, o.email, o.name, o.tier, currency,
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
         o.tz, focus, o.marketing_opt_in, o.gender,
         amount_minor=amount_minor, phone=o.phone,

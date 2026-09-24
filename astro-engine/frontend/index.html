@@ -65,6 +65,8 @@
   .navlinks { display:flex; gap:30px; font-size:14px; color:var(--lavender); }
   .navlinks a { color:var(--lavender); text-decoration:none; transition:color .2s; white-space:nowrap; }
   .nl-short { display:none; }
+  /* price amounts stay hidden until /api/prices says which currency to show */
+  body:not(.prices-ready) [data-amt] { visibility:hidden; }
   /* keep anchored sections clear of the fixed nav when jumped to */
   section[id] { scroll-margin-top:80px; }
   .navlinks a:hover { color:var(--gold-light); }
@@ -499,6 +501,9 @@
           <p class="legal full" id="hostednote" style="display:none">You'll be taken to our
             payment provider's secure page to complete the payment, then brought straight back
             here for your report.</p>
+          <p class="legal full india-card-note" style="display:none">Paying with an Indian
+            card? Make sure international / online transactions are switched on in your bank
+            app, as the payment is processed by our UK company.</p>
 
           <div class="full newsletter-box">
             <input type="checkbox" id="optin">
@@ -679,6 +684,9 @@
           <p class="legal full" id="compatHostednote" style="display:none">You'll be taken to our
             payment provider's secure page to complete the payment, then brought straight back
             here for your report.</p>
+          <p class="legal full india-card-note" style="display:none">Paying with an Indian
+            card? Make sure international / online transactions are switched on in your bank
+            app, as the payment is processed by our UK company.</p>
           <p class="legal full">One-time payment. No subscription or recurring charge of any kind.
             By purchasing you agree to the <a href="/terms.html" target="_blank">Terms &amp; Refund
             Policy</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. Your and your
@@ -852,11 +860,12 @@ function scrollToCompatibility(ev){
 
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
-// USD only — no currency selection, client or server-side (a prior INR
-// toggle let anyone check out at the India-specific discounted price
-// regardless of where they actually were; see backend/payment/GATEWAYS.md).
+// Currency is decided by the server from the visitor's IP (INR in India,
+// USD elsewhere) and reported by /api/prices; the browser only displays it.
+// There is deliberately no currency toggle, and the server ignores any
+// currency sent back with an order.
 let quizSession = null, tier = null, chosenPlace = null, quizCompleteSent = false;
-const currency = "USD";
+let currency = "USD";
 let activeOrderId = null;
 let PROVIDER = "mock";
 
@@ -1333,23 +1342,26 @@ const compatPlaceB = makeCityAutocomplete("bplaceB", "citySuggestionsB", "cityHi
 
 const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
 
-/* ---- pricing (USD only) ---- */
+/* ---- pricing (currency set by the server, see /api/prices) ---- */
 let PRICES = {western:[19,"$"], vedic:[19,"$"], mixed:[29,"$"],
               zodiac_compat:[24,"$"], vedic_compat:[30,"$"], mixed_compat:[39,"$"]};
 const TIER_LABEL = {western:"Western", vedic:"Vedic", mixed:"Mixed",
                     zodiac_compat:"Zodiac Compatibility", vedic_compat:"Vedic Compatibility",
                     mixed_compat:"Combined Compatibility"};
 
-fetch(API+"/api/prices").then(r=>r.json()).then(serverPrices=>{
-  for (const [name, values] of Object.entries(serverPrices))
-    if (values.USD !== undefined) PRICES[name] = [values.USD / 100, "$"];
+fetch(API+"/api/prices").then(r=>r.json()).then(data=>{
+  currency = data.currency;
+  for (const [name, minor] of Object.entries(data.prices))
+    PRICES[name] = [minor / 100, data.symbol];
+  document.querySelectorAll(".india-card-note").forEach(el =>
+    el.style.display = currency === "INR" ? "block" : "none");
   paintPricing();
-}).catch(()=>{});
+}).catch(()=>{}).finally(()=>document.body.classList.add("prices-ready"));
 
 function paintPricing() {
   document.querySelectorAll("#pricingGrid .price-card, #compatPricingGrid .price-card").forEach(el => {
     const [amt,sym] = PRICES[el.dataset.tier];
-    el.querySelector("[data-amt]").textContent = sym + amt.toLocaleString("en-US");
+    el.querySelector("[data-amt]").textContent = sym + amt.toLocaleString(currency === "INR" ? "en-IN" : "en-US");
   });
   paintSummary();
   paintCompatSummary();
@@ -1374,7 +1386,7 @@ function paintSummary() {
   if (!tier) { document.getElementById("sumTier").textContent = "Select a report";
     document.getElementById("sumAmt").textContent = "—"; return; }
   const [amt,sym] = PRICES[tier];
-  const full = sym + amt.toLocaleString("en-US");
+  const full = sym + amt.toLocaleString(currency === "INR" ? "en-IN" : "en-US");
   document.getElementById("sumTier").textContent = TIER_LABEL[tier] + " report";
   document.getElementById("sumAmt").innerHTML = appliedCoupon
     ? `<span class="strike">${full}</span>FREE`
@@ -1444,7 +1456,7 @@ function paintCompatSummary() {
   if (!compatTier) { sumTier.textContent = "Select a report";
     document.getElementById("compatSumAmt").textContent = "—"; return; }
   const [amt, sym] = PRICES[compatTier];
-  const full = sym + amt.toLocaleString("en-US");
+  const full = sym + amt.toLocaleString(currency === "INR" ? "en-IN" : "en-US");
   sumTier.textContent = TIER_LABEL[compatTier] + " report";
   document.getElementById("compatSumAmt").innerHTML = compatAppliedCoupon
     ? `<span class="strike">${full}</span>FREE`
