@@ -12,9 +12,22 @@
   })();
   gtag('js', new Date());
   gtag('config', 'AW-18468656072');
+
+  // Microsoft Clarity (heatmaps/session replays): only loaded once the
+  // visitor has accepted cookies, here or via the banner in /consent.js.
+  window.arvelosLoadClarity = function () {
+    if (window.clarity) return;
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "ynhwv5bnnl");
+    window.clarity('consent');
+  };
+  try { if (localStorage.getItem('arvelos_consent') === 'granted') window.arvelosLoadClarity(); } catch (e) {}
 </script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18468656072"></script>
-<script defer src="/consent.js"></script>
+<script defer src="/consent.js?v=2"></script>
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -423,7 +436,7 @@
   </div>
 </section>
 
-<section id="order">
+<section id="order" data-clarity-mask="True">
   <div class="wrap">
     <div class="sec-head">
       <span class="eyebrow">Your details</span>
@@ -608,7 +621,7 @@
       </div>
     </div>
 
-    <div class="order-layout" id="compatFormView" style="display:none; margin-top:48px;">
+    <div class="order-layout" id="compatFormView" data-clarity-mask="True" style="display:none; margin-top:48px;">
       <div class="card order-card">
         <div class="field-grid">
           <div class="full"><label style="font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--gold); margin-bottom:0;">Your details</label></div>

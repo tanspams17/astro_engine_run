@@ -1,5 +1,6 @@
 /*
- * Cookie consent banner for the Google Ads tag (Consent Mode v2).
+ * Cookie consent banner for the Google Ads tag (Consent Mode v2) and
+ * Microsoft Clarity (loaded only after Accept, see each page's <head>).
  *
  * Each page's <head> sets every consent type to "denied" (or to the stored
  * choice) before gtag.js loads, so no ad cookies are set until the visitor
@@ -22,6 +23,11 @@
         ad_storage: v, ad_user_data: v, ad_personalization: v,
         analytics_storage: v
       });
+    }
+    if (choice === 'granted') {
+      if (typeof window.arvelosLoadClarity === 'function') window.arvelosLoadClarity();
+    } else if (typeof window.clarity === 'function') {
+      window.clarity('consent', false);   // withdrawn: Clarity stops and clears its cookies
     }
     close();
   }
@@ -54,7 +60,7 @@
     el.setAttribute('aria-label', 'Cookie consent');
     el.appendChild(css);
     el.insertAdjacentHTML('beforeend',
-      '<p>We use Google Ads cookies to measure which ads bring people to Arvelos. ' +
+      '<p>With your permission we use cookies from Google Ads and Microsoft Clarity to see which ads bring people here and how the site is used. ' +
       'Your birth details are never shared with them. ' +
       '<a href="/privacy.html#cookies">Privacy policy</a></p>' +
       '<div class="arv-btns">' +
