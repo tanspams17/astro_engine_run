@@ -36,7 +36,7 @@
 <meta name="description" content="A personalized astrology report calculated from your exact birth details. Sidereal Vedic, tropical Western, or both compared. One honest payment — no subscription, no app, no auto-renewal.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,300;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg-deep:#0e1535; --bg-warm:#1c1a3e; --bg-warmer:#241f4a;
@@ -159,8 +159,14 @@
     box-shadow:0 14px 40px rgba(212,146,10,0.16); }
   .price-card h3 { font-size:23px; margin-bottom:4px; }
   .price-card .tagline { font-size:13px; color:var(--lavender); margin-bottom:18px; }
-  .price-card .amount { font-family:var(--serif); font-size:38px; color:var(--gold-light);
+  .price-card .amount { font-family:var(--serif); font-weight:700; font-size:38px; color:var(--gold-light);
     margin-bottom:4px; font-variant-numeric:lining-nums; }
+  .price-card[data-tier="mixed"], .price-card[data-tier="mixed_compat"] {
+    box-shadow:0 0 15px rgba(234,179,8,0.3); }
+  @media (min-width:901px) {
+    .price-card[data-tier="mixed"], .price-card[data-tier="mixed_compat"] { transform:scale(1.02); }
+    .price-card[data-tier="mixed"]:hover, .price-card[data-tier="mixed_compat"]:hover { transform:scale(1.02) translateY(-3px); }
+  }
   .price-card .amount span { font-size:14px; color:var(--lavender); font-family:var(--sans); }
   .price-card ul { list-style:none; margin:20px 0 26px; flex:1; }
   .price-card li { font-size:14px; color:var(--cream); margin:9px 0; padding-left:20px;
@@ -234,14 +240,49 @@
     padding:14px 0; border-top:1px solid var(--surface-border); }
   .summary-row:first-of-type { border-top:none; }
   .summary-row .name { font-family:var(--serif); font-size:19px; color:var(--cream); }
-  .summary-row .amt { font-family:var(--serif); font-size:26px; color:var(--gold-light);
+  .summary-row .amt { font-family:var(--serif); font-weight:700; font-size:26px; color:var(--gold-light);
     font-variant-numeric:lining-nums; }
   .summary-row .amt .strike { font-size:16px; color:var(--lavender); text-decoration:line-through;
     margin-right:8px; opacity:.7; }
   .summary-note { font-size:12px; color:var(--lavender); margin:6px 0 20px; }
-  .paypills { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
+  .paypills { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; justify-content:center; }
   .paypills span { font-size:11px; border:1px solid var(--surface-border); color:var(--lavender);
     padding:5px 11px; border-radius:999px; letter-spacing:.02em; }
+  .trust-badges { margin-top:14px; text-align:center; }
+  .trust-line { font-family:var(--sans); font-size:12px; color:var(--gold-light); opacity:.85;
+    letter-spacing:.01em; margin:0; }
+
+  /* ---------- SAMPLE REPORT PREVIEW ---------- */
+  .sample-preview-cta { text-align:center; margin:40px auto 0; max-width:480px; }
+  .sample-preview-btn { display:inline-flex; align-items:center; gap:9px; font-family:var(--sans);
+    font-size:14px; font-weight:600; padding:13px 28px; border-radius:999px;
+    border:1px solid var(--surface-border-strong); color:var(--gold-light);
+    background:rgba(212,146,10,0.08); cursor:pointer; transition:background .2s, border-color .2s; }
+  .sample-preview-btn:hover { background:rgba(212,146,10,0.16); border-color:var(--gold); }
+  .sample-preview-note { margin:11px 0 0; font-size:12.5px; color:var(--lavender); }
+
+  .modal-overlay { position:fixed; inset:0; z-index:1000; background:rgba(10,8,30,0.78);
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); align-items:center;
+    justify-content:center; padding:20px; }
+  .modal-box { width:100%; max-width:780px; height:88vh; background:var(--bg-warm);
+    border:1px solid var(--surface-border-strong); border-radius:14px; display:flex;
+    flex-direction:column; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.5); }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px;
+    border-bottom:1px solid var(--surface-border); font-family:var(--sans); font-size:13.5px;
+    color:var(--cream); }
+  .modal-actions { display:flex; align-items:center; gap:16px; }
+  .modal-newtab { color:var(--gold-light); font-size:12.5px; text-decoration:none; }
+  .modal-newtab:hover { text-decoration:underline; }
+  .modal-close { background:none; border:none; color:var(--lavender); font-size:22px; line-height:1;
+    cursor:pointer; padding:2px 6px; }
+  .modal-close:hover { color:var(--cream); }
+  .modal-box iframe { flex:1; width:100%; border:0; background:#fff; }
+  @media (max-width:640px) { .modal-box { height:92vh; } .sample-preview-btn { font-size:13px; padding:12px 20px; } }
+
+  /* ---------- 12-HOUR TIME-OF-BIRTH SELECTOR ---------- */
+  .time-ampm-row { display:flex; gap:6px; }
+  .time-ampm-row select { flex:1; min-width:0; padding-left:8px; padding-right:4px; font-size:14px; }
+  .time-ampm-row select:disabled { opacity:.4; cursor:not-allowed; }
 
   .order-state { display:none; text-align:center; padding:70px 20px; }
   .order-state.on { display:block; }
@@ -435,6 +476,12 @@
         <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)"><span class="heart">&#128149;</span> Add a Partner Compatibility Check</a>
       </div>
     </div>
+    <div class="sample-preview-cta">
+      <button type="button" class="sample-preview-btn" onclick="openSamplePreview()">
+        <span aria-hidden="true">&#128065;&#65039;</span> Preview Sample 30+ Page Report (PDF)
+      </button>
+      <p class="sample-preview-note">Your personalized report will be generated instantly in full PDF format upon checkout.</p>
+    </div>
   </div>
 </section>
 
@@ -461,11 +508,11 @@
             <p class="hint" id="phoneHint" style="display:none; color:#e08a8a"></p></div>
 
           <div><label for="bdate">Date of birth</label><input type="date" id="bdate"></div>
-          <div><label for="btime">Time of birth</label><input type="time" id="btime"></div>
+          <div><label for="btime_h">Time of birth</label><div class="time-ampm-row"><select id="btime_h" aria-label="Hour"></select><select id="btime_m" aria-label="Minute"></select><select id="btime_ap" aria-label="AM or PM"></select></div><input type="hidden" id="btime"></div>
 
           <div class="full">
             <div class="timeoff">
-              <input type="checkbox" id="notime" onchange="document.getElementById('btime').disabled=this.checked">
+              <input type="checkbox" id="notime" onchange="setTimeFieldDisabled('btime', this.checked)">
               <span>I don't know my exact birth time. (Your report still works — we'll skip only the
                 rising sign and houses, which need a clock time.)</span>
             </div>
@@ -544,10 +591,13 @@
         <div class="summary-row"><span class="name" id="sumTier">Select a report</span>
           <span class="amt" id="sumAmt">—</span></div>
         <div class="summary-note">Instant PDF delivery by email · Secure checkout · One-time payment — no subscription, nothing to cancel</div>
-        <div class="paypills">
-          <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span>
-        </div>
         <button class="btn-primary full" id="paybtn" onclick="pay()">Get my report</button>
+        <div class="trust-badges">
+          <p class="trust-line">&#10003; One-Time Payment &bull; No Recurring Subscription &bull; Instant PDF Download</p>
+          <div class="paypills">
+            <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span><span>Google Pay</span>
+          </div>
+        </div>
         <div class="err" id="e1" role="alert" aria-live="polite"></div>
       </aside>
     </div>
@@ -632,10 +682,10 @@
           <div><label for="cEmail">Email <span class="opt">report delivered here</span></label>
             <input type="email" id="cEmail" placeholder="you@example.com"></div>
           <div><label for="cBdate">Date of birth</label><input type="date" id="cBdate"></div>
-          <div><label for="cBtime">Time of birth</label><input type="time" id="cBtime"></div>
+          <div><label for="cBtime_h">Time of birth</label><div class="time-ampm-row"><select id="cBtime_h" aria-label="Hour"></select><select id="cBtime_m" aria-label="Minute"></select><select id="cBtime_ap" aria-label="AM or PM"></select></div><input type="hidden" id="cBtime"></div>
           <div class="full">
             <div class="timeoff">
-              <input type="checkbox" id="cNotime" onchange="document.getElementById('cBtime').disabled=this.checked">
+              <input type="checkbox" id="cNotime" onchange="setTimeFieldDisabled('cBtime', this.checked)">
               <span>I don't know my exact birth time.</span>
             </div>
           </div>
@@ -660,10 +710,10 @@
           <div><label for="pName">Their first name</label>
             <input type="text" id="pName" placeholder="So the report can address them" maxlength="60"></div>
           <div><label for="pBdate">Date of birth</label><input type="date" id="pBdate"></div>
-          <div><label for="pBtime">Time of birth</label><input type="time" id="pBtime"></div>
+          <div><label for="pBtime_h">Time of birth</label><div class="time-ampm-row"><select id="pBtime_h" aria-label="Hour"></select><select id="pBtime_m" aria-label="Minute"></select><select id="pBtime_ap" aria-label="AM or PM"></select></div><input type="hidden" id="pBtime"></div>
           <div class="full">
             <div class="timeoff">
-              <input type="checkbox" id="pNotime" onchange="document.getElementById('pBtime').disabled=this.checked">
+              <input type="checkbox" id="pNotime" onchange="setTimeFieldDisabled('pBtime', this.checked)">
               <span>I don't know their exact birth time.</span>
             </div>
           </div>
@@ -714,10 +764,13 @@
         <div class="summary-row"><span class="name" id="compatSumTier">Select a report</span>
           <span class="amt" id="compatSumAmt">—</span></div>
         <div class="summary-note">Instant PDF delivery by email · Secure checkout · One-time payment — no subscription, nothing to cancel</div>
-        <div class="paypills">
-          <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span>
-        </div>
         <button class="btn-primary full" id="compatPaybtn" onclick="payCompat()">Get our report</button>
+        <div class="trust-badges">
+          <p class="trust-line">&#10003; One-Time Payment &bull; No Recurring Subscription &bull; Instant PDF Download</p>
+          <div class="paypills">
+            <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span><span>Google Pay</span>
+          </div>
+        </div>
         <div class="err" id="compatErr" role="alert" aria-live="polite"></div>
       </aside>
     </div>
@@ -760,6 +813,21 @@
       <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>.</div>
   </div>
 </footer>
+
+<div class="modal-overlay" id="sampleModal" role="dialog" aria-modal="true"
+     aria-labelledby="sampleModalTitle" style="display:none"
+     onclick="if(event.target===this) closeSamplePreview()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="sampleModalTitle">Sample report preview</span>
+      <div class="modal-actions">
+        <a href="/sample-report.pdf" target="_blank" rel="noopener" class="modal-newtab">Open in new tab &#8599;</a>
+        <button type="button" class="modal-close" onclick="closeSamplePreview()" aria-label="Close preview">&times;</button>
+      </div>
+    </div>
+    <iframe id="sampleModalFrame" src="" title="Arvelos sample report preview"></iframe>
+  </div>
+</div>
 
 <script>
 /* ================= starfield ================= */
@@ -872,6 +940,58 @@ function scrollToCompatibility(ev){
   if (ev) ev.stopPropagation();  // don't also trigger the pricing card's own onclick
   document.getElementById('compatibility').scrollIntoView({behavior:'smooth'});
 }
+
+/* ---- 12-hour time-of-birth selectors (Hour/Minute/AM-PM), synced into
+   a hidden HH:MM input so the rest of the order logic is unchanged ---- */
+function initAmPmTime(prefix){
+  const h = document.getElementById(prefix + "_h"),
+        m = document.getElementById(prefix + "_m"),
+        ap = document.getElementById(prefix + "_ap"),
+        hidden = document.getElementById(prefix);
+  h.add(new Option("HH", ""));
+  for (let i = 1; i <= 12; i++) h.add(new Option(String(i), String(i)));
+  m.add(new Option("MM", ""));
+  for (let i = 0; i < 60; i++) { const v = String(i).padStart(2, "0"); m.add(new Option(v, v)); }
+  ap.add(new Option("AM/PM", ""));
+  ap.add(new Option("AM", "AM"));
+  ap.add(new Option("PM", "PM"));
+  function sync(){
+    if (h.value && m.value && ap.value) {
+      let hh = parseInt(h.value, 10) % 12;
+      if (ap.value === "PM") hh += 12;
+      hidden.value = String(hh).padStart(2, "0") + ":" + m.value;
+    } else {
+      hidden.value = "";
+    }
+  }
+  [h, m, ap].forEach(el => el.addEventListener("change", sync));
+}
+function setTimeFieldDisabled(prefix, disabled){
+  ["_h", "_m", "_ap"].forEach(suf => {
+    const el = document.getElementById(prefix + suf);
+    if (el) el.disabled = disabled;
+  });
+}
+["btime", "cBtime", "pBtime"].forEach(initAmPmTime);
+
+/* ---- sample report preview modal ---- */
+function openSamplePreview(){
+  const frame = document.getElementById('sampleModalFrame');
+  // an iframe's .src reads back as the current page URL when the src
+  // attribute is empty, so compare the attribute, not the live property
+  if (frame.getAttribute('src') !== '/sample-report.pdf#toolbar=0')
+    frame.src = '/sample-report.pdf#toolbar=0';
+  document.getElementById('sampleModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  if (typeof track === 'function') track('view_item', {item_id: 'sample_report_preview', item_name: 'Sample report preview'});
+}
+function closeSamplePreview(){
+  document.getElementById('sampleModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('sampleModal').style.display !== 'none') closeSamplePreview();
+});
 
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
