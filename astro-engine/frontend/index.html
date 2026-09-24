@@ -63,7 +63,10 @@
   .brand:hover { opacity:.82; }
   .brand em { color:var(--gold-light); }
   .navlinks { display:flex; gap:30px; font-size:14px; color:var(--lavender); }
-  .navlinks a { color:var(--lavender); text-decoration:none; transition:color .2s; }
+  .navlinks a { color:var(--lavender); text-decoration:none; transition:color .2s; white-space:nowrap; }
+  .nl-short { display:none; }
+  /* keep anchored sections clear of the fixed nav when jumped to */
+  section[id] { scroll-margin-top:80px; }
   .navlinks a:hover { color:var(--gold-light); }
   .nav-cta { font-family:var(--sans); font-size:13px; font-weight:600; padding:9px 20px;
              border-radius:999px; background:transparent; border:1px solid var(--surface-border-strong);
@@ -271,7 +274,6 @@
   /* ---------- RESPONSIVE ---------- */
   @media (max-width:900px) {
     .hero-inner { grid-template-columns:1fr; grid-template-areas:"visual" "text"; gap:20px; }
-    header.hero { padding:120px 0 60px; }
     .hero-text { text-align:left; }
     .constellation-wrap { max-width:340px; }
     .included-grid { grid-template-columns:repeat(2,1fr); }
@@ -279,7 +281,16 @@
     .order-layout { grid-template-columns:1fr; }
     .field-grid { grid-template-columns:1fr; }
     .summary-card { position:static; }
-    .navlinks { display:none; }
+    /* phones/tablets: links drop to a second, swipeable row under the logo */
+    nav.top { padding:12px 0 8px; }
+    nav.top .wrap { flex-wrap:wrap; row-gap:8px; }
+    .navlinks { order:3; width:100%; justify-content:space-between; gap:12px; font-size:13px;
+                overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
+    .nl-full { display:none; }
+    .nl-short { display:inline; }
+    .navlinks::-webkit-scrollbar { display:none; }
+    header.hero { padding:140px 0 60px; }
+    section[id] { scroll-margin-top:100px; }
   }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior:auto; }
@@ -298,8 +309,9 @@
   <div class="wrap">
     <a class="brand" href="/" aria-label="Arvelos — home">Arvel<em>o</em>s</a>
     <div class="navlinks">
-      <a href="#included">What's included</a>
-      <a href="#pricing">Pricing</a>
+      <a href="#included"><span class="nl-full">What's included</span><span class="nl-short">Included</span></a>
+      <a href="#pricing"><span class="nl-full">Individual Report</span><span class="nl-short">Individual</span></a>
+      <a href="#compatibility"><span class="nl-full">Compatibility Report</span><span class="nl-short">Compatibility</span></a>
       <a href="#order">Order</a>
     </div>
     <button class="nav-cta" onclick="scrollToOrder()">Get your report</button>
