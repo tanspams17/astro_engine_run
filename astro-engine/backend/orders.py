@@ -16,17 +16,16 @@ DB_PATH = os.environ.get("ARVELOS_DB", os.path.join(
     os.path.dirname(__file__), "..", "data", "arvelos.db"))
 
 PRICES = {  # minor units, fixed at order creation — never recomputed mid-checkout
-    # GBP set 2026-09-24 per the account owner's fixed price list (own
-    # currency, no FX conversion for UK visitors): one price per row
-    # regardless of Western/Vedic, so zodiac_compat and vedic_compat
-    # share a GBP price (and, per the same 2026-09-24 decision, an INR
-    # price too) — only USD still prices them apart ($24 / $30).
-    "western": {"USD": 1900, "INR": 99900, "GBP": 799},
-    "vedic": {"USD": 1900, "INR": 99900, "GBP": 799},
-    "mixed": {"USD": 2900, "INR": 149900, "GBP": 1199},
-    "zodiac_compat": {"USD": 2400, "INR": 149900, "GBP": 1499},
-    "vedic_compat": {"USD": 3000, "INR": 149900, "GBP": 1499},
-    "mixed_compat": {"USD": 3900, "INR": 199900, "GBP": 1999},
+    # Full price list set 2026-09-24 per the account owner's fixed table
+    # (own currency per market, not converted from USD). Western/Vedic
+    # and Zodiac/Vedic Compatibility each share one price per currency,
+    # in all three currencies now — no longer just GBP/INR.
+    "western": {"USD": 999, "INR": 99900, "GBP": 799},
+    "vedic": {"USD": 999, "INR": 99900, "GBP": 799},
+    "mixed": {"USD": 1499, "INR": 129900, "GBP": 1199},
+    "zodiac_compat": {"USD": 1899, "INR": 149900, "GBP": 1499},
+    "vedic_compat": {"USD": 1899, "INR": 149900, "GBP": 1499},
+    "mixed_compat": {"USD": 2499, "INR": 199900, "GBP": 1999},
 }
 
 VALID_STATES = {"pending", "paid", "delivered", "fulfilment_failed", "failed", "refunded"}
