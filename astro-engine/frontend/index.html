@@ -110,6 +110,8 @@
   .hero-text { grid-area:text; }
   .hero-visual { grid-area:visual; }
   .hero h1 { font-size:clamp(34px,4.6vw,58px); line-height:1.12; margin:18px 0 22px; font-weight:300; }
+  .hero-tagline { font-family:var(--sans); font-size:18.5px; font-weight:600; color:#FDE047;
+               max-width:500px; margin:0 0 16px; line-height:1.4; }
   .hero .sub { font-size:17.5px; color:var(--lavender); max-width:480px; margin-bottom:34px;
                font-weight:300; }
   .hero .sub strong { color:var(--cream); font-weight:500; }
@@ -246,10 +248,11 @@
     margin-right:8px; opacity:.7; }
   .summary-note { font-size:12px; color:var(--lavender); margin:6px 0 20px; }
   .paypills { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; justify-content:center; }
-  .paypills span { font-size:11px; border:1px solid var(--surface-border); color:var(--lavender);
-    padding:5px 11px; border-radius:999px; letter-spacing:.02em; }
+  .paypills .pay-icon { display:inline-flex; align-items:center; justify-content:center;
+    background:#fff; border-radius:5px; padding:4px 7px; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .paypills .pay-icon svg { display:block; }
   .trust-badges { margin-top:14px; text-align:center; }
-  .trust-line { font-family:var(--sans); font-size:12px; color:var(--gold-light); opacity:.85;
+  .trust-line { font-family:var(--sans); font-size:12.5px; font-weight:600; color:#FDE047;
     letter-spacing:.01em; margin:0; }
 
   /* ---------- SAMPLE REPORT PREVIEW ---------- */
@@ -382,6 +385,8 @@
     <div class="hero-text">
       <span class="eyebrow">Sidereal · Lahiri Ayanamsa · Real Jyotish</span>
       <h1>Your birth chart,<br>read <em>properly</em>.</h1>
+      <p class="hero-tagline">Deep-dive 30+ page analysis combining Western Psychology &amp;
+        Ancient Vedic Wisdom. Generated in 60 seconds.</p>
       <p class="sub">Calculated from the Swiss Ephemeris, not a template — your exact
         <strong>nakshatra</strong>, <strong>dasha periods</strong> and houses, using the sidereal
         zodiac and Lahiri ayanamsa. Prefer the tropical lens, or both compared side by side?
@@ -440,24 +445,24 @@
     <div class="pricing-grid" id="pricingGrid">
         <div class="card price-card" data-tier="western" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('western')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('western')}">
         <h3>Western</h3>
-        <div class="tagline">The psychological lens</div>
+        <div class="tagline">Your Mind &amp; Personality</div>
         <div class="amount" data-amt>$19</div>
         <ul>
-          <li>Tropical zodiac &amp; houses</li>
-          <li>Full planetary aspects</li>
-          <li>18–22 page report</li>
+          <li>Uncover your deep psychological blueprint</li>
+          <li>Personality, career &amp; core drives</li>
+          <li>Instant 30+ page personal breakdown</li>
         </ul>
         <div class="choose">Choose Western</div>
         <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)"><span class="heart">&#128149;</span> Add a Partner Compatibility Check</a>
       </div>
         <div class="card price-card" data-tier="vedic" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('vedic')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('vedic')}">
         <h3>Vedic</h3>
-        <div class="tagline">Authentic Jyotish</div>
+        <div class="tagline">Your Karma &amp; Destiny</div>
         <div class="amount" data-amt>$19</div>
         <ul>
-          <li>Sidereal zodiac, Lahiri ayanamsa</li>
-          <li>Nakshatra &amp; dasha periods</li>
-          <li>20–25 page report</li>
+          <li>Accurate soul timing &amp; life cycles</li>
+          <li>Dasha timeline &amp; karmic themes</li>
+          <li>Traditional sidereal calculations</li>
         </ul>
         <div class="choose">Choose Vedic</div>
         <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)"><span class="heart">&#128149;</span> Add a Partner Compatibility Check</a>
@@ -465,12 +470,12 @@
         <div class="card price-card" data-tier="mixed" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('mixed')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('mixed')}">
         <span class="badge">Most chosen</span>
         <h3>Mixed</h3>
-        <div class="tagline">Both, fully compared</div>
+        <div class="tagline">The Complete Synthesis</div>
         <div class="amount" data-amt>$29</div>
         <ul>
-          <li>Western + Vedic, fully calculated</li>
-          <li>A synthesis comparing both</li>
-          <li>32+ page report</li>
+          <li>Western Psychology + Vedic Karma</li>
+          <li>Side-by-side system comparison</li>
+          <li>Best value: 2 complete reports in 1</li>
         </ul>
         <div class="choose">Choose Mixed</div>
         <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)"><span class="heart">&#128149;</span> Add a Partner Compatibility Check</a>
@@ -478,7 +483,7 @@
     </div>
     <div class="sample-preview-cta">
       <button type="button" class="sample-preview-btn" onclick="openSamplePreview()">
-        <span aria-hidden="true">&#128065;&#65039;</span> Preview Sample 30+ Page Report (PDF)
+        <span aria-hidden="true">&#128065;&#65039;</span> See Sample Report (32-Page PDF)
       </button>
       <p class="sample-preview-note">Your personalized report will be generated instantly in full PDF format upon checkout.</p>
     </div>
@@ -591,11 +596,11 @@
         <div class="summary-row"><span class="name" id="sumTier">Select a report</span>
           <span class="amt" id="sumAmt">—</span></div>
         <div class="summary-note">Instant PDF delivery by email · Secure checkout · One-time payment — no subscription, nothing to cancel</div>
-        <button class="btn-primary full" id="paybtn" onclick="pay()">Get my report</button>
+        <button class="btn-primary full" id="paybtn" onclick="pay()">Get Your Reading Now</button>
         <div class="trust-badges">
-          <p class="trust-line">&#10003; One-Time Payment &bull; No Recurring Subscription &bull; Instant PDF Download</p>
-          <div class="paypills">
-            <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span><span>Google Pay</span>
+          <p class="trust-line">&#10003; One-Time Payment &bull; No Monthly Subscription &bull; Instant PDF Delivery</p>
+          <div class="paypills" aria-label="Accepted payment methods">
+            <span class="pay-icon" title="Visa"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Visa"><rect width="48" height="20" rx="3" fill="#fff"/><text x="24" y="14.5" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#1A1F71">VISA</text></svg></span><span class="pay-icon" title="Mastercard"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Mastercard"><rect width="48" height="20" rx="3" fill="#fff"/><circle cx="20" cy="10" r="7" fill="#EB001B"/><circle cx="28" cy="10" r="7" fill="#F79E1B" style="mix-blend-mode:multiply"/></svg></span><span class="pay-icon" title="Apple Pay"><svg viewBox="0 0 56 20" width="48" height="18" role="img" aria-label="Apple Pay"><rect width="56" height="20" rx="3" fill="#fff"/><ellipse cx="16" cy="11" rx="5.4" ry="5.7" fill="#000"/><circle cx="21" cy="7.5" r="3.2" fill="#fff"/><path d="M16.3 5.6c0-1.5 1.1-2.7 2.6-2.7 0 1.5-1.2 2.7-2.6 2.7z" fill="#000"/><text x="28" y="14.5" font-family="Arial, sans-serif" font-weight="600" font-size="11" fill="#000">Pay</text></svg></span><span class="pay-icon" title="Google Pay"><svg viewBox="0 0 58 20" width="50" height="18" role="img" aria-label="Google Pay"><rect width="58" height="20" rx="3" fill="#fff"/><text x="6" y="14.5" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="#4285F4">G</text><text x="16" y="14.5" font-family="Arial, sans-serif" font-weight="500" font-size="11" fill="#3C4043">Pay</text></svg></span><span class="pay-icon" title="PayPal"><svg viewBox="0 0 54 20" width="48" height="18" role="img" aria-label="PayPal"><rect width="54" height="20" rx="3" fill="#fff"/><text x="4" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#003087">Pay</text><text x="24" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#009cde">Pal</text></svg></span>
           </div>
         </div>
         <div class="err" id="e1" role="alert" aria-live="polite"></div>
@@ -643,9 +648,9 @@
         <div class="tagline">Numerology + zodiac compatibility</div>
         <div class="amount" data-amt>$24</div>
         <ul>
-          <li>Core-number harmony</li>
-          <li>Elemental &amp; modality read</li>
-          <li>Descriptive — no numeric score</li>
+          <li>Deep synastry &amp; emotional connection</li>
+          <li>Communication &amp; long-term alignment</li>
+          <li>Core numbers &amp; elemental harmony score</li>
         </ul>
         <div class="choose">Choose Zodiac</div>
       </div>
@@ -654,9 +659,9 @@
         <div class="tagline">Classical Guna Milan matching</div>
         <div class="amount" data-amt>$30</div>
         <ul>
-          <li>8-koota Ashtakoota score, out of 36</li>
-          <li>Koota-by-koota breakdown</li>
-          <li>The traditional marriage-matching system</li>
+          <li>Deep synastry &amp; emotional connection</li>
+          <li>Communication &amp; long-term alignment</li>
+          <li>Classical 36-point Ashtakoota score</li>
         </ul>
         <div class="choose">Choose Vedic</div>
       </div>
@@ -666,11 +671,18 @@
         <div class="tagline">Zodiac + Vedic, fully compared</div>
         <div class="amount" data-amt>$39</div>
         <ul>
-          <li>Everything in Zodiac and Vedic</li>
-          <li>Two full traditions, one report</li>
+          <li>Deep synastry &amp; emotional connection</li>
+          <li>Communication &amp; long-term alignment</li>
+          <li>Complete dual-system compatibility score</li>
         </ul>
         <div class="choose">Choose Combined</div>
       </div>
+    </div>
+    <div class="sample-preview-cta">
+      <button type="button" class="sample-preview-btn" onclick="openSamplePreview()">
+        <span aria-hidden="true">&#128065;&#65039;</span> See Sample Report (32-Page PDF)
+      </button>
+      <p class="sample-preview-note">Your personalized report will be generated instantly in full PDF format upon checkout.</p>
     </div>
 
     <div class="order-layout" id="compatFormView" data-clarity-mask="True" style="display:none; margin-top:48px;">
@@ -764,11 +776,11 @@
         <div class="summary-row"><span class="name" id="compatSumTier">Select a report</span>
           <span class="amt" id="compatSumAmt">—</span></div>
         <div class="summary-note">Instant PDF delivery by email · Secure checkout · One-time payment — no subscription, nothing to cancel</div>
-        <button class="btn-primary full" id="compatPaybtn" onclick="payCompat()">Get our report</button>
+        <button class="btn-primary full" id="compatPaybtn" onclick="payCompat()">Get Your Reading Now</button>
         <div class="trust-badges">
-          <p class="trust-line">&#10003; One-Time Payment &bull; No Recurring Subscription &bull; Instant PDF Download</p>
-          <div class="paypills">
-            <span>Visa</span><span>Mastercard</span><span>PayPal</span><span>Apple Pay</span><span>Google Pay</span>
+          <p class="trust-line">&#10003; One-Time Payment &bull; No Monthly Subscription &bull; Instant PDF Delivery</p>
+          <div class="paypills" aria-label="Accepted payment methods">
+            <span class="pay-icon" title="Visa"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Visa"><rect width="48" height="20" rx="3" fill="#fff"/><text x="24" y="14.5" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#1A1F71">VISA</text></svg></span><span class="pay-icon" title="Mastercard"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Mastercard"><rect width="48" height="20" rx="3" fill="#fff"/><circle cx="20" cy="10" r="7" fill="#EB001B"/><circle cx="28" cy="10" r="7" fill="#F79E1B" style="mix-blend-mode:multiply"/></svg></span><span class="pay-icon" title="Apple Pay"><svg viewBox="0 0 56 20" width="48" height="18" role="img" aria-label="Apple Pay"><rect width="56" height="20" rx="3" fill="#fff"/><ellipse cx="16" cy="11" rx="5.4" ry="5.7" fill="#000"/><circle cx="21" cy="7.5" r="3.2" fill="#fff"/><path d="M16.3 5.6c0-1.5 1.1-2.7 2.6-2.7 0 1.5-1.2 2.7-2.6 2.7z" fill="#000"/><text x="28" y="14.5" font-family="Arial, sans-serif" font-weight="600" font-size="11" fill="#000">Pay</text></svg></span><span class="pay-icon" title="Google Pay"><svg viewBox="0 0 58 20" width="50" height="18" role="img" aria-label="Google Pay"><rect width="58" height="20" rx="3" fill="#fff"/><text x="6" y="14.5" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="#4285F4">G</text><text x="16" y="14.5" font-family="Arial, sans-serif" font-weight="500" font-size="11" fill="#3C4043">Pay</text></svg></span><span class="pay-icon" title="PayPal"><svg viewBox="0 0 54 20" width="48" height="18" role="img" aria-label="PayPal"><rect width="54" height="20" rx="3" fill="#fff"/><text x="4" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#003087">Pay</text><text x="24" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#009cde">Pal</text></svg></span>
           </div>
         </div>
         <div class="err" id="compatErr" role="alert" aria-live="polite"></div>
@@ -1008,14 +1020,12 @@ function applyProviderUI() {
   const hosted = PROVIDER !== "mock";
   document.getElementById("cardfields").style.display = hosted ? "none" : "";
   document.getElementById("hostednote").style.display = hosted ? "block" : "none";
-  document.getElementById("paybtn").textContent =
-    hosted ? "Continue to secure payment" : "Get my report";
+  document.getElementById("paybtn").textContent = "Get Your Reading Now";
   const compatCardfields = document.getElementById("compatCardfields");
   if (compatCardfields) {
     compatCardfields.style.display = hosted ? "none" : "";
     document.getElementById("compatHostednote").style.display = hosted ? "block" : "none";
-    document.getElementById("compatPaybtn").textContent =
-      hosted ? "Continue to secure payment" : "Get our report";
+    document.getElementById("compatPaybtn").textContent = "Get Your Reading Now";
   }
 }
 
