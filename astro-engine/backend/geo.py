@@ -43,10 +43,16 @@ def country_for_ip(ip: str) -> str | None:
 
 
 INR_COUNTRIES = {"IN"}
+GBP_COUNTRIES = {"GB"}
 
 
 def pricing_currency(request: Request) -> str:
-    """INR for visitors in India, USD for everyone else (and whenever the
-    country can't be determined)."""
+    """INR for visitors in India, GBP for visitors in the UK (the
+    company's own currency, no FX conversion), USD for everyone else
+    (and whenever the country can't be determined)."""
     country = country_for_ip(client_ip(request))
-    return "INR" if country in INR_COUNTRIES else "USD"
+    if country in INR_COUNTRIES:
+        return "INR"
+    if country in GBP_COUNTRIES:
+        return "GBP"
+    return "USD"

@@ -16,12 +16,17 @@ DB_PATH = os.environ.get("ARVELOS_DB", os.path.join(
     os.path.dirname(__file__), "..", "data", "arvelos.db"))
 
 PRICES = {  # minor units, fixed at order creation — never recomputed mid-checkout
-    "western": {"USD": 1900, "INR": 99900},
-    "vedic": {"USD": 1900, "INR": 99900},
-    "mixed": {"USD": 2900, "INR": 149900},
-    "zodiac_compat": {"USD": 2400, "INR": 99900},
-    "vedic_compat": {"USD": 3000, "INR": 149900},
-    "mixed_compat": {"USD": 3900, "INR": 199900},
+    # GBP set 2026-09-24 per the account owner's fixed price list (own
+    # currency, no FX conversion for UK visitors). Note the owner's list
+    # gives one GBP price per row regardless of Western/Vedic, so
+    # zodiac_compat and vedic_compat share a GBP price even though their
+    # USD/INR prices differ from each other.
+    "western": {"USD": 1900, "INR": 99900, "GBP": 799},
+    "vedic": {"USD": 1900, "INR": 99900, "GBP": 799},
+    "mixed": {"USD": 2900, "INR": 149900, "GBP": 1199},
+    "zodiac_compat": {"USD": 2400, "INR": 99900, "GBP": 1499},
+    "vedic_compat": {"USD": 3000, "INR": 149900, "GBP": 1499},
+    "mixed_compat": {"USD": 3900, "INR": 199900, "GBP": 1999},
 }
 
 VALID_STATES = {"pending", "paid", "delivered", "fulfilment_failed", "failed", "refunded"}

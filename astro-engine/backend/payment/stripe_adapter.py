@@ -1,6 +1,6 @@
 """
 Stripe payment adapter — hosted Checkout flow. The only real gateway in
-use. Charges in USD, or INR for visitors in India (see geo.pricing_currency()).
+use. Charges in USD, GBP for the UK, or INR for India (see geo.pricing_currency()).
 
 Set env: STRIPE_API_KEY=sk_test_xxx (later sk_live_xxx, or preferably a
          restricted key rk_... scoped to Checkout Sessions + Refunds

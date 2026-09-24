@@ -1,10 +1,11 @@
 # Going live: Stripe
 
-Arvelos sells via Stripe in **USD, or INR for visitors in India**. The
-currency is chosen on the server from the visitor's IP
+Arvelos sells via Stripe in **USD, GBP for the UK, or INR for India**.
+The currency is chosen on the server from the visitor's IP
 (`geo.pricing_currency()`); `/api/prices`, `/api/coupon/check` and
-`/api/orders` all use it and ignore any `currency` the client sends. INR
-prices live next to USD in `orders.PRICES`.
+`/api/orders` all use it and ignore any `currency` the client sends. GBP
+and INR prices live next to USD in `orders.PRICES` (GBP is the account
+owner's own fixed price list, not converted from USD).
 
 History: the site once had an INR/Razorpay path where the *client* picked
 the currency (a frontend toggle, or any direct API call), so anyone could

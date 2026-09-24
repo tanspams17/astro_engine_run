@@ -235,7 +235,7 @@ def geo_lookup(request: Request):
     return {"country": country}
 
 
-CURRENCY_SYMBOL = {"USD": "$", "INR": "₹"}
+CURRENCY_SYMBOL = {"USD": "$", "INR": "₹", "GBP": "£"}
 
 
 @app.get("/api/prices")
