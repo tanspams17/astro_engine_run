@@ -43,7 +43,7 @@ def _email_text(name: str, tier_name: str, token: str) -> str:
 
 Your Arvelos {tier_name} is ready.
 
-Download it here (link is private to you — keep it safe):
+Download it here (the link is private to you, so keep it safe):
 {link}
 
 A few notes:
@@ -81,11 +81,11 @@ text-transform:uppercase;margin:0 0 20px;">Arvelos</p>
 <a href="{link}" style="background:#d4920a;color:#191735;text-decoration:none;
 padding:14px 28px;border-radius:8px;font-weight:bold;display:inline-block;">
 Download your report (PDF)</a></p>
-<p style="font-size:13px;color:#a9a3c9;">This link is private to you — keep it safe.</p>
+<p style="font-size:13px;color:#a9a3c9;">This link is private to you, so keep it safe.</p>
 <hr style="border:none;border-top:1px solid #35325a;margin:28px 0;">
 <p style="font-size:13px;color:#a9a3c9;">
 The report was calculated individually from your exact birth details.
-This was a one-time payment — no subscription, no renewals, nothing to cancel.<br><br>
+This was a one-time payment. No subscription, no renewals, nothing to cancel.<br><br>
 If anything looks wrong (a typo in your birth details, a broken link),
 just reply to this email and we'll fix it: {SUPPORT_EMAIL}</p>
 <p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos · {BASE_URL}</p>

@@ -38,16 +38,16 @@ MODES = {"Aries": "Cardinal", "Cancer": "Cardinal", "Libra": "Cardinal",
 # harmonious; the two "quiet" pairs (Fire+Earth, Air+Water) read as
 # more effortful, not incompatible.
 ELEMENT_HARMONY = {
-    frozenset({"Fire", "Fire"}): "a shared spark — you understand each other's need for momentum instinctively",
-    frozenset({"Air", "Air"}): "a shared need for ideas and conversation — rarely a dull moment between you",
-    frozenset({"Earth", "Earth"}): "a shared groundedness — stability comes naturally when you're together",
-    frozenset({"Water", "Water"}): "a shared emotional depth — you read each other's feelings without needing to ask",
-    frozenset({"Fire", "Air"}): "a classically easy pairing — Air feeds Fire, and this relationship tends to energize both of you",
-    frozenset({"Earth", "Water"}): "a classically easy pairing — Water nourishes Earth, and this relationship tends to feel steadying for both of you",
-    frozenset({"Fire", "Water"}): "a pairing that takes real effort — Fire and Water can put each other out or bring each other to the boil; worth naming rather than ignoring",
-    frozenset({"Fire", "Earth"}): "a pairing of different paces — Fire wants to move, Earth wants to build; patience with the difference is the work here",
-    frozenset({"Air", "Water"}): "a pairing of different languages — Air processes by talking it through, Water by feeling it through; translation takes practice",
-    frozenset({"Air", "Earth"}): "a pairing of different priorities — Air chases ideas, Earth chases results; each has something real to teach the other",
+    frozenset({"Fire", "Fire"}): "a shared spark: you understand each other's need for momentum instinctively",
+    frozenset({"Air", "Air"}): "a shared need for ideas and conversation, with rarely a dull moment between you",
+    frozenset({"Earth", "Earth"}): "a shared groundedness, where stability comes naturally when you're together",
+    frozenset({"Water", "Water"}): "a shared emotional depth: you read each other's feelings without needing to ask",
+    frozenset({"Fire", "Air"}): "a classically easy pairing. Air feeds Fire, and this relationship tends to energize both of you",
+    frozenset({"Earth", "Water"}): "a classically easy pairing. Water nourishes Earth, and this relationship tends to feel steadying for both of you",
+    frozenset({"Fire", "Water"}): "a pairing that takes real effort. Fire and Water can put each other out or bring each other to the boil, which is worth naming rather than ignoring",
+    frozenset({"Fire", "Earth"}): "a pairing of different paces. Fire wants to move, Earth wants to build; patience with the difference is the work here",
+    frozenset({"Air", "Water"}): "a pairing of different languages. Air processes by talking it through, Water by feeling it through; translation takes practice",
+    frozenset({"Air", "Earth"}): "a pairing of different priorities. Air chases ideas, Earth chases results; each has something real to teach the other",
 }
 
 
@@ -78,13 +78,13 @@ def zodiac_compare(name_a: str, num_a: dict, sun_sign_a: str,
     numerology_friendly = same_mulank or num_b["mulank"] in friends_a
     numerology_score = 5 if same_mulank else (4 if numerology_friendly else 2)
     out.append({
-        "title": "Numerology — Core Numbers",
+        "title": "Numerology: Core Numbers",
         "body": (f"{name_a}'s Mulank is {num_a['mulank']}, {name_b}'s is {num_b['mulank']}. "
-                 + ("These numbers are traditionally friendly with each other — a "
+                 + ("These numbers are traditionally friendly with each other, a "
                     "harmonious pairing that tends to work with less friction than most."
                     if numerology_friendly else
                     "These numbers sit in mild tension in the traditional friend-number "
-                    "system — not a red flag, but a pairing that rewards a bit more "
+                    "system. It isn't a red flag, but the pairing rewards a bit more "
                     "deliberate communication than a naturally friendly pair would need.")),
     })
 
@@ -92,23 +92,23 @@ def zodiac_compare(name_a: str, num_a: dict, sun_sign_a: str,
     harmony = ELEMENT_HARMONY[frozenset({elem_a, elem_b})]
     elemental_score = ELEMENT_SCORE[frozenset({elem_a, elem_b})]
     out.append({
-        "title": "Zodiac — Elemental Compatibility",
+        "title": "Zodiac: Elemental Compatibility",
         "body": (f"{name_a} is {_article(sun_sign_a)} {sun_sign_a} Sun ({elem_a}), "
                  f"{name_b} is {_article(sun_sign_b)} {sun_sign_b} Sun ({elem_b}). "
-                 f"{harmony.capitalize()}."),
+                 f"{harmony[0].upper() + harmony[1:]}."),
     })
 
     mode_a, mode_b = MODES[sun_sign_a], MODES[sun_sign_b]
     if mode_a == mode_b:
         mode_text = (f"{name_a} and {name_b} are both {mode_a} signs, which means they tend "
-                     f"to move through life the same way — "
+                     f"to move through life the same way: "
                      f"{'both natural starters' if mode_a=='Cardinal' else ('both built for the long haul' if mode_a=='Fixed' else 'both comfortable adapting as you go')}. "
                      "Comfortable, though two people pulling the same direction can also mean "
                      "nobody's covering the other approach.")
     else:
-        mode_text = (f"{name_a} is {mode_a}, {name_b} is {mode_b} — different operating "
+        mode_text = (f"{name_a} is {mode_a}, {name_b} is {mode_b}. These are different operating "
                      "rhythms that, read well, cover each other's blind spots rather than clash.")
-    out.append({"title": "Zodiac — How They Each Move Through Life", "body": mode_text})
+    out.append({"title": "Zodiac: How They Each Move Through Life", "body": mode_text})
 
     score = {
         "total": numerology_score + elemental_score, "max": 10,
@@ -233,8 +233,8 @@ def _varna_score(sign_a: str, sign_b: str) -> tuple[float, str]:
     if diff == 0:
         return 1, "Same varna."
     if diff == 1:
-        return 0.5, "Adjacent varna — a mild difference in temperament, not a real mismatch."
-    return 0, "A significant varna difference — traditionally the widest caste-temperament gap."
+        return 0.5, "Adjacent varna: a mild difference in temperament rather than a real mismatch."
+    return 0, "A significant varna difference, traditionally the widest caste-temperament gap."
 
 
 def _vashya_score(sign_a: str, sign_b: str) -> tuple[float, str]:
@@ -261,7 +261,7 @@ def _yoni_score(nak_a: str, nak_b: str) -> tuple[float, str]:
         return 4, f"Same yoni ({ya})."
     if frozenset({ya, yb}) in YONI_ENEMIES:
         return 0, f"{ya}/{yb} are classically opposed yonis."
-    return 2, f"{ya}/{yb} — neutral yoni pairing."
+    return 2, f"{ya}/{yb}: neutral yoni pairing."
 
 
 def _graha_maitri_score(sign_a: str, sign_b: str) -> tuple[float, str]:
@@ -294,7 +294,7 @@ def _bhakoot_score(sign_a: str, sign_b: str) -> tuple[float, str]:
 
 def _nadi_score(nak_a: str, nak_b: str) -> tuple[float, str]:
     if NADI[nak_a] == NADI[nak_b]:
-        return 0, f"Same nadi ({NADI[nak_a]}) — the one koota Vedic tradition weighs most heavily."
+        return 0, f"Same nadi ({NADI[nak_a]}), the one koota Vedic tradition weighs most heavily."
     return 8, f"Different nadi ({NADI[nak_a]}/{NADI[nak_b]})."
 
 

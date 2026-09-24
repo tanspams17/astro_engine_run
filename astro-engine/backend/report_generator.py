@@ -5,6 +5,7 @@ Assembles chart data + content library into a styled PDF via WeasyPrint.
 from __future__ import annotations
 
 import datetime as dt
+import random
 import os
 
 from jinja2 import Environment, FileSystemLoader
@@ -24,7 +25,7 @@ except ImportError:
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "pdf_templates")
 
 TIER_NAMES = {"western": "Western Report", "vedic": "Vedic Report",
-              "mixed": "Mixed Report — Western + Vedic"}
+              "mixed": "Mixed Report: Western + Vedic"}
 COMPAT_TIER_NAMES = {"zodiac_compat": "Zodiac Compatibility Report",
                      "vedic_compat": "Vedic Compatibility Report",
                      "mixed_compat": "Combined Compatibility Report"}
@@ -54,13 +55,13 @@ def _core_three(chart: Chart) -> list[dict]:
     sun = chart.get("Sun")
     moon = chart.get("Moon")
     if asc:
-        out.append({"title": f"Your Rising Sign — {asc.sign}",
+        out.append({"title": f"Your Rising Sign: {asc.sign}",
                     "body": cl.RISING_SIGNS[asc.sign]})
     if sun:
-        out.append({"title": f"Your Sun — {sun.sign}",
+        out.append({"title": f"Your Sun: {sun.sign}",
                     "body": cl.SUN_SIGNS[sun.sign]})
     if moon:
-        out.append({"title": f"Your Moon — {moon.sign}",
+        out.append({"title": f"Your Moon: {moon.sign}",
                     "body": cl.MOON_SIGNS[moon.sign]})
     return out
 
@@ -75,7 +76,7 @@ def _planet_sections(chart: Chart, with_houses: bool = True) -> list[dict]:
         if with_houses:
             body += " " + cl.planet_in_house(p.planet, p.house)
         if p.retrograde:
-            body += (" This planet was retrograde at your birth — its themes "
+            body += (" This planet was retrograde at your birth, so its themes "
                      "tend to be processed inwardly first, and mature later "
                      "and more thoroughly than average.")
         if chart.system == "vedic" and p.nakshatra:
@@ -101,22 +102,22 @@ def _house_sections(chart: Chart) -> list[dict]:
         cusp_sign = SIGNS[int(chart.house_cusps[h - 1] // 30) % 12]
         occupants = by_house.get(h, [])
         style = (f"The sign on this house's cusp is {cusp_sign}, so this "
-                 f"arena of your life tends to run in a {cusp_sign} style — "
+                 f"arena of your life tends to run in a {cusp_sign} style, "
                  f"{cl.SIGN_EXPRESSIONS[cusp_sign]}.")
         if occupants:
             occ = ", ".join(occupants)
             body = (f"This house governs {desc}. {style} In your chart it "
-                    f"holds {occ} — this is an active arena for you, "
+                    f"holds {occ}, which makes it an active arena for you, "
                     f"energized by the themes of "
                     f"{'that planet' if len(occupants)==1 else 'those planets'} "
-                    f"described above. Expect this part of life to demand — "
-                    f"and reward — more of your attention than average.")
+                    f"described above. Expect this part of life to ask for, "
+                    f"and repay, more of your attention than average.")
         else:
             body = (f"This house governs {desc}. {style} No planets occupy it "
-                    f"in your chart — which doesn't mean the area is empty in "
+                    f"in your chart. That doesn't mean the area is empty in "
                     f"your life, only that it runs quietly on that cusp-sign "
                     f"style rather than being a major center of gravity.")
-        out.append({"title": f"{cl._ordinal(h)} House — {title}", "body": body})
+        out.append({"title": f"{cl._ordinal(h)} House: {title}", "body": body})
     return out
 
 
@@ -146,8 +147,8 @@ def _focus_sections(charts: dict[str, Chart], focus_areas: list[str]) -> list[di
                 f"Sun, and your emotional engine is a {moon.sign} Moon. Read together: "
                 f"the world first meets the {asc.sign} in you, is then held (or "
                 f"challenged) by the {sun.sign} underneath, and the private weather "
-                f"is {moon.sign}. When these three feel at odds, it isn't inconsistency "
-                f"— it's layering, and self-knowledge is mostly learning which layer "
+                f"is {moon.sign}. When these three feel at odds, that is layering rather "
+                f"than inconsistency, and self-knowledge is mostly learning which layer "
                 f"is speaking.")
         elif area == "love":
             venus, moon = chart.get("Venus"), chart.get("Moon")
@@ -156,16 +157,16 @@ def _focus_sections(charts: dict[str, Chart], focus_areas: list[str]) -> list[di
                          cl.planet_in_house("Venus", venus.house))
             parts.append(
                 f"Your Moon in {moon.sign} sets what you need to feel emotionally "
-                f"safe with a partner — reread that section with relationships in "
+                f"safe with a partner, so reread that section with relationships in "
                 f"mind.")
             if seventh:
                 parts.append(
                     f"Your 7th house of partnership holds {', '.join(seventh)}: "
-                    f"relationships are a genuinely active arena in this chart, "
+                    f"relationships are an active arena in this chart, "
                     f"a place where major themes of your life get worked out.")
             else:
                 parts.append(
-                    "Your 7th house of partnership holds no planets — partnership "
+                    "Your 7th house of partnership holds no planets, so partnership "
                     "in your chart is shaped more by who you choose than by heavy "
                     "internal weather, which is quieter but also freer.")
         elif area == "career":
@@ -173,18 +174,18 @@ def _focus_sections(charts: dict[str, Chart], focus_areas: list[str]) -> list[di
             saturn, mars = chart.get("Saturn"), chart.get("Mars")
             if tenth:
                 parts.append(
-                    f"Your 10th house of career holds {', '.join(tenth)} — public "
+                    f"Your 10th house of career holds {', '.join(tenth)}. Public "
                     f"work is a major center of gravity in this chart, and those "
                     f"planets' themes (see their sections) describe the flavor of "
                     f"work that will feel like yours.")
             else:
                 parts.append(
                     "Your 10th house of career holds no planets, which often "
-                    "describes careers built deliberately rather than compulsively "
-                    "— direction comes from choice and cumulative skill rather "
+                    "describes careers built deliberately rather than compulsively: "
+                    "direction comes from choice and cumulative skill rather "
                     "than a single burning drive.")
             parts.append(
-                f"Saturn — where you meet discipline — sits in {saturn.sign} in your "
+                f"Saturn, where you meet discipline, sits in {saturn.sign} in your "
                 f"{cl._ordinal(saturn.house)} house: effort invested there compounds "
                 f"more slowly but more durably than anywhere else in your chart. "
                 f"Mars in {mars.sign} describes your working drive: "
@@ -196,14 +197,16 @@ def _focus_sections(charts: dict[str, Chart], focus_areas: list[str]) -> list[di
             parts.append(
                 f"Saturn marks the chart's main growth edge. Yours, in {saturn.sign} "
                 f"in the {cl._ordinal(saturn.house)} house, points to the arena where "
-                f"life keeps setting the same exam until you pass it — and where "
-                f"passing it builds something nothing can take away.")
+                f"life keeps setting the same exam until you pass it, and where "
+                f"passing it builds something that lasts.")
             for a in hard:
                 parts.append(f"Your {a.planet_a}–{a.planet_b} "
                              f"{a.aspect.lower()}: these two functions "
-                             f"{cl.ASPECT_MEANINGS[a.aspect]}. Friction like this "
-                             f"is the chart's gym equipment — resistance that "
-                             f"builds strength when worked deliberately.")
+                             f"{cl.ASPECT_MEANINGS[a.aspect]}.")
+            if hard:
+                parts.append("Friction like this is the chart's gym equipment: "
+                             "resistance that builds strength when worked "
+                             "deliberately.")
             v = charts.get("vedic")
             if v:
                 rahu, ketu = v.get("Rahu"), v.get("Ketu")
@@ -227,8 +230,8 @@ def _vedic_sections(chart: Chart) -> list[dict]:
     if nak:
         symbol, lord, passage = cv.NAKSHATRAS[nak]
         out.append({
-            "title": f"Your Birth Star — {nak}",
-            "body": (cv.NAKSHATRA_INTRO + f"\n\nYours is {nak} — symbol: "
+            "title": f"Your Birth Star: {nak}",
+            "body": (cv.NAKSHATRA_INTRO + f"\n\nYours is {nak}. Symbol: "
                      f"{symbol}; ruled by {lord}; pada {chart.moon_nakshatra_pada}. "
                      f"\n\n{passage}"),
         })
@@ -238,7 +241,7 @@ def _vedic_sections(chart: Chart) -> list[dict]:
             f"{'▶ ' if d.current else '   '}{d.lord}: {d.start[:7]} → {d.end[:7]}"
             for d in chart.dashas)
         out.append({
-            "title": f"Your Current Chapter — {current.lord} Mahadasha "
+            "title": f"Your Current Chapter: {current.lord} Mahadasha "
                      f"(until {current.end[:7]})",
             "body": (cv.DASHA_INTRO + "\n\n" + cv.DASHA_LORDS[current.lord] +
                      "\n\nYour full mahadasha timeline:\n" + timeline),
@@ -247,13 +250,13 @@ def _vedic_sections(chart: Chart) -> list[dict]:
         if idx + 1 < len(chart.dashas):
             nxt = chart.dashas[idx + 1]
             out.append({
-                "title": f"The Chapter After — {nxt.lord} Mahadasha "
+                "title": f"The Chapter After: {nxt.lord} Mahadasha "
                          f"(from {nxt.start[:7]})",
                 "body": ("For orientation, here is the chapter that follows "
                          "your current one. " + cv.DASHA_LORDS[nxt.lord] +
-                         " Knowing what's next isn't about bracing for it — "
-                         "it's about finishing the current chapter's work "
-                         "so the next one starts on solid ground."),
+                         " The point of knowing what's next is to finish the "
+                         "current chapter's work, so the next one starts on "
+                         "solid ground."),
             })
     return out
 
@@ -268,14 +271,14 @@ def _synthesis_section(charts: dict[str, Chart]) -> dict:
         if not wp or not vp:
             continue
         if wp.sign == vp.sign:
-            lines.append(f"• {name}: {wp.sign} in BOTH systems — a reinforced "
+            lines.append(f"• {name}: {wp.sign} in BOTH systems, a reinforced "
                          f"signal; treat this placement's description as "
                          f"doubly weighted for you.")
         else:
-            lines.append(f"• {name}: {wp.sign} (Western) / {vp.sign} (Vedic) "
-                         f"— read the Western as the inner experience, the "
+            lines.append(f"• {name}: {wp.sign} (Western) / {vp.sign} (Vedic). "
+                         f"Read the Western as the inner experience, the "
                          f"Vedic as the life-pattern lens.")
-    return {"title": "Synthesis — Two Lenses, One Person",
+    return {"title": "Synthesis: Two Lenses, One Person",
             "body": "\n".join(lines)}
 
 
@@ -296,9 +299,9 @@ def _balance_section(chart: Chart) -> dict:
         "Water": "feeling, intuition, and emotional depth",
     }
     MODE_MEANING = {
-        "Cardinal": "starting things — leadership and initiation",
-        "Fixed": "sustaining things — persistence and loyalty",
-        "Mutable": "adapting things — flexibility and learning",
+        "Cardinal": "starting things, through leadership and initiation",
+        "Fixed": "sustaining things, through persistence and loyalty",
+        "Mutable": "adapting things, through flexibility and learning",
     }
     core = [p for p in chart.placements
             if p.planet in ("Sun", "Moon", "Mercury", "Venus", "Mars",
@@ -318,10 +321,10 @@ def _balance_section(chart: Chart) -> dict:
         f"toward {ELEM_MEANING[dom_e]}.")
     if missing:
         m = missing[0]
-        body += (f" You have no classical planets in {m} — not a deficiency, "
-                 f"but a muscle that develops through conscious practice "
+        body += (f" You have no classical planets in {m}. Treat this as "
+                 f"a muscle that develops through conscious practice "
                  f"rather than instinct: {ELEM_MEANING[m]}.")
-    body += (f"\n\nBy modality, your chart leans {dom_m} — your natural mode "
+    body += (f"\n\nBy modality, your chart leans {dom_m}. Your natural mode "
              f"is {MODE_MEANING[dom_m]}. Knowing your dominant mode explains "
              f"a lot about where your energy goes effortlessly and which "
              f"phases of a project you tend to hand off, avoid, or need "
@@ -341,15 +344,15 @@ def _numerology_sections(num: dict, no) -> list[dict]:
         from .chart_graphics import lo_shu_svg
     except ImportError:
         from chart_graphics import lo_shu_svg
-    out = [{"h1": "Your Numbers — Numerological Analysis", "no": no}]
-    out.append({"title": f"Mulank {num['mulank']} — Your Psychic Number",
+    out = [{"h1": "Your Numbers: Numerological Analysis", "no": no}]
+    out.append({"title": f"Mulank {num['mulank']}: Your Psychic Number",
                 "body": (cn.MULANK_INTRO + f"\n\nYours is {num['mulank']}, "
                          + cn.NUMBER_ESSENCE[num['mulank']])})
     if num["karmic_debt"]:
-        out.append({"title": f"Born on the {num['karmic_debt']}th — "
+        out.append({"title": f"Born on the {num['karmic_debt']}th: "
                              "A Karmic Number",
                     "body": cn.KARMIC_DEBT_TEXT[num["karmic_debt"]]})
-    out.append({"title": f"Bhagyank {num['bhagyank']} — Your Destiny Number",
+    out.append({"title": f"Bhagyank {num['bhagyank']}: Your Destiny Number",
                 "body": (cn.BHAGYANK_INTRO + f"\n\nYours is {num['bhagyank']}, "
                          + cn.NUMBER_ESSENCE[num['bhagyank']])})
     friendly = (num["bhagyank"] in cn_friends(num["mulank"])
@@ -367,11 +370,11 @@ def _numerology_sections(num: dict, no) -> list[dict]:
                 "body": (cn.NAME_INTRO + f"\n\nYours is {num['name_number']}, "
                          + cn.NUMBER_ESSENCE[num['name_number']] + "\n\n"
                          + ("Your name number is harmonious with your birth "
-                            "numbers — the name you use works with you."
+                            "numbers, so the name you use works with you."
                             if num["name_harmonious"] else
                             "Your name number sits in mild tension with your "
-                            "birth numbers. Nothing alarming — many successful "
-                            "people have this — but if you ever use a short "
+                            "birth numbers. This is nothing alarming, and many "
+                            "successful people have it, but if you ever use a short "
                             "form or pen name, one aligned with your Mulank's "
                             "friend numbers ("
                             + ", ".join(map(str, num["friend_numbers"]))
@@ -392,23 +395,23 @@ def _numerology_sections(num: dict, no) -> list[dict]:
                          "develop through conscious practice rather than "
                          "instinct."), "title": ""})
     out.append({"chart": lo_shu_svg(num["grid"]["counts"]),
-                "cap": "Your Lo Shu grid — numbers present in your birth data, with their classical elements"})
+                "cap": "Your Lo Shu grid: numbers present in your birth data, with their classical elements"})
     strengths = [f"{n} appears {c}×" for n, c in num["grid"]["present"].items() if c >= 2]
     if strengths:
         out.append({"title": "Concentrated numbers",
                     "body": ("In your grid: " + "; ".join(strengths) + ". "
-                             "Repetition amplifies a number's qualities — "
+                             "Repetition amplifies a number's qualities, so "
                              "review the essences above for your repeated "
                              "numbers; they act as double-strength traits.")})
     if num["grid"]["missing"]:
         body = "\n\n".join(cn.MISSING_NUMBER[n] for n in num["grid"]["missing"])
-        out.append({"title": "Missing numbers — and what to do about them",
+        out.append({"title": "Missing numbers and what to do about them",
                     "body": body + "\n\n" + cn.GRID_PLANE_NOTE})
 
     # lucky things + directions card
     kd = num["kua_directions"]
     out.append({"h1": "Your Lucky Things & Directions", "no": None})
-    out.append({"gold": True, "title": "Quick Reference — Keep This Page",
+    out.append({"gold": True, "title": "Quick Reference: Keep This Page",
                 "kv": [
                     ("Ruling planet", num["ruling_planet"]),
                     ("Lucky colours", num["lucky"]["colours"]),
@@ -427,10 +430,10 @@ def _numerology_sections(num: dict, no) -> list[dict]:
                 "body": ("How to use this page: favour your colours and days "
                          "for important starts; face your success direction "
                          "for focused work when practical; the mantra is "
-                         "traditionally recited on your strong days — 11 or "
-                         "108 repetitions, entirely optional. None of this "
-                         "is superstition-as-obligation; treat it as a "
-                         "personal rhythm the tradition offers you.")})
+                         "traditionally recited on your strong days (11 or "
+                         "108 repetitions, entirely optional). None of this "
+                         "is an obligation; treat it as a personal rhythm "
+                         "the tradition offers you.")})
     return out
 
 
@@ -460,10 +463,10 @@ def _monthly_sections(num: dict, moon_sidereal_lon: float,
     transits = monthly_transits(moon_sidereal_lon)
     cur_dasha = next((d.lord for d in dashas if d.current), None) if dashas else None
 
-    out = [{"h1": "Month by Month — Your Next 12 Months", "no": None},
+    out = [{"h1": "Month by Month: Your Next 12 Months", "no": None},
            {"title": "", "body": cn.MONTHLY_INTRO +
             (f"\n\nBackdrop for the whole year: you are in a {cur_dasha} "
-             f"mahadasha — reread that chapter's description; every month "
+             f"mahadasha. Reread that chapter's description; every month "
              f"below plays out against it." if cur_dasha else "")}]
     sade_flagged = False
     for mo, tr in zip(months, transits):
@@ -517,13 +520,13 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
 
     # 01 how to read
     sections.append(h1("How to Read This Report",
-                       "No astrology knowledge assumed — start here"))
+                       "No astrology knowledge assumed. Start here"))
     sections.append({"title": "", "body": cl.HOW_TO_READ + (
         "" if time_known else
         "\n\nA note on your birth time: you indicated it isn't precisely "
-        "known. Everything based on your birth date — all numerology, sun "
-        "sign, monthly forecast, and (almost always) moon sign and nakshatra "
-        "— is unaffected. We've omitted the rising sign and house placements, "
+        "known. Everything based on your birth date (all numerology, sun "
+        "sign, monthly forecast, and almost always moon sign and nakshatra) "
+        "is unaffected. We've omitted the rising sign and house placements, "
         "which are the only elements that need an exact clock time, rather "
         "than guess them.")})
 
@@ -537,7 +540,7 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
            else "Not precisely known"),
           ("Place of birth", place_label),
           ("Sun sign (Western)", charts.get("western").get("Sun").sign
-           if "western" in charts else "—"),
+           if "western" in charts else "Not in this report"),
           ("Moon sign" + (" (Vedic)" if vc0 else ""),
            (vc0 or primary).get("Moon").sign),
           ("Mulank (psychic number)", str(num["mulank"])),
@@ -555,11 +558,11 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
     if "western" in charts:
         wc = charts["western"]
         sections.append(h1("Your Western Birth Chart",
-                           "Tropical zodiac — the psychological lens"))
+                           "Tropical zodiac: the psychological lens"))
         wheel_pl = [(p.planet, p.longitude) for p in wc.placements]
         sections.append({"chart": western_wheel(
             wheel_pl, wc.ascendant.longitude if time_known else None),
-            "cap": "Your Western chart wheel — planets in the tropical zodiac"
+            "cap": "Your Western chart wheel: planets in the tropical zodiac"
                    + (", Ascendant marked" if time_known else "")})
         sections += _core_three(wc) if time_known else _core_three_no_asc(wc)
         sections.append({"table": _placement_rows(wc), "houses": time_known,
@@ -578,14 +581,14 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
     if "vedic" in charts:
         vc = charts["vedic"]
         sections.append(h1("Your Vedic Birth Chart",
-                           "Sidereal zodiac, Lahiri — the Jyotish lens"))
+                           "Sidereal zodiac, Lahiri: the Jyotish lens"))
         asc_idx = (int(vc.ascendant.longitude // 30) if time_known
                    else int(vc.get("Moon").longitude // 30))
         diamond_pl = [(p.planet, int(p.longitude // 30))
                       for p in vc.placements]
         cap = ("North-Indian style chart" +
                (" (lagna kundali)" if time_known else
-                " drawn from your Moon sign (chandra kundali) — the "
+                " drawn from your Moon sign (chandra kundali), the "
                 "traditional approach when birth time is unknown"))
         sections.append({"chart": north_indian_chart(asc_idx, diamond_pl),
                          "cap": cap})
@@ -601,7 +604,7 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
             sections += _house_sections(vc)
 
     if tier == "mixed" and "western" in charts and "vedic" in charts:
-        sections.append(h1("Synthesis — Two Lenses, One Person",
+        sections.append(h1("Synthesis: Two Lenses, One Person",
                            "Where the systems agree about you"))
         sections.append(_synthesis_section(charts))
 
@@ -613,12 +616,12 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
             sec_no[0] += 1
             s["no"] = f"{sec_no[0]:02d}"
             toc.append({"title": s["h1"], "desc": {
-                "Your Numbers — Numerological Analysis":
-                    "Mulank, Bhagyank, name, soul urge — Chaldean system",
+                "Your Numbers: Numerological Analysis":
+                    "Mulank, Bhagyank, name and soul urge (Chaldean system)",
                 "Your Lo Shu Fortune Grid":
                     "Your birth digits on the ancient magic square",
                 "Your Lucky Things & Directions":
-                    "Colours, days, dates, directions, mantra — quick reference",
+                    "Colours, days, dates, directions and mantra at a glance",
             }.get(s["h1"], "")})
     sections += num_secs
 
@@ -645,10 +648,11 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
         "birth_line": ((birth_dt_local.strftime("%d %B %Y, %H:%M")
                         if time_known else
                         birth_dt_local.strftime("%d %B %Y")) +
-                       f" — {place_label}"),
+                       f", {place_label}"),
         "generated": dt.date.today().strftime("%d %B %Y"),
         "sections": sections, "toc": toc, "num": num,
         "closing": cl.CLOSING,
+        "closing_quote": random.choice(cl.QUOTES_BY_TIER[tier]),
         "cover_ring": cover_zodiac_ring(),
         "asc_sign": (primary.ascendant.sign
                      if time_known and primary.ascendant else ""),
@@ -660,9 +664,9 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
 def _core_three_no_asc(chart: Chart) -> list[dict]:
     out = []
     sun, moon = chart.get("Sun"), chart.get("Moon")
-    out.append({"title": f"Your Sun — {sun.sign}",
+    out.append({"title": f"Your Sun: {sun.sign}",
                 "body": cl.SUN_SIGNS[sun.sign]})
-    out.append({"title": f"Your Moon — {moon.sign}",
+    out.append({"title": f"Your Moon: {moon.sign}",
                 "body": cl.MOON_SIGNS[moon.sign]})
     return out
 
@@ -711,7 +715,7 @@ def _compat_brief_profile(charts: dict[str, Chart], num: dict,
         out.append({"title": f"Sun in {sun.sign}", "body": cl.SUN_SIGNS[sun.sign]})
         out.append({"title": f"Moon in {moon.sign}", "body": cl.MOON_SIGNS[moon.sign]})
         if time_known and w.ascendant:
-            out.append({"title": f"Rising — {w.ascendant.sign}",
+            out.append({"title": f"Rising: {w.ascendant.sign}",
                         "body": cl.RISING_SIGNS[w.ascendant.sign]})
     if needs_vedic and "vedic" in charts:
         v = charts["vedic"]
@@ -719,15 +723,15 @@ def _compat_brief_profile(charts: dict[str, Chart], num: dict,
                     "body": cl.MOON_SIGNS[v.get("Moon").sign]})
         if v.moon_nakshatra:
             _, lord, passage = cv.NAKSHATRAS[v.moon_nakshatra]
-            out.append({"title": f"Birth Star — {v.moon_nakshatra} "
+            out.append({"title": f"Birth Star: {v.moon_nakshatra} "
                                  f"(ruled by {lord})", "body": passage})
         current = next((d for d in v.dashas if d.current), None)
         if current:
-            out.append({"title": f"Current Chapter — {current.lord} Mahadasha",
+            out.append({"title": f"Current Chapter: {current.lord} Mahadasha",
                         "body": cv.DASHA_LORDS[current.lord]})
-    out.append({"title": f"Mulank {num['mulank']} — Psychic Number",
+    out.append({"title": f"Mulank {num['mulank']}: Psychic Number",
                "body": f"Yours is {num['mulank']}, " + cn_essence(num["mulank"])})
-    out.append({"title": f"Bhagyank {num['bhagyank']} — Destiny Number",
+    out.append({"title": f"Bhagyank {num['bhagyank']}: Destiny Number",
                "body": f"Yours is {num['bhagyank']}, " + cn_essence(num["bhagyank"])})
     return out
 
@@ -825,11 +829,11 @@ def build_compatibility_report_context(order: dict) -> dict:
                          "title": "Vedic Guna Milan (Ashtakoota Matching)"})
 
     # 03/04 brief individual profiles
-    sections.append(h1(f"Brief Profile — {order['name']}",
+    sections.append(h1(f"Brief Profile: {order['name']}",
                        "Their core signs and numbers"))
     sections += _compat_brief_profile(a_charts, num_a, needs_western, needs_vedic, time_known_a)
 
-    sections.append(h1(f"Brief Profile — {order['partner_name']}",
+    sections.append(h1(f"Brief Profile: {order['partner_name']}",
                        "Their core signs and numbers"))
     sections += _compat_brief_profile(b_charts, num_b, needs_western, needs_vedic, time_known_b)
 
@@ -839,6 +843,7 @@ def build_compatibility_report_context(order: dict) -> dict:
         "generated": dt.date.today().strftime("%d %B %Y"),
         "sections": sections, "toc": toc, "guna_summary": guna,
         "closing": cl.CLOSING,
+        "closing_quote": random.choice(cl.QUOTES_BY_TIER[tier]),
     }
 
 

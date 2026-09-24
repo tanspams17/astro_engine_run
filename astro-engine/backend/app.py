@@ -321,7 +321,7 @@ def create_order(o: OrderIn):
         except Exception:
             logger.exception("Gateway create_order failed for order %s (%s)",
                              order["id"], order["currency"])
-            raise HTTPException(502, "payment gateway unavailable — please try again shortly")
+            raise HTTPException(502, "payment gateway unavailable, please try again shortly")
         if session.checkout_url:  # hosted checkout: remember session on the order
             orders.set_payment_session(order["id"], session.session_id)
     return {"order_id": order["id"], "payment_session_id": session.session_id if session else None,
@@ -402,14 +402,14 @@ def pay(p: PayIn, background: BackgroundTasks):
     except Exception:
         logger.exception("Gateway call failed for order %s (%s)",
                          p.order_id, order["currency"])
-        raise HTTPException(502, "payment gateway unavailable — please try again shortly")
+        raise HTTPException(502, "payment gateway unavailable, please try again shortly")
     if not result.success:
         orders.transition(p.order_id, "failed")
         raise HTTPException(402, result.error or "payment failed")
     orders.mark_paid(p.order_id, session.session_id, result.charge_id)
     background.add_task(_fulfil, p.order_id)
     return {"ok": True, "order_id": p.order_id, "status": "paid",
-            "message": "Payment received — your report is being generated "
+            "message": "Payment received. Your report is being generated "
                        "and will arrive by email within a few minutes."}
 
 

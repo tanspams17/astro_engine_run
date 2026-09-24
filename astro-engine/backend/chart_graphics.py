@@ -123,7 +123,7 @@ def lo_shu_svg(counts: dict[int, int], size=300) -> str:
         fill = PAPER if cnt else "#eae5f5"
         e.append(f'<rect x="{x+2}" y="{y+2}" width="{cell-4}" height="{cell-4}" '
                  f'fill="{fill}" stroke="{GOLD}" stroke-width="2" rx="6"/>')
-        txt = " ".join([str(n)] * cnt) if cnt else "—"
+        txt = " ".join([str(n)] * cnt) if cnt else "–"
         e.append(f'<text x="{x+cell/2}" y="{y+cell/2+2}" font-size="{20 if cnt else 16}" '
                  f'fill="{INK if cnt else "#9b90c4"}" text-anchor="middle" '
                  f'font-weight="bold">{txt}</text>')
