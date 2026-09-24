@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) — Consent Mode v2: denied until the visitor accepts (see /consent.js) -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  (function () {
+    var c = null; try { c = localStorage.getItem('arvelos_consent'); } catch (e) {}
+    var v = c === 'granted' ? 'granted' : 'denied';
+    gtag('consent', 'default', {ad_storage: v, ad_user_data: v, ad_personalization: v, analytics_storage: v});
+  })();
+  gtag('js', new Date());
+  gtag('config', 'AW-18468656072');
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18468656072"></script>
+<script defer src="/consent.js"></script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Arvelos — Your Birth Chart, Read Properly</title>
@@ -702,7 +717,8 @@
 <footer>
   <div class="wrap">
     Arvelos · astro.arvelos.cloud · <a href="/terms.html">Terms &amp; Refunds</a> ·
-    <a href="/privacy.html">Privacy</a> · support@arvelos.cloud
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="#" onclick="window.arvelosConsent&&arvelosConsent.open();return false;">Cookie settings</a> · support@arvelos.cloud
     <div class="fine">For reflection and entertainment. Reports describe tendencies, not
       certainties, and make no predictions about your future.</div>
     <div class="fine">Birthplace data © <a href="https://www.geonames.org/" target="_blank">GeoNames.org</a>, licensed under
