@@ -60,7 +60,7 @@
     el.setAttribute('aria-label', 'Cookie consent');
     el.appendChild(css);
     el.insertAdjacentHTML('beforeend',
-      '<p>With your permission we use cookies from Google Ads and Microsoft Clarity to see which ads bring people here and how the site is used. ' +
+      '<p>With your permission we use cookies from Google (Ads and Analytics) and Microsoft Clarity to see which ads bring people here and how the site is used. ' +
       'Your birth details are never shared with them. ' +
       '<a href="/privacy.html#cookies">Privacy policy</a></p>' +
       '<div class="arv-btns">' +

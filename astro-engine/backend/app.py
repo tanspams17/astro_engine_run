@@ -461,6 +461,9 @@ def order_status(order_id: str):
     if order["status"] == "delivered":
         out["download_url"] = f"/download/{order['download_token']}"
         out["tier"] = order["tier"]
+        # for the analytics purchase event on the success screen
+        out["amount_minor"] = order["amount_minor"]
+        out["currency"] = order["currency"]
     if order["status"] == "fulfilment_failed":
         out["retryable"] = True
         out["error"] = order.get("fulfilment_error") or "report generation failed"
