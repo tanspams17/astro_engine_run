@@ -1904,6 +1904,19 @@ async function poll(orderId, n) {
       if (!seen && s.tier && s.amount_minor !== undefined) {
         track("purchase", {transaction_id: orderId, currency: s.currency,
           value: s.amount_minor / 100, items: [gaItem(s.tier)]});
+        // Google Ads "Purchase" conversion action (separate from the GA4
+        // purchase event above): fires once per delivered order, with the
+        // real order id and amount so Ads can optimise on actual revenue.
+        try {
+          if (typeof gtag === "function") {
+            gtag("event", "conversion", {
+              send_to: "AW-18468656072/JogqCO366ocdEMinxeZE",
+              transaction_id: orderId,
+              value: s.amount_minor / 100,
+              currency: s.currency
+            });
+          }
+        } catch (e) {}
         try { sessionStorage.setItem("ga_purchase_" + orderId, "1"); } catch (e) {}
       }
       const dlBtn = document.getElementById("dl");
