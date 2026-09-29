@@ -109,12 +109,13 @@ Your free birth chart preview is ready — calculated from your real birth
 details, not a template:
 {link}
 
-As a thank-you for trying it, here's {discount_pct}% off your full report:
+As a thank-you for trying it, we've reserved {discount_pct}% off your full report — it's yours,
+you just need to claim it:
 
   CODE: {discount_code}
   Gone after {expiry} — {discount_pct}% off any report, one time only, then this price won't come back.
 
-Claim it here (the code fills in automatically):
+Claim your reserved discount here (the code fills in automatically):
 {claim_link}
 
 Warmly,
@@ -147,16 +148,16 @@ font-size:14px;">Download your free preview (PDF)</a></p>
 <div style="margin:28px 0;padding:20px;border:1.5px dashed #d4920a;border-radius:10px;
 background:rgba(212,146,10,0.08);">
 <p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;
-color:#d4920a;font-weight:bold;">As a thank-you — {discount_pct}% off your full report</p>
+color:#d4920a;font-weight:bold;">Reserved for you — {discount_pct}% off your full report</p>
 <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:22px;letter-spacing:.04em;
 color:#f5eedc;font-weight:bold;">{discount_code}</p>
 <p style="margin:0 0 14px;font-size:12.5px;color:#a9a3c9;">Gone after {expiry} —
 one-time use, then this price won't come back.</p>
 <a href="{claim_link}" style="background:#d4920a;color:#191735;text-decoration:none;
 padding:12px 26px;border-radius:8px;font-weight:bold;display:inline-block;
-font-size:14px;">Claim my {discount_pct}% off &rarr;</a>
+font-size:14px;">Claim your reserved {discount_pct}% off &rarr;</a>
 </div>
-<p style="font-size:12px;color:#8b84a8;margin:0 0 20px;">P.S. Your code is reserved for you
+<p style="font-size:12px;color:#8b84a8;margin:0 0 20px;">P.S. This code is reserved for you
 specifically — it can only be used once, by whoever claims it first.</p>
 <p style="font-size:13px;color:#a9a3c9;">Questions? Reply to this email: {SUPPORT_EMAIL}</p>
 <p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos · {BASE_URL}</p>
