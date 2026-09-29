@@ -54,7 +54,7 @@ A few notes:
 
 Warmly,
 Arvelos
-{BASE_URL}
+Your NextGen Astral Report
 """
 
 
@@ -88,7 +88,7 @@ The report was calculated individually from your exact birth details.
 This was a one-time payment. No subscription, no renewals, nothing to cancel.<br><br>
 If anything looks wrong (a typo in your birth details, a broken link),
 just reply to this email and we'll fix it: {SUPPORT_EMAIL}</p>
-<p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos · {BASE_URL}</p>
+<p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos<br>Your NextGen Astral Report</p>
 </div></body></html>"""
 
 
@@ -120,7 +120,7 @@ Claim your reserved discount here (the code fills in automatically):
 
 Warmly,
 Arvelos
-{BASE_URL}
+Your NextGen Astral Report
 
 P.S. Your code is reserved for you specifically — it can only be used once, by whoever claims it first.
 """
@@ -160,7 +160,7 @@ font-size:14px;">Claim your reserved {discount_pct}% off &rarr;</a>
 <p style="font-size:12px;color:#8b84a8;margin:0 0 20px;">P.S. This code is reserved for you
 specifically — it can only be used once, by whoever claims it first.</p>
 <p style="font-size:13px;color:#a9a3c9;">Questions? Reply to this email: {SUPPORT_EMAIL}</p>
-<p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos · {BASE_URL}</p>
+<p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos<br>Your NextGen Astral Report</p>
 </div></body></html>"""
 
 
