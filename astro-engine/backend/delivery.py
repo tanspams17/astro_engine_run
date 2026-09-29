@@ -92,6 +92,73 @@ just reply to this email and we'll fix it: {SUPPORT_EMAIL}</p>
 </div></body></html>"""
 
 
+def _format_expiry(expires_at_iso: str) -> str:
+    import datetime as _dt
+    when = _dt.datetime.fromisoformat(expires_at_iso)
+    return when.strftime("%-I:%M %p, %-d %B %Y (UTC)")
+
+
+def _lead_text(name: str, token: str, discount_code: str, discount_pct: int,
+               expires_at: str) -> str:
+    link = f"{BASE_URL}/download/lead/{token}"
+    claim_link = f"{BASE_URL}/?coupon={discount_code}&tier=mixed#order"
+    expiry = _format_expiry(expires_at)
+    return f"""Hi {name},
+
+Your free birth chart preview is ready — calculated from your real birth
+details, not a template:
+{link}
+
+As a thank-you for trying it, here's {discount_pct}% off your full report:
+
+  CODE: {discount_code}
+  Valid until {expiry} — {discount_pct}% off any report, one time only.
+
+Claim it here (the code fills in automatically):
+{claim_link}
+
+Warmly,
+Arvelos
+{BASE_URL}
+"""
+
+
+def _lead_html(name: str, token: str, discount_code: str, discount_pct: int,
+              expires_at: str) -> str:
+    safe_name = html.escape(name)
+    link = f"{BASE_URL}/download/lead/{token}"
+    claim_link = f"{BASE_URL}/?coupon={discount_code}&tier=mixed#order"
+    expiry = _format_expiry(expires_at)
+    return f"""<!DOCTYPE html>
+<html><body style="margin:0;padding:32px 20px;background:#191735;
+font-family:Georgia,serif;color:#e9e4f5;">
+<div style="max-width:480px;margin:0 auto;">
+<p style="color:#d4920a;font-size:13px;letter-spacing:.08em;
+text-transform:uppercase;margin:0 0 20px;">Arvelos</p>
+<p style="font-size:16px;">Hi {safe_name},</p>
+<p style="font-size:16px;">Your free birth chart preview is ready — calculated
+from your real birth details, not a template.</p>
+<p style="margin:20px 0;">
+<a href="{link}" style="background:#3a3568;color:#f5eedc;text-decoration:none;
+padding:12px 24px;border-radius:8px;font-weight:bold;display:inline-block;
+font-size:14px;">Download your free preview (PDF)</a></p>
+<div style="margin:28px 0;padding:20px;border:1.5px dashed #d4920a;border-radius:10px;
+background:rgba(212,146,10,0.08);">
+<p style="margin:0 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+color:#d4920a;font-weight:bold;">As a thank-you — {discount_pct}% off your full report</p>
+<p style="margin:0 0 10px;font-family:Georgia,serif;font-size:22px;letter-spacing:.04em;
+color:#f5eedc;font-weight:bold;">{discount_code}</p>
+<p style="margin:0 0 14px;font-size:12.5px;color:#a9a3c9;">Valid until {expiry} —
+one-time use.</p>
+<a href="{claim_link}" style="background:#d4920a;color:#191735;text-decoration:none;
+padding:12px 26px;border-radius:8px;font-weight:bold;display:inline-block;
+font-size:14px;">Claim my {discount_pct}% off &rarr;</a>
+</div>
+<p style="font-size:13px;color:#a9a3c9;">Questions? Reply to this email: {SUPPORT_EMAIL}</p>
+<p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos · {BASE_URL}</p>
+</div></body></html>"""
+
+
 def _send_via_resend(to_email: str, subject: str, html: str, text: str):
     api_key = os.environ["RESEND_API_KEY"]
     sender = os.environ.get("RESEND_FROM", f"Arvelos <reports@arvelos.cloud>")
@@ -155,6 +222,23 @@ def send_report_email(to_email: str, name: str, tier_name: str,
 
     if os.environ.get("RESEND_API_KEY"):
         _send_via_resend(to_email, subject, _email_html(name, tier_name, token), text)
+    elif os.environ.get("SMTP_HOST"):
+        _send_via_smtp(to_email, subject, text)
+    else:  # dev mode: write to outbox instead of sending
+        _write_to_outbox(to_email, subject, text, token)
+    return True
+
+
+def send_lead_teaser_email(to_email: str, name: str, token: str,
+                           discount_code: str, discount_pct: int,
+                           expires_at: str) -> bool:
+    subject = f"Your free birth chart preview + {discount_pct}% off (48h only)"
+    text = _lead_text(name, token, discount_code, discount_pct, expires_at)
+
+    if os.environ.get("RESEND_API_KEY"):
+        _send_via_resend(to_email, subject,
+                         _lead_html(name, token, discount_code, discount_pct, expires_at),
+                         text)
     elif os.environ.get("SMTP_HOST"):
         _send_via_smtp(to_email, subject, text)
     else:  # dev mode: write to outbox instead of sending

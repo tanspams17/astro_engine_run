@@ -698,6 +698,100 @@ def generate_report(name, birth_dt_local, tz_name, place_label, lat, lon,
     return render_pdf(ctx, out_path)
 
 
+# ------------------------------------------------------------ lead magnet
+#
+# Free 2-page teaser, sent before any payment. Deliberately reuses the same
+# calculation engine and content library as a real report (this is a real
+# Sun/Moon placement, not a canned message) but renders only a fraction of
+# it, through a separate template that carries the time-boxed discount
+# offer. Never touches PRICES currency handling beyond reading it — no
+# order, no payment, no gateway call anywhere in this path.
+
+_CURRENCY_SYMBOL = {"USD": "$", "GBP": "£", "INR": "₹"}
+
+
+def build_lead_teaser_context(name: str, birth_dt_local: dt.datetime,
+                              tz_name: str, place_label: str, lat: float,
+                              lon: float, time_known: bool, gender: str,
+                              currency: str, discount_code: str,
+                              discount_pct: int, expires_at: str) -> dict:
+    try:
+        from .numerology import compute_numerology
+    except ImportError:
+        from numerology import compute_numerology
+    try:
+        from .chart_graphics import cover_zodiac_ring
+    except ImportError:
+        from chart_graphics import cover_zodiac_ring
+    try:
+        from . import orders as _orders
+    except ImportError:
+        import orders as _orders
+
+    charts = compute_charts("mixed", birth_dt_local, tz_name, lat, lon)
+    western, vedic = charts["western"], charts["vedic"]
+    sun = western.get("Sun")
+    num = compute_numerology(name, birth_dt_local.date(), gender)
+
+    # Original + discounted price for the report this teaser upsells —
+    # the anchor (struck-through original) is what makes the discount
+    # register as a real saving, not just an abstract percentage.
+    mixed_price = _orders.PRICES["mixed"][currency]
+    discounted = round(mixed_price * (100 - discount_pct) / 100)
+    sym = _CURRENCY_SYMBOL[currency]
+    # INR prices are always whole rupees; USD/GBP always carry cents.
+    fmt = ((lambda minor: f"{sym}{minor // 100:,}") if currency == "INR"
+           else (lambda minor: f"{sym}{minor / 100:,.2f}"))
+
+    expiry_dt = dt.datetime.fromisoformat(expires_at)
+
+    ctx = {
+        "name": name,
+        "generated": dt.date.today().strftime("%d %B %Y"),
+        "sun_sign": sun.sign,
+        "sun_text": cl.SUN_SIGNS[sun.sign],
+        "moon_sign": vedic.get("Moon").sign,
+        "mulank": num["mulank"],
+        "bhagyank": num["bhagyank"],
+        "cover_ring": cover_zodiac_ring(),
+        "discount_code": discount_code,
+        "discount_pct": discount_pct,
+        "price_before": fmt(mixed_price),
+        "price_after": fmt(discounted),
+        "expiry_display": expiry_dt.strftime("%-I:%M %p, %-d %B %Y (UTC)"),
+        "claim_url": f"https://astro.arvelos.cloud/?coupon={discount_code}&tier=mixed#order",
+    }
+    if time_known:
+        asc = western.ascendant
+        if asc:
+            ctx["rising_sign"] = asc.sign
+        nak = vedic.moon_nakshatra
+        if nak:
+            ctx["nakshatra"] = nak
+    return ctx
+
+
+def render_lead_teaser_pdf(context: dict, out_path: str) -> str:
+    from weasyprint import HTML
+    # Same autoescape=True reasoning as render_pdf(): `name` is free-text
+    # customer input rendered into this HTML before WeasyPrint turns it
+    # into a PDF server-side.
+    env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=True)
+    tpl = env.get_template("lead_teaser.html")
+    html = tpl.render(**context)
+    HTML(string=html, base_url=TEMPLATE_DIR).write_pdf(out_path)
+    return out_path
+
+
+def generate_lead_teaser(name, birth_dt_local, tz_name, place_label, lat, lon,
+                         out_path, time_known, gender, currency,
+                         discount_code, discount_pct, expires_at) -> str:
+    ctx = build_lead_teaser_context(
+        name, birth_dt_local, tz_name, place_label, lat, lon, time_known,
+        gender, currency, discount_code, discount_pct, expires_at)
+    return render_lead_teaser_pdf(ctx, out_path)
+
+
 # ------------------------------------------------------------ compatibility
 
 

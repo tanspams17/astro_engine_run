@@ -322,6 +322,21 @@
     background:rgba(212,146,10,0.08); cursor:pointer; transition:background .2s, border-color .2s; }
   .sample-preview-btn:hover { background:rgba(212,146,10,0.16); border-color:var(--gold); }
   .sample-preview-note { margin:11px 0 0; font-size:12.5px; color:var(--lavender); }
+  .lead-magnet-link { display:inline-block; margin-top:14px; font-family:var(--sans);
+    font-size:13.5px; font-weight:600; color:var(--gold-light); text-decoration:none;
+    border-bottom:1px dashed rgba(240,192,74,0.5); cursor:pointer; background:none; border-top:none;
+    border-left:none; border-right:none; padding:0; }
+  .lead-magnet-link:hover { color:var(--cream); border-bottom-color:var(--cream); }
+
+  /* ---------- LEAD MAGNET MODAL ---------- */
+  .modal-box.lead-box { height:auto; max-height:88vh; }
+  .modal-box.lead-box .modal-body { padding:22px 26px 26px; overflow-y:auto; }
+  .lead-intro { font-size:13.5px; color:var(--lavender); margin:0 0 18px; }
+  .lead-intro strong { color:var(--cream); }
+  #leadForm .field-grid { margin-bottom:4px; }
+  #leadSuccess, #leadError { display:none; text-align:center; padding:10px 0; }
+  #leadSuccess .glyph, #leadError .glyph { font-size:40px; margin-bottom:10px; }
+  #leadSuccess p, #leadError p { color:var(--lavender); font-size:14px; }
 
   .modal-overlay { position:fixed; inset:0; z-index:1000; background:rgba(10,8,30,0.78);
     backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); align-items:center;
@@ -547,6 +562,7 @@
         <span aria-hidden="true">&#128065;&#65039;</span> See Sample Report (PDF)
       </button>
       <p class="sample-preview-note">Your personalized report will be generated instantly in full PDF format upon checkout.</p>
+      <button type="button" class="lead-magnet-link" onclick="openLeadModal()">Or get YOUR free 2-page preview + 40% off &rarr;</button>
     </div>
   </div>
 </section>
@@ -747,6 +763,7 @@
         <span aria-hidden="true">&#128065;&#65039;</span> See Sample Report (PDF)
       </button>
       <p class="sample-preview-note">Your personalized report will be generated instantly in full PDF format upon checkout.</p>
+      <button type="button" class="lead-magnet-link" onclick="openLeadModal()">Or get YOUR free 2-page preview + 40% off &rarr;</button>
     </div>
 
     <div class="order-layout" id="compatFormView" data-clarity-mask="True" style="display:none; margin-top:48px;">
@@ -905,6 +922,68 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="leadModal" role="dialog" aria-modal="true"
+     aria-labelledby="leadModalTitle" style="display:none"
+     onclick="if(event.target===this) closeLeadModal()">
+  <div class="modal-box lead-box">
+    <div class="modal-head">
+      <span id="leadModalTitle">Your free 2-page preview</span>
+      <div class="modal-actions">
+        <button type="button" class="modal-close" onclick="closeLeadModal()" aria-label="Close">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="lead-intro">Enter your real birth details and we'll email you a free 2-page
+        preview of your chart — plus a <strong>40% discount code</strong> toward your full
+        report, good for 48 hours.</p>
+
+      <form id="leadForm" onsubmit="event.preventDefault(); submitLead();">
+        <div class="field-grid">
+          <div><label for="leadName">Your first name</label>
+            <input type="text" id="leadName" placeholder="So we can address you" maxlength="60"></div>
+          <div><label for="leadEmail">Email</label>
+            <input type="email" id="leadEmail" placeholder="you@example.com"></div>
+          <div><label for="leadDate">Date of birth</label><input type="date" id="leadDate"></div>
+          <div><label for="leadTime_h">Time of birth</label>
+            <div class="time-ampm-row">
+              <select id="leadTime_h" aria-label="Hour"></select>
+              <select id="leadTime_m" aria-label="Minute"></select>
+              <select id="leadTime_ap" aria-label="AM or PM"></select>
+            </div><input type="hidden" id="leadTime"></div>
+          <div class="full">
+            <div class="timeoff">
+              <input type="checkbox" id="leadNotime" onchange="setTimeFieldDisabled('leadTime', this.checked)">
+              <span>I don't know my exact birth time.</span>
+            </div>
+          </div>
+          <div class="full"><label for="leadPlace">Place of birth</label>
+            <div class="autocomplete">
+              <input type="text" id="leadPlace" placeholder="City, Country — e.g. Mumbai, India" autocomplete="off" aria-controls="leadCitySuggestions" aria-expanded="false">
+              <div class="suggestions" id="leadCitySuggestions" role="listbox"></div>
+            </div>
+            <p class="hint" id="leadCityHint" style="display:none">No matching city found — check the
+              spelling, or try just the city name without the country.</p>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary full" id="leadSubmitBtn" style="margin-top:18px">Get my free preview</button>
+        <div class="err" id="leadErr" role="alert" aria-live="polite"></div>
+      </form>
+
+      <div id="leadSuccess">
+        <div class="glyph">&#128233;</div>
+        <p><strong style="color:var(--cream)">Check your inbox!</strong><br>Your free preview and
+          40%-off code are on their way — they can take a minute or two to arrive.</p>
+        <button type="button" class="btn-primary" onclick="closeLeadModal()">Done</button>
+      </div>
+      <div id="leadError">
+        <div class="glyph">!</div>
+        <p id="leadErrorMsg">Something went wrong. Please try again.</p>
+        <button type="button" class="btn-primary" onclick="document.getElementById('leadForm').style.display='';document.getElementById('leadError').style.display='none';">Try again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ================= starfield ================= */
 // "Dual Tone" — mostly the site's cream tone (reads as actual stars against
@@ -1048,7 +1127,7 @@ function setTimeFieldDisabled(prefix, disabled){
     if (el) el.disabled = disabled;
   });
 }
-["btime", "cBtime", "pBtime"].forEach(initAmPmTime);
+["btime", "cBtime", "pBtime", "leadTime"].forEach(initAmPmTime);
 
 /* ---- sample report preview modal ---- */
 function openSamplePreview(){
@@ -1067,7 +1146,57 @@ function closeSamplePreview(){
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('sampleModal').style.display !== 'none') closeSamplePreview();
+  if (e.key === 'Escape' && document.getElementById('leadModal').style.display !== 'none') closeLeadModal();
 });
+
+/* ---- free 2-page preview / lead magnet modal ---- */
+function openLeadModal(){
+  document.getElementById('leadForm').style.display = '';
+  document.getElementById('leadSuccess').style.display = 'none';
+  document.getElementById('leadError').style.display = 'none';
+  document.getElementById('leadModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  if (typeof track === 'function') track('view_item', {item_id: 'lead_magnet_form', item_name: 'Free 2-page preview form'});
+}
+function closeLeadModal(){
+  document.getElementById('leadModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function submitLead(){
+  const err = document.getElementById('leadErr');
+  err.textContent = '';
+  const name = document.getElementById('leadName').value.trim();
+  const email = document.getElementById('leadEmail').value.trim();
+  const d = document.getElementById('leadDate').value,
+        t = document.getElementById('leadTime').value,
+        noTime = document.getElementById('leadNotime').checked;
+  const place = leadPlace.resolve();
+
+  if (!name || !email || !d || (!t && !noTime) || !place) {
+    err.textContent = 'Please fill in your name, email, date of birth, and a valid place '
+      + '(pick one from the dropdown) — birth time only if you know it.';
+    return;
+  }
+  const btn = document.getElementById('leadSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const r = await fetch(API+'/api/leads', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name, email, birth_date: d, birth_time: noTime ? null : t,
+        birth_place: place.n, lat: place.a, lon: place.o, tz: place.z})});
+    if (!r.ok) throw new Error((await r.json()).detail || 'Could not send your preview');
+    document.getElementById('leadForm').style.display = 'none';
+    document.getElementById('leadSuccess').style.display = 'block';
+    track('generate_lead', {currency, value: 0, item_id: 'lead_magnet'});
+  } catch (e) {
+    document.getElementById('leadForm').style.display = 'none';
+    document.getElementById('leadErrorMsg').textContent = e.message || 'Something went wrong. Please try again.';
+    document.getElementById('leadError').style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Get my free preview';
+}
 
 /* ================= app state / backend integration ================= */
 const API = "";   // same origin; Nginx proxies /api to the backend
@@ -1548,6 +1677,7 @@ function makeCityAutocomplete(inputId, suggestBoxId, hintId) {
 
 const compatPlaceA = makeCityAutocomplete("bplaceA", "citySuggestionsA", "cityHintA");
 const compatPlaceB = makeCityAutocomplete("bplaceB", "citySuggestionsB", "cityHintB");
+const leadPlace = makeCityAutocomplete("leadPlace", "leadCitySuggestions", "leadCityHint");
 
 const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
 
@@ -1598,7 +1728,33 @@ fetch(API+"/api/prices").then(r=>r.json()).then(data=>{
   document.querySelectorAll(".india-card-note").forEach(el =>
     el.style.display = currency === "INR" ? "block" : "none");
   paintPricing();
-}).catch(()=>{}).finally(()=>document.body.classList.add("prices-ready"));
+}).catch(()=>{}).finally(()=>{
+  document.body.classList.add("prices-ready");
+  applyDeepLinkCoupon();
+});
+
+// A lead-magnet PDF/email links back here as ?coupon=CODE&tier=mixed so
+// the discount is one click away instead of "go type this code in
+// yourself" — the single biggest drop-off point in any coupon funnel.
+function applyDeepLinkCoupon(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get("coupon");
+  if (!code) return;
+  const wantTier = params.get("tier");
+  const isCompat = wantTier && COMPAT_TIERS_FRONTEND.has(wantTier);
+  if (isCompat) {
+    chooseCompatTier(wantTier);
+    document.getElementById("cCoupon").value = code;
+    scrollIntoViewSettled(document.getElementById("compatFormView"));
+    applyCompatCoupon();
+  } else {
+    chooseTier(wantTier && PRICES[wantTier] ? wantTier : "mixed", true);
+    document.getElementById("coupon").value = code;
+    scrollToOrder();
+    applyCoupon();
+  }
+}
+const COMPAT_TIERS_FRONTEND = new Set(["zodiac_compat", "vedic_compat", "mixed_compat"]);
 
 function paintPricing() {
   document.querySelectorAll("#pricingGrid .price-card, #compatPricingGrid .price-card").forEach(el => {
@@ -1623,7 +1779,7 @@ function chooseTier(t, fromSelect) {
   if (!fromSelect) scrollToOrder();
 }
 
-let appliedCoupon = null;   // the code, once /api/coupon/check confirms it's valid+free
+let appliedCoupon = null;   // {code, amount_minor}, once /api/coupon/check confirms it's valid
 
 function paintSummary() {
   if (!tier) { document.getElementById("sumTier").textContent = "Select a report";
@@ -1632,8 +1788,18 @@ function paintSummary() {
   const full = sym + amt.toLocaleString(currency === "INR" ? "en-IN" : "en-US");
   document.getElementById("sumTier").textContent = TIER_LABEL[tier] + " report";
   document.getElementById("sumAmt").innerHTML = appliedCoupon
-    ? `<span class="strike">${full}</span>FREE`
+    ? `<span class="strike">${full}</span>` + fmtDiscounted(appliedCoupon.amount_minor, sym)
     : full;
+}
+
+// Shared by both order summaries: $0 shows as FREE, anything else as a
+// formatted price (the backend, not this function, is what actually
+// enforces the discount — this is display only).
+function fmtDiscounted(amountMinor, sym) {
+  if (amountMinor === 0) return "FREE";
+  return sym + (amountMinor / 100).toLocaleString(
+    currency === "INR" ? "en-IN" : "en-US",
+    currency === "INR" ? {} : {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 async function applyCoupon() {
@@ -1649,13 +1815,11 @@ async function applyCoupon() {
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({tier, currency, coupon_code: code})});
     const data = await r.json();
-    if (data.valid && data.amount_minor === 0) {
-      appliedCoupon = code;
-      result.textContent = "✓ Coupon applied — this report is free.";
-      result.classList.add("ok");
-    } else if (data.valid) {
-      appliedCoupon = null;
-      result.textContent = "Coupon applied.";
+    if (data.valid) {
+      appliedCoupon = {code, amount_minor: data.amount_minor};
+      result.textContent = data.amount_minor === 0
+        ? "✓ Coupon applied — this report is free."
+        : "✓ Coupon applied — see your new price below.";
       result.classList.add("ok");
     } else {
       appliedCoupon = null;
@@ -1703,7 +1867,7 @@ function paintCompatSummary() {
   const full = sym + amt.toLocaleString(currency === "INR" ? "en-IN" : "en-US");
   sumTier.textContent = TIER_LABEL[compatTier] + " report";
   document.getElementById("compatSumAmt").innerHTML = compatAppliedCoupon
-    ? `<span class="strike">${full}</span>FREE`
+    ? `<span class="strike">${full}</span>` + fmtDiscounted(compatAppliedCoupon.amount_minor, sym)
     : full;
 }
 
@@ -1720,13 +1884,11 @@ async function applyCompatCoupon() {
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({tier: compatTier, currency, coupon_code: code})});
     const data = await r.json();
-    if (data.valid && data.amount_minor === 0) {
-      compatAppliedCoupon = code;
-      result.textContent = "✓ Coupon applied — this report is free.";
-      result.classList.add("ok");
-    } else if (data.valid) {
-      compatAppliedCoupon = null;
-      result.textContent = "Coupon applied.";
+    if (data.valid) {
+      compatAppliedCoupon = {code, amount_minor: data.amount_minor};
+      result.textContent = data.amount_minor === 0
+        ? "✓ Coupon applied — this report is free."
+        : "✓ Coupon applied — see your new price below.";
       result.classList.add("ok");
     } else {
       compatAppliedCoupon = null;

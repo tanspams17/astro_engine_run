@@ -17,16 +17,18 @@ from pydantic import BaseModel, EmailStr, Field, model_validator
 
 try:
     from . import orders, geo
-    from .delivery import send_report_email
+    from .delivery import send_report_email, send_lead_teaser_email
     from .report_generator import (generate_report, TIER_NAMES,
-                                   generate_compatibility_report, COMPAT_TIER_NAMES)
+                                   generate_compatibility_report, COMPAT_TIER_NAMES,
+                                   generate_lead_teaser)
     from .payment.mock_adapter import MockAdapter
 except ImportError:
     import orders
     import geo
-    from delivery import send_report_email
+    from delivery import send_report_email, send_lead_teaser_email
     from report_generator import (generate_report, TIER_NAMES,
-                                  generate_compatibility_report, COMPAT_TIER_NAMES)
+                                  generate_compatibility_report, COMPAT_TIER_NAMES,
+                                  generate_lead_teaser)
     from payment.mock_adapter import MockAdapter
 
 # openapi_url=None too: /docs and /redoc were already disabled, but the raw
@@ -120,6 +122,9 @@ def _apply_coupon(amount_minor: int, coupon_code: str | None) -> int:
     code = coupon_code.strip().upper()
     if code in FREE_COUPON_CODES:
         return 0
+    lead = orders.validate_discount_code(code)
+    if lead:
+        return round(amount_minor * (100 - lead["discount_pct"]) / 100)
     raise ValueError("invalid coupon code")
 
 
@@ -201,6 +206,22 @@ class CouponCheckIn(BaseModel):
     tier: str = Field(pattern=ALL_TIERS_PATTERN)
     currency: str | None = Field(default=None, max_length=3)  # ignored, see OrderIn
     coupon_code: str = Field(min_length=1, max_length=40)
+
+
+class LeadIn(BaseModel):
+    """Free 2-page preview: no payment, no tier — just enough to compute a
+    real (if short) chart and email it, plus a discount code toward a
+    real report."""
+    email: EmailStr
+    name: str = Field(min_length=1, max_length=80)
+    birth_date: str = Field(max_length=10)
+    birth_time: str | None = Field(default=None, max_length=5)
+    birth_place: str = Field(max_length=200)
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz: str = Field(max_length=64)
+    gender: str = Field(default="unspecified",
+                        pattern="^(male|female|unspecified)$")
 
 
 # ------------------------------------------------------------ endpoints
@@ -308,6 +329,14 @@ def create_order(o: OrderIn, request: Request):
         amount_minor = _apply_coupon(orders.PRICES[o.tier][currency], o.coupon_code)
     except ValueError:
         amount_minor = orders.PRICES[o.tier][currency]
+    # Record a lead-magnet discount code on the order (not a FREE_COUPON_
+    # CODES freebie) so mark_paid() can burn it once, only on confirmed
+    # payment — never at order creation, since a Stripe Checkout can be
+    # abandoned.
+    discount_code = None
+    if o.coupon_code and o.coupon_code.strip().upper() not in FREE_COUPON_CODES:
+        if orders.validate_discount_code(o.coupon_code):
+            discount_code = o.coupon_code.strip().upper()
     order = orders.create_order(
         o.quiz_session_id, o.email, o.name, o.tier, currency,
         o.birth_date, o.birth_time or "", o.birth_place, o.lat, o.lon,
@@ -318,7 +347,7 @@ def create_order(o: OrderIn, request: Request):
         partner_name=o.partner_name, partner_birth_date=o.partner_birth_date,
         partner_birth_time=o.partner_birth_time, partner_birth_place=o.partner_birth_place,
         partner_lat=o.partner_lat, partner_lon=o.partner_lon, partner_tz=o.partner_tz,
-        partner_gender=o.partner_gender)
+        partner_gender=o.partner_gender, discount_code=discount_code)
     session = None
     if amount_minor > 0:
         adapter = get_adapter()
@@ -335,6 +364,80 @@ def create_order(o: OrderIn, request: Request):
     return {"order_id": order["id"], "payment_session_id": session.session_id if session else None,
             "amount_minor": order["amount_minor"],
             "currency": order["currency"], "checkout_url": session.checkout_url if session else None}
+
+
+@app.post("/api/leads")
+def create_lead(lead_in: LeadIn, request: Request, background: BackgroundTasks):
+    """Free 2-page preview lead magnet: no payment. Computes a real (short)
+    chart in the background, emails it with a 48h/40%-off discount code
+    toward a full report. Same birth-data validation as /api/orders, for
+    the same reason — never hand a chart the engine can't calculate."""
+    try:
+        dt.datetime.strptime(
+            lead_in.birth_date + " " + (lead_in.birth_time or "12:00"),
+            "%Y-%m-%d %H:%M")
+        from zoneinfo import ZoneInfo
+        ZoneInfo(lead_in.tz)
+    except Exception:
+        raise HTTPException(400, "invalid birth date/time/timezone")
+
+    currency = geo.pricing_currency(request)
+    lead = orders.create_lead(
+        lead_in.email, lead_in.name, lead_in.birth_date,
+        lead_in.birth_time or "", lead_in.birth_place, lead_in.lat,
+        lead_in.lon, lead_in.tz, currency, gender=lead_in.gender)
+    background.add_task(_fulfil_lead, lead["id"])
+    return {"ok": True, "lead_id": lead["id"]}
+
+
+def _fulfil_lead(lead_id: str):
+    """Generate the 2-page teaser PDF + email it. Mirrors _fulfil() below,
+    just for the free lead-magnet flow (no payment, no orders row)."""
+    lead = orders.get_lead(lead_id)
+    if not lead:
+        return
+    pdf_path = os.path.join(REPORT_DIR, f"{lead_id}.pdf")
+    try:
+        os.makedirs(REPORT_DIR, exist_ok=True)
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+        time_known = bool(lead["birth_time"])
+        birth = dt.datetime.strptime(
+            lead["birth_date"] + " " + (lead["birth_time"] or "12:00"),
+            "%Y-%m-%d %H:%M")
+        generate_lead_teaser(
+            lead["name"], birth, lead["tz"], lead["birth_place"],
+            lead["lat"], lead["lon"], pdf_path, time_known=time_known,
+            gender=lead.get("gender", "unspecified"),
+            currency=lead["currency"], discount_code=lead["discount_code"],
+            discount_pct=lead["discount_pct"], expires_at=lead["expires_at"])
+        if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
+            raise RuntimeError("teaser generator did not create a PDF")
+    except Exception as exc:
+        logger.exception("Lead teaser generation failed for lead %s", lead_id)
+        try:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+            orders.mark_lead_fulfilment_failed(lead_id, str(exc))
+        except Exception:
+            logger.exception("Could not record fulfilment failure for lead %s", lead_id)
+        return
+
+    try:
+        token = orders.mark_lead_delivered(lead_id, pdf_path)
+    except Exception:
+        logger.exception("Could not mark lead teaser delivered for %s", lead_id)
+        return
+
+    try:
+        send_lead_teaser_email(lead["email"], lead["name"], token,
+                               lead["discount_code"], lead["discount_pct"],
+                               lead["expires_at"])
+    except Exception as exc:
+        logger.exception("Lead teaser email delivery failed for %s", lead_id)
+        with orders._conn() as connection:
+            connection.execute("UPDATE leads SET email_error=? WHERE id=?",
+                               (str(exc), lead_id))
 
 
 def _fulfil(order_id: str):
@@ -490,6 +593,15 @@ def download(token: str):
     fname = f"Arvelos_{order['tier'].title()}_Report.pdf"
     return FileResponse(order["pdf_path"], media_type="application/pdf",
                         filename=fname)
+
+
+@app.get("/download/lead/{token}")
+def download_lead(token: str):
+    lead = orders.get_lead_by_token(token)
+    if not lead or not lead["pdf_path"] or not os.path.exists(lead["pdf_path"]):
+        raise HTTPException(404, "preview not found")
+    return FileResponse(lead["pdf_path"], media_type="application/pdf",
+                        filename="Arvelos_Free_Preview.pdf")
 
 
 # Optional: serve the static frontend from this same process (test/simple

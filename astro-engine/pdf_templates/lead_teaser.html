@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    background: #fbf9f4;
+    @bottom-center {
+      content: "✦  Arvelos · arvelos.cloud  ✦";
+      font-family: Georgia, serif; font-size: 8.5pt; color: #8b84a8;
+    }
+  }
+  @page cover { margin: 0; background: #130a40; @bottom-center { content: none; } }
+
+  body { font-family: Georgia, 'Times New Roman', serif; color: #2b2440;
+         font-size: 11.5pt; line-height: 1.72; }
+
+  /* ------------------------------------------------ cover (page 1) */
+  .cover { page: cover; width: 210mm; height: 297mm; position: relative;
+           background: radial-gradient(ellipse at 50% 34%, #241a5e 0%, #1a1150 45%, #130a40 100%);
+           color: #f3eefe; }
+  .cover-frame { position: absolute; top: 8mm; left: 8mm; right: 8mm; bottom: 8mm;
+                 border: 2px solid #c9b458; }
+  .cover-frame2 { position: absolute; top: 11mm; left: 11mm; right: 11mm; bottom: 11mm;
+                  border: 0.7px solid #c9b458; }
+  .cover-inner { position: absolute; top: 22mm; left: 0; right: 0; text-align: center; }
+  .cover .brand { font-size: 12pt; letter-spacing: 8px; color: #c9b458; }
+  .cover .eyebrow { font-size: 9.5pt; letter-spacing: 3px; color: #9d90c4;
+                    text-transform: uppercase; margin-top: 4mm; }
+  .cover h1 { font-size: 30pt; font-weight: normal; color: #f8f5ff;
+              margin: 8mm 0 2mm; line-height: 1.15; }
+  .ring { display: block; margin: 6mm auto 4mm; width: 110mm; }
+  .plaque { display: inline-block; border: 1.6px solid #c9b458; border-radius: 20px;
+            padding: 4mm 16mm; margin-top: 2mm; }
+  .plaque .name { font-size: 19pt; color: #ffffff; }
+  .cover .snapshot { margin-top: 8mm; font-size: 11.5pt; color: #c9b458; }
+  .cover .free-badge { display: inline-block; margin-top: 10mm; padding: 2.5mm 8mm;
+                       border: 1px solid #c9b458; border-radius: 999px;
+                       font-size: 9.5pt; letter-spacing: 2px; color: #f8f5ff;
+                       text-transform: uppercase; }
+  .cover .foot { position: absolute; bottom: 15mm; left: 0; right: 0;
+                 text-align: center; font-size: 9.5pt; color: #9d90c4; }
+
+  /* ------------------------------------------------ body (page 2) */
+  h1 { font-size: 17.5pt; color: #43277a; font-weight: normal;
+       border-bottom: 2px solid #c9b458; padding-bottom: 2mm;
+       margin: 0 0 5mm; page-break-after: avoid; }
+  p { margin: 0 0 4mm; text-align: justify; }
+  .gap-line { font-style: italic; color: #6a5f94; border-left: 3px solid #c9b458;
+              padding-left: 4mm; margin: 5mm 0 7mm; }
+
+  /* offer block — the whole reason this document exists */
+  .offer { page-break-inside: avoid; background: linear-gradient(135deg, #2d1b52, #1a1150);
+           color: #f3eefe; border-radius: 3mm; padding: 7mm 8mm; margin-top: 4mm;
+           border: 1.4px solid #c9b458; }
+  .offer .kicker { font-size: 10pt; letter-spacing: 1.5px; text-transform: uppercase;
+                   color: #c9b458; margin-bottom: 2mm; }
+  .offer .prices { text-align: center; margin: 5mm 0; }
+  .offer .before { font-size: 15pt; color: #9d90c4; text-decoration: line-through;
+                   margin-right: 4mm; }
+  .offer .after { font-size: 26pt; color: #f8f5ff; font-weight: bold; }
+  .offer .save { display: block; font-size: 10pt; color: #c9b458; margin-top: 1mm; }
+  .code-box { text-align: center; background: rgba(212,146,10,0.12);
+             border: 1.4px dashed #c9b458; border-radius: 2mm; padding: 4mm; margin: 5mm 0; }
+  .code-box .code { font-size: 20pt; letter-spacing: 3px; color: #f8f5ff; font-weight: bold; }
+  .code-box .expiry { font-size: 10pt; color: #e0a860; margin-top: 2mm; }
+  .cta { display: block; text-align: center; background: #d4920a; color: #191735 !important;
+        text-decoration: none; font-weight: bold; font-size: 13pt; padding: 4mm; border-radius: 2mm;
+        margin: 5mm 0 2mm; }
+  .offer .reassure { text-align: center; font-size: 9.5pt; color: #a9a3c9; margin: 3mm 0 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ PAGE 1: COVER -->
+<div class="cover">
+  <div class="cover-frame"></div><div class="cover-frame2"></div>
+  <div class="cover-inner">
+    <div class="brand">A R V E L O S</div>
+    <div class="eyebrow">Your Free Preview</div>
+    <h1>A Glimpse of<br>Your Sky</h1>
+    <img class="ring" src="cover_emblem.png">
+    <div class="plaque">
+      <div class="name">{{ name }}</div>
+    </div>
+    <div class="snapshot">
+      {{ sun_sign }} Sun
+      {% if moon_sign %} · {{ moon_sign }} Moon (Vedic){% endif %}
+      {% if rising_sign %} · {{ rising_sign }} Rising{% endif %}
+      · Mulank {{ mulank }}
+    </div>
+    <div class="free-badge">Free 2-Page Preview</div>
+  </div>
+  <div class="foot">Calculated from your real birth details · Prepared {{ generated }} · arvelos.cloud</div>
+</div>
+
+<!-- ============================================================ PAGE 2: TEASER + OFFER -->
+<h1>Your Sun in {{ sun_sign }}</h1>
+<p>{{ sun_text }}</p>
+<p class="gap-line">This is one placement out of a dozen that shape your chart. Your full report
+  adds your Moon, Rising and every planet — in both Western and Vedic systems — plus how they
+  play out in your love life, career and personal growth, across 20+ pages calculated
+  specifically for you.</p>
+
+<div class="offer">
+  <div class="kicker">Because you took the first step</div>
+  <p style="text-align:center; color:#e9e4f5; margin-bottom:0;">Here's {{ discount_pct }}% off your full report
+    — good for the next 48 hours only.</p>
+  <div class="prices">
+    <span class="before">{{ price_before }}</span><span class="after">{{ price_after }}</span>
+    <span class="save">Mixed Report (Western + Vedic) — {{ discount_pct }}% off, one time only</span>
+  </div>
+  <div class="code-box">
+    <div class="code">{{ discount_code }}</div>
+    <div class="expiry">Expires {{ expiry_display }}</div>
+  </div>
+  <a class="cta" href="{{ claim_url }}">Claim my {{ discount_pct }}% off &rarr;</a>
+  <p class="reassure">One-time payment. No subscription, no renewals, nothing to cancel.</p>
+</div>
+
+</body>
+</html>

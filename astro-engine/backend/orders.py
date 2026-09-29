@@ -120,6 +120,34 @@ CREATE TABLE IF NOT EXISTS gdpr_requests (
     decided_by TEXT,
     result TEXT                          -- JSON: what approve() actually did
 );
+-- "Free 2-page preview" lead magnet (added 2026-09-29): captures an email
+-- before any payment, in exchange for a short teaser PDF and a time-boxed,
+-- single-use discount code toward a real report. Deliberately a separate
+-- table from `orders`, not a fake $0 order — a lead never had a tier,
+-- amount or payment lifecycle, and mixing it into `orders` would make
+-- every order-stats query have to filter it back out.
+CREATE TABLE IF NOT EXISTS leads (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    email TEXT NOT NULL,
+    name TEXT NOT NULL,
+    birth_date TEXT NOT NULL,
+    birth_time TEXT NOT NULL DEFAULT '',   -- '' = time unknown
+    birth_place TEXT NOT NULL,
+    lat REAL NOT NULL, lon REAL NOT NULL, tz TEXT NOT NULL,
+    gender TEXT NOT NULL DEFAULT 'unspecified',
+    currency TEXT NOT NULL,                -- for the price shown on the teaser
+    discount_code TEXT NOT NULL UNIQUE,
+    discount_pct INTEGER NOT NULL DEFAULT 40,
+    expires_at TEXT NOT NULL,
+    redeemed_at TEXT,
+    redeemed_order_id TEXT,
+    download_token TEXT,
+    pdf_path TEXT,
+    delivered_at TEXT,
+    fulfilment_error TEXT,
+    email_error TEXT
+);
 """
 
 
@@ -137,7 +165,8 @@ def init_db():
         columns = {row[1] for row in c.execute("PRAGMA table_info(orders)")}
         for column in ("fulfilment_error", "email_error", "phone",
                        "partner_name", "partner_birth_date", "partner_birth_time",
-                       "partner_birth_place", "partner_tz", "partner_gender"):
+                       "partner_birth_place", "partner_tz", "partner_gender",
+                       "discount_code"):
             if column not in columns:
                 c.execute(f"ALTER TABLE orders ADD COLUMN {column} TEXT")
         if "zodiac_insights_opt_in" not in columns:
@@ -198,7 +227,8 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
                  partner_lat: float | None = None,
                  partner_lon: float | None = None,
                  partner_tz: str | None = None,
-                 partner_gender: str | None = None) -> dict:
+                 partner_gender: str | None = None,
+                 discount_code: str | None = None) -> dict:
     if tier not in PRICES:
         raise ValueError(f"unknown tier {tier}")
     if currency not in PRICES[tier]:
@@ -215,15 +245,15 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
             " marketing_opt_in, zodiac_insights_opt_in, product_type,"
             " partner_name, partner_birth_date, partner_birth_time,"
             " partner_birth_place, partner_lat, partner_lon, partner_tz,"
-            " partner_gender)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " partner_gender, discount_code)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (oid, quiz_session_id, _now(), email, name, phone, tier, currency,
              amount, birth_date, birth_time, gender, birth_place, lat, lon,
              tz, ",".join(focus_areas), int(marketing_opt_in),
              int(zodiac_insights_opt_in), product_type,
              partner_name, partner_birth_date, partner_birth_time,
              partner_birth_place, partner_lat, partner_lon, partner_tz,
-             partner_gender))
+             partner_gender, discount_code))
         _upsert_customer(c, email, name, phone, marketing_opt_in,
                          zodiac_insights_opt_in)
     return get_order(oid)
@@ -310,6 +340,16 @@ def transition(order_id: str, new_status: str, **fields):
 def mark_paid(order_id: str, payment_session_id: str, charge_id: str):
     transition(order_id, "paid", payment_session_id=payment_session_id,
                charge_id=charge_id)
+    order = get_order(order_id)
+    if order and order.get("discount_code"):
+        # Burn the lead-magnet discount code only on confirmed payment, not
+        # at order creation — an abandoned Stripe Checkout must not waste
+        # the customer's one-time code.
+        with _conn() as c:
+            c.execute(
+                "UPDATE leads SET redeemed_at=?, redeemed_order_id=?"
+                " WHERE discount_code=? AND redeemed_at IS NULL",
+                (_now(), order_id, order["discount_code"]))
 
 
 def mark_delivered(order_id: str, pdf_path: str) -> str:
@@ -326,3 +366,87 @@ def mark_fulfilment_failed(order_id: str, error: str):
 
 def retry_fulfilment(order_id: str):
     transition(order_id, "paid", fulfilment_error=None, email_error=None)
+
+
+# -------------------------------------------------------- lead magnet
+#
+# "Free 2-page preview": no payment, just birth details + email. In
+# exchange, the visitor gets a short personal teaser PDF and a discount
+# code good for DISCOUNT_PCT off a real report, valid for CODE_LIFETIME
+# from generation. Deliberately short-lived and single-use (see mark_paid
+# above) — a long-lived or shared code would just become a permanent
+# price cut for anyone who found it, not a lead-nurture tool.
+
+DISCOUNT_PCT = 40
+CODE_LIFETIME = dt.timedelta(hours=48)
+
+
+def _gen_discount_code() -> str:
+    # Short, easy to type/read off a PDF or forward in an email; not
+    # security-sensitive (worst case of a guess is one 40%-off code that
+    # still requires a real order to redeem, single-use, 48h-lived).
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O/1/I confusion
+    return "ARVELOS-" + "".join(secrets.choice(alphabet) for _ in range(6))
+
+
+def create_lead(email: str, name: str, birth_date: str, birth_time: str,
+                birth_place: str, lat: float, lon: float, tz: str,
+                currency: str, gender: str = "unspecified") -> dict:
+    lid = f"lead_{secrets.token_urlsafe(10)}"
+    code = _gen_discount_code()
+    expires = (dt.datetime.now(dt.timezone.utc) + CODE_LIFETIME).isoformat()
+    with _conn() as c:
+        c.execute(
+            "INSERT INTO leads (id, created_at, email, name, birth_date,"
+            " birth_time, birth_place, lat, lon, tz, gender, currency,"
+            " discount_code, discount_pct, expires_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (lid, _now(), email, name, birth_date, birth_time, birth_place,
+             lat, lon, tz, gender, currency, code, DISCOUNT_PCT, expires))
+    return get_lead(lid)
+
+
+def get_lead(lead_id: str) -> dict | None:
+    with _conn() as c:
+        row = c.execute("SELECT * FROM leads WHERE id=?", (lead_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def get_lead_by_token(token: str) -> dict | None:
+    with _conn() as c:
+        row = c.execute("SELECT * FROM leads WHERE download_token=?",
+                        (token,)).fetchone()
+    return dict(row) if row else None
+
+
+def mark_lead_delivered(lead_id: str, pdf_path: str) -> str:
+    token = secrets.token_urlsafe(24)
+    with _conn() as c:
+        c.execute(
+            "UPDATE leads SET pdf_path=?, download_token=?, delivered_at=?,"
+            " fulfilment_error=NULL WHERE id=?",
+            (pdf_path, token, _now(), lead_id))
+    return token
+
+
+def mark_lead_fulfilment_failed(lead_id: str, error: str):
+    with _conn() as c:
+        c.execute("UPDATE leads SET fulfilment_error=? WHERE id=?",
+                  (error, lead_id))
+
+
+def validate_discount_code(code: str) -> dict | None:
+    """Returns the lead row if `code` is a live, unredeemed, unexpired
+    discount code, else None. Case-insensitive; the stored code is always
+    upper-case (see _gen_discount_code)."""
+    with _conn() as c:
+        row = c.execute("SELECT * FROM leads WHERE discount_code=?",
+                        (code.strip().upper(),)).fetchone()
+    if not row:
+        return None
+    lead = dict(row)
+    if lead["redeemed_at"]:
+        return None
+    if dt.datetime.now(dt.timezone.utc) > dt.datetime.fromisoformat(lead["expires_at"]):
+        return None
+    return lead
