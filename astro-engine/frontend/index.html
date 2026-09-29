@@ -322,11 +322,30 @@
     background:rgba(212,146,10,0.08); cursor:pointer; transition:background .2s, border-color .2s; }
   .sample-preview-btn:hover { background:rgba(212,146,10,0.16); border-color:var(--gold); }
   .sample-preview-note { margin:11px 0 0; font-size:12.5px; color:var(--lavender); }
-  .lead-magnet-link { display:inline-block; margin-top:14px; font-family:var(--sans);
-    font-size:13.5px; font-weight:600; color:var(--gold-light); text-decoration:none;
-    border-bottom:1px dashed rgba(240,192,74,0.5); cursor:pointer; background:none; border-top:none;
-    border-left:none; border-right:none; padding:0; }
-  .lead-magnet-link:hover { color:var(--cream); border-bottom-color:var(--cream); }
+
+  .lead-divider { display:flex; align-items:center; gap:12px; margin:24px auto 18px; max-width:280px; }
+  .lead-divider::before, .lead-divider::after { content:''; flex:1; height:1px;
+    background:var(--surface-border-strong); }
+  .lead-divider span { font-family:var(--sans); font-size:11px; font-weight:600;
+    text-transform:uppercase; letter-spacing:1.5px; color:var(--lavender); }
+
+  .lead-magnet-cta { display:inline-flex; align-items:center; gap:10px; font-family:var(--sans);
+    font-size:16.5px; font-weight:800; padding:17px 32px; border-radius:999px; border:none;
+    color:#191735; background:linear-gradient(135deg, #f7d074, #d4920a);
+    box-shadow:0 4px 20px rgba(212,146,10,0.4); cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease; animation:leadPulse 2.6s ease-in-out infinite; }
+  .lead-magnet-cta:hover { transform:translateY(-2px) scale(1.02);
+    box-shadow:0 8px 26px rgba(212,146,10,0.55); }
+  .lead-cta-badge { background:#191735; color:#FDE047; font-size:10.5px; font-weight:800;
+    letter-spacing:.07em; padding:4px 9px; border-radius:999px; text-transform:uppercase;
+    flex:0 0 auto; }
+  .lead-cta-arrow { font-size:18px; flex:0 0 auto; }
+  .lead-cta-sub { margin:11px 0 0; font-size:12.5px; color:var(--lavender); }
+  @keyframes leadPulse {
+    0%, 100% { box-shadow:0 4px 20px rgba(212,146,10,0.4); }
+    50% { box-shadow:0 4px 26px rgba(212,146,10,0.7); }
+  }
+  @media (prefers-reduced-motion: reduce) { .lead-magnet-cta { animation:none; } }
 
   /* ---------- LEAD MAGNET MODAL ---------- */
   .modal-box.lead-box { height:auto; max-height:88vh; }
@@ -354,7 +373,8 @@
     cursor:pointer; padding:2px 6px; }
   .modal-close:hover { color:var(--cream); }
   .modal-box iframe { flex:1; width:100%; border:0; background:#fff; }
-  @media (max-width:640px) { .modal-box { height:92vh; } .sample-preview-btn { font-size:13px; padding:12px 20px; } }
+  @media (max-width:640px) { .modal-box { height:92vh; } .sample-preview-btn { font-size:13px; padding:12px 20px; }
+    .lead-magnet-cta { font-size:14.5px; padding:14px 22px; white-space:normal; text-align:center; } }
 
   /* ---------- 12-HOUR TIME-OF-BIRTH SELECTOR ---------- */
   .time-ampm-row { display:flex; gap:6px; }
@@ -562,7 +582,13 @@
         <span aria-hidden="true">&#128065;&#65039;</span> See Sample Report (PDF)
       </button>
       <p class="sample-preview-note">Your personalized report will be generated instantly in full PDF format upon checkout.</p>
-      <button type="button" class="lead-magnet-link" onclick="openLeadModal()">Or get YOUR free 2-page preview + 40% off &rarr;</button>
+      <div class="lead-divider"><span>or</span></div>
+      <button type="button" class="lead-magnet-cta" onclick="openLeadModal()">
+        <span class="lead-cta-badge">Free</span>
+        <span>Get YOUR 2-Page Preview + 40% Off</span>
+        <span class="lead-cta-arrow" aria-hidden="true">&rarr;</span>
+      </button>
+      <p class="lead-cta-sub">No payment needed · Takes 30 seconds · Code expires in 48 hours</p>
     </div>
   </div>
 </section>
@@ -763,7 +789,13 @@
         <span aria-hidden="true">&#128065;&#65039;</span> See Sample Report (PDF)
       </button>
       <p class="sample-preview-note">Your personalized report will be generated instantly in full PDF format upon checkout.</p>
-      <button type="button" class="lead-magnet-link" onclick="openLeadModal()">Or get YOUR free 2-page preview + 40% off &rarr;</button>
+      <div class="lead-divider"><span>or</span></div>
+      <button type="button" class="lead-magnet-cta" onclick="openLeadModal()">
+        <span class="lead-cta-badge">Free</span>
+        <span>Get YOUR 2-Page Preview + 40% Off</span>
+        <span class="lead-cta-arrow" aria-hidden="true">&rarr;</span>
+      </button>
+      <p class="lead-cta-sub">No payment needed · Takes 30 seconds · Code expires in 48 hours</p>
     </div>
 
     <div class="order-layout" id="compatFormView" data-clarity-mask="True" style="display:none; margin-top:48px;">
