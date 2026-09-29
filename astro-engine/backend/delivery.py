@@ -90,7 +90,7 @@ If anything looks wrong (a typo in your birth details, a broken link),
 just reply to this email and we'll fix it: {SUPPORT_EMAIL}</p>
 <p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos<br>Your NextGen Astral Report</p>
 <p style="text-align:center;margin:20px 0 0;">
-<img src="{BASE_URL}/icon-512.png" alt="Arvelos" width="40" height="40"
+<img src="{BASE_URL}/email-logo.png" alt="Arvelos" width="40" height="40"
 style="width:40px;height:40px;border-radius:50%;"><br>
 <span style="font-size:10.5px;color:#5d5885;">© 2026 Arvelos</span></p>
 </div></body></html>"""
@@ -166,7 +166,7 @@ specifically — it can only be used once, by whoever claims it first.</p>
 <p style="font-size:13px;color:#a9a3c9;">Questions? Reply to this email: {SUPPORT_EMAIL}</p>
 <p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos<br>Your NextGen Astral Report</p>
 <p style="text-align:center;margin:20px 0 0;">
-<img src="{BASE_URL}/icon-512.png" alt="Arvelos" width="40" height="40"
+<img src="{BASE_URL}/email-logo.png" alt="Arvelos" width="40" height="40"
 style="width:40px;height:40px;border-radius:50%;"><br>
 <span style="font-size:10.5px;color:#5d5885;">© 2026 Arvelos</span></p>
 </div></body></html>"""
