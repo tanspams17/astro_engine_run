@@ -745,13 +745,17 @@ def build_lead_teaser_context(name: str, birth_dt_local: dt.datetime,
 
     expiry_dt = dt.datetime.fromisoformat(expires_at)
 
+    moon_sign = vedic.get("Moon").sign
+
     ctx = {
         "name": name,
         "generated": dt.date.today().strftime("%d %B %Y"),
         "sun_sign": sun.sign,
         "sun_text": cl.SUN_SIGNS[sun.sign],
-        "moon_sign": vedic.get("Moon").sign,
+        "moon_sign": moon_sign,
+        "moon_text": cl.MOON_SIGNS[moon_sign],
         "mulank": num["mulank"],
+        "mulank_text": f"Your Mulank is {num['mulank']}, " + cn_essence(num["mulank"]),
         "bhagyank": num["bhagyank"],
         "cover_ring": cover_zodiac_ring(),
         "discount_code": discount_code,

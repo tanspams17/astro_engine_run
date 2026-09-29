@@ -96,13 +96,20 @@
   <div class="foot">Calculated from your real birth details · Prepared {{ generated }} · arvelos.cloud</div>
 </div>
 
-<!-- ============================================================ PAGE 2: TEASER + OFFER -->
+<!-- ============================================================ PAGE 2: SUN TEASER -->
 <h1>Your Sun in {{ sun_sign }}</h1>
 <p>{{ sun_text }}</p>
 <p class="gap-line">This is one placement out of a dozen that shape your chart. Your full report
-  adds your Moon, Rising and every planet — in both Western and Vedic systems — plus how they
+  adds your Rising sign and every other planet — in both Western and Vedic systems — plus how they
   play out in your love life, career and personal growth, across 20+ pages calculated
   specifically for you.</p>
+
+<!-- ============================================================ PAGE 3: MOON + NUMBER TEASER + OFFER -->
+<div style="page-break-before: always;">
+<h1>Your Moon in {{ moon_sign }} <span style="font-size:11pt;color:#8b84a8;font-weight:normal;">(Vedic)</span></h1>
+<p>{{ moon_text }}</p>
+<p>{{ mulank_text }}</p>
+</div>
 
 <div class="offer">
   <div class="kicker">Because you took the first step</div>
