@@ -112,7 +112,7 @@ details, not a template:
 As a thank-you for trying it, here's {discount_pct}% off your full report:
 
   CODE: {discount_code}
-  Valid until {expiry} — {discount_pct}% off any report, one time only.
+  Gone after {expiry} — {discount_pct}% off any report, one time only, then this price won't come back.
 
 Claim it here (the code fills in automatically):
 {claim_link}
@@ -120,6 +120,8 @@ Claim it here (the code fills in automatically):
 Warmly,
 Arvelos
 {BASE_URL}
+
+P.S. Your code is reserved for you specifically — it can only be used once, by whoever claims it first.
 """
 
 
@@ -148,12 +150,14 @@ background:rgba(212,146,10,0.08);">
 color:#d4920a;font-weight:bold;">As a thank-you — {discount_pct}% off your full report</p>
 <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:22px;letter-spacing:.04em;
 color:#f5eedc;font-weight:bold;">{discount_code}</p>
-<p style="margin:0 0 14px;font-size:12.5px;color:#a9a3c9;">Valid until {expiry} —
-one-time use.</p>
+<p style="margin:0 0 14px;font-size:12.5px;color:#a9a3c9;">Gone after {expiry} —
+one-time use, then this price won't come back.</p>
 <a href="{claim_link}" style="background:#d4920a;color:#191735;text-decoration:none;
 padding:12px 26px;border-radius:8px;font-weight:bold;display:inline-block;
 font-size:14px;">Claim my {discount_pct}% off &rarr;</a>
 </div>
+<p style="font-size:12px;color:#8b84a8;margin:0 0 20px;">P.S. Your code is reserved for you
+specifically — it can only be used once, by whoever claims it first.</p>
 <p style="font-size:13px;color:#a9a3c9;">Questions? Reply to this email: {SUPPORT_EMAIL}</p>
 <p style="font-size:13px;color:#a9a3c9;">Warmly,<br>Arvelos · {BASE_URL}</p>
 </div></body></html>"""

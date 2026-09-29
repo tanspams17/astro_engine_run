@@ -51,6 +51,14 @@
   .gap-line { font-style: italic; color: #6a5f94; border-left: 3px solid #c9b458;
               padding-left: 4mm; margin: 5mm 0 7mm; }
 
+  /* progress indicator — makes the preview feel visibly unfinished */
+  .progress-wrap { margin: 6mm 0 1mm; }
+  .progress-label { font-size: 9.5pt; letter-spacing: .5px; color: #6a5f94;
+                    text-transform: uppercase; margin-bottom: 2mm; }
+  .progress-track { background: #e7e1f2; border-radius: 999px; height: 3mm; overflow: hidden; }
+  .progress-fill { background: linear-gradient(90deg, #c9b458, #d4920a);
+                   height: 100%; width: 16.6%; border-radius: 999px; }
+
   /* offer block — the whole reason this document exists */
   .offer { page-break-inside: avoid; background: linear-gradient(135deg, #2d1b52, #1a1150);
            color: #f3eefe; border-radius: 3mm; padding: 7mm 8mm; margin-top: 4mm;
@@ -109,6 +117,11 @@
 <h1>Your Moon in {{ moon_sign }} <span style="font-size:11pt;color:#8b84a8;font-weight:normal;">(Vedic)</span></h1>
 <p>{{ moon_text }}</p>
 <p>{{ mulank_text }}</p>
+
+<div class="progress-wrap">
+  <div class="progress-label">2 of 12 chart points revealed</div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
 </div>
 
 <div class="offer">
@@ -121,7 +134,7 @@
   </div>
   <div class="code-box">
     <div class="code">{{ discount_code }}</div>
-    <div class="expiry">Expires {{ expiry_display }}</div>
+    <div class="expiry">Gone after {{ expiry_display }} — this price won't come back</div>
   </div>
   <a class="cta" href="{{ claim_url }}">Claim my {{ discount_pct }}% off &rarr;</a>
   <p class="reassure">One-time payment. No subscription, no renewals, nothing to cancel.</p>
