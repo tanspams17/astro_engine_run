@@ -49,7 +49,13 @@
       'box-shadow:0 8px 30px rgba(0,0,0,0.35);font:14px/1.5 Inter,-apple-system,sans-serif}' +
       '.arv-consent p{margin:0 0 12px}' +
       '.arv-consent a{color:#f0c04a}' +
-      '.arv-consent .arv-btns{display:flex;gap:10px;flex-wrap:wrap}' +
+      '.arv-cat{display:flex;align-items:center;justify-content:space-between;gap:10px;' +
+      'margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,238,220,0.15)}' +
+      '.arv-cat-name{font-weight:600}' +
+      '.arv-cat-badge{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#0e1535;' +
+      'background:#9d90c4;padding:3px 8px;border-radius:999px}' +
+      '.arv-cat-desc{margin:4px 0 0;font-size:12.5px;color:#c9c2e0}' +
+      '.arv-consent .arv-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}' +
       '.arv-consent button{flex:1 1 120px;padding:9px 14px;border-radius:8px;cursor:pointer;' +
       'font:600 14px Inter,-apple-system,sans-serif;border:1px solid rgba(212,146,10,0.55)}' +
       '.arv-consent .arv-accept{background:#d4920a;color:#0e1535;border-color:#d4920a}' +
@@ -60,9 +66,16 @@
     el.setAttribute('aria-label', 'Cookie consent');
     el.appendChild(css);
     el.insertAdjacentHTML('beforeend',
-      '<p>With your permission we use cookies from Google (Ads and Analytics) and Microsoft Clarity to see which ads bring people here and how the site is used. ' +
-      'Your birth details are never shared with them. ' +
+      '<p>We use cookies to run this site and, with your permission, to see which ads bring people ' +
+      'here and how the site is used. Your birth details are never shared with anyone. ' +
       '<a href="/privacy.html#cookies">Privacy policy</a></p>' +
+      '<div class="arv-cat">' +
+      '<span class="arv-cat-name">Necessary</span>' +
+      '<span class="arv-cat-badge">Always active</span></div>' +
+      '<p class="arv-cat-desc">Keeps the site working: remembers this choice, your currency, and your checkout session. Cannot be turned off.</p>' +
+      '<div class="arv-cat">' +
+      '<span class="arv-cat-name">Analytics &amp; Marketing</span></div>' +
+      '<p class="arv-cat-desc">Google Ads, Google Analytics and Microsoft Clarity. Only runs if you accept below.</p>' +
       '<div class="arv-btns">' +
       '<button type="button" class="arv-reject">Reject</button>' +
       '<button type="button" class="arv-accept">Accept</button></div>');
