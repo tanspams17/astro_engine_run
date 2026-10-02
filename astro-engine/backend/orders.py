@@ -166,9 +166,17 @@ def init_db():
         for column in ("fulfilment_error", "email_error", "phone",
                        "partner_name", "partner_birth_date", "partner_birth_time",
                        "partner_birth_place", "partner_tz", "partner_gender",
-                       "discount_code"):
+                       "discount_code", "primary_focus"):
             if column not in columns:
                 c.execute(f"ALTER TABLE orders ADD COLUMN {column} TEXT")
+        lead_cols = {row[1] for row in c.execute("PRAGMA table_info(leads)")}
+        for column in ("primary_focus", "quiz_session_id"):
+            if column not in lead_cols:
+                c.execute(f"ALTER TABLE leads ADD COLUMN {column} TEXT")
+        quiz_cols = {row[1] for row in c.execute("PRAGMA table_info(quiz_sessions)")}
+        for column in ("gclid", "gbraid", "wbraid"):
+            if column not in quiz_cols:
+                c.execute(f"ALTER TABLE quiz_sessions ADD COLUMN {column} TEXT")
         if "zodiac_insights_opt_in" not in columns:
             c.execute("ALTER TABLE orders ADD COLUMN zodiac_insights_opt_in"
                       " INTEGER NOT NULL DEFAULT 0")
@@ -192,10 +200,12 @@ def start_quiz_session(utm: dict) -> str:
     with _conn() as c:
         c.execute(
             "INSERT INTO quiz_sessions (id, created_at, utm_source, utm_medium,"
-            " utm_campaign, utm_content, utm_term) VALUES (?,?,?,?,?,?,?)",
+            " utm_campaign, utm_content, utm_term, gclid, gbraid, wbraid)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?)",
             (sid, _now(), utm.get("utm_source"), utm.get("utm_medium"),
              utm.get("utm_campaign"), utm.get("utm_content"),
-             utm.get("utm_term")))
+             utm.get("utm_term"), utm.get("gclid"), utm.get("gbraid"),
+             utm.get("wbraid")))
         c.execute("INSERT INTO events (at, kind, quiz_session_id)"
                   " VALUES (?,?,?)", (_now(), "quiz_start", sid))
     return sid
@@ -228,7 +238,8 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
                  partner_lon: float | None = None,
                  partner_tz: str | None = None,
                  partner_gender: str | None = None,
-                 discount_code: str | None = None) -> dict:
+                 discount_code: str | None = None,
+                 primary_focus: str | None = None) -> dict:
     if tier not in PRICES:
         raise ValueError(f"unknown tier {tier}")
     if currency not in PRICES[tier]:
@@ -245,15 +256,15 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
             " marketing_opt_in, zodiac_insights_opt_in, product_type,"
             " partner_name, partner_birth_date, partner_birth_time,"
             " partner_birth_place, partner_lat, partner_lon, partner_tz,"
-            " partner_gender, discount_code)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " partner_gender, discount_code, primary_focus)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (oid, quiz_session_id, _now(), email, name, phone, tier, currency,
              amount, birth_date, birth_time, gender, birth_place, lat, lon,
              tz, ",".join(focus_areas), int(marketing_opt_in),
              int(zodiac_insights_opt_in), product_type,
              partner_name, partner_birth_date, partner_birth_time,
              partner_birth_place, partner_lat, partner_lon, partner_tz,
-             partner_gender, discount_code))
+             partner_gender, discount_code, primary_focus))
         _upsert_customer(c, email, name, phone, marketing_opt_in,
                          zodiac_insights_opt_in)
     return get_order(oid)
@@ -391,7 +402,9 @@ def _gen_discount_code() -> str:
 
 def create_lead(email: str, name: str, birth_date: str, birth_time: str,
                 birth_place: str, lat: float, lon: float, tz: str,
-                currency: str, gender: str = "unspecified") -> dict:
+                currency: str, gender: str = "unspecified",
+                primary_focus: str | None = None,
+                quiz_session_id: str | None = None) -> dict:
     lid = f"lead_{secrets.token_urlsafe(10)}"
     code = _gen_discount_code()
     expires = (dt.datetime.now(dt.timezone.utc) + CODE_LIFETIME).isoformat()
@@ -399,10 +412,12 @@ def create_lead(email: str, name: str, birth_date: str, birth_time: str,
         c.execute(
             "INSERT INTO leads (id, created_at, email, name, birth_date,"
             " birth_time, birth_place, lat, lon, tz, gender, currency,"
-            " discount_code, discount_pct, expires_at)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " discount_code, discount_pct, expires_at, primary_focus,"
+            " quiz_session_id)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (lid, _now(), email, name, birth_date, birth_time, birth_place,
-             lat, lon, tz, gender, currency, code, DISCOUNT_PCT, expires))
+             lat, lon, tz, gender, currency, code, DISCOUNT_PCT, expires,
+             primary_focus, quiz_session_id))
     return get_lead(lid)
 
 

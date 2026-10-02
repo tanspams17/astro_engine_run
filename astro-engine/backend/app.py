@@ -140,7 +140,12 @@ class QuizStart(BaseModel):
     utm_campaign: str | None = None
     utm_content: str | None = None
     utm_term: str | None = None
+    gclid: str | None = Field(default=None, max_length=200)
+    gbraid: str | None = Field(default=None, max_length=200)
+    wbraid: str | None = Field(default=None, max_length=200)
 
+
+FOCUS_PATTERN = "^(personality|love|career|growth)$"
 
 COMPAT_TIERS = {"zodiac_compat", "vedic_compat", "mixed_compat"}
 ALL_TIERS_PATTERN = "^(western|vedic|mixed|zodiac_compat|vedic_compat|mixed_compat)$"
@@ -168,6 +173,7 @@ class OrderIn(BaseModel):
     lon: float = Field(ge=-180, le=180)
     tz: str = Field(max_length=64)                  # IANA name, e.g. Asia/Kolkata
     focus_areas: list[str] = Field(default_factory=list, max_length=8)
+    primary_focus: str | None = Field(default=None, pattern=FOCUS_PATTERN)
     marketing_opt_in: bool = False   # MUST default False (GDPR/PECR)
     zodiac_insights_opt_in: bool = False   # separate consent, MUST default False
 
@@ -222,6 +228,8 @@ class LeadIn(BaseModel):
     tz: str = Field(max_length=64)
     gender: str = Field(default="unspecified",
                         pattern="^(male|female|unspecified)$")
+    primary_focus: str | None = Field(default=None, pattern=FOCUS_PATTERN)
+    quiz_session_id: str | None = Field(default=None, max_length=64)
 
 
 # ------------------------------------------------------------ endpoints
@@ -347,7 +355,8 @@ def create_order(o: OrderIn, request: Request):
         partner_name=o.partner_name, partner_birth_date=o.partner_birth_date,
         partner_birth_time=o.partner_birth_time, partner_birth_place=o.partner_birth_place,
         partner_lat=o.partner_lat, partner_lon=o.partner_lon, partner_tz=o.partner_tz,
-        partner_gender=o.partner_gender, discount_code=discount_code)
+        partner_gender=o.partner_gender, discount_code=discount_code,
+        primary_focus=o.primary_focus)
     session = None
     if amount_minor > 0:
         adapter = get_adapter()
@@ -385,7 +394,9 @@ def create_lead(lead_in: LeadIn, request: Request, background: BackgroundTasks):
     lead = orders.create_lead(
         lead_in.email, lead_in.name, lead_in.birth_date,
         lead_in.birth_time or "", lead_in.birth_place, lead_in.lat,
-        lead_in.lon, lead_in.tz, currency, gender=lead_in.gender)
+        lead_in.lon, lead_in.tz, currency, gender=lead_in.gender,
+        primary_focus=lead_in.primary_focus,
+        quiz_session_id=lead_in.quiz_session_id)
     background.add_task(_fulfil_lead, lead["id"])
     return {"ok": True, "lead_id": lead["id"]}
 
@@ -410,7 +421,8 @@ def _fulfil_lead(lead_id: str):
             lead["lat"], lead["lon"], pdf_path, time_known=time_known,
             gender=lead.get("gender", "unspecified"),
             currency=lead["currency"], discount_code=lead["discount_code"],
-            discount_pct=lead["discount_pct"], expires_at=lead["expires_at"])
+            discount_pct=lead["discount_pct"], expires_at=lead["expires_at"],
+            primary_focus=lead.get("primary_focus"))
         if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
             raise RuntimeError("teaser generator did not create a PDF")
     except Exception as exc:
@@ -432,7 +444,8 @@ def _fulfil_lead(lead_id: str):
     try:
         send_lead_teaser_email(lead["email"], lead["name"], token,
                                lead["discount_code"], lead["discount_pct"],
-                               lead["expires_at"])
+                               lead["expires_at"],
+                               primary_focus=lead.get("primary_focus"))
     except Exception as exc:
         logger.exception("Lead teaser email delivery failed for %s", lead_id)
         with orders._conn() as connection:
@@ -461,7 +474,8 @@ def _fulfil(order_id: str):
                 order["name"], birth, order["tz"], order["birth_place"],
                 order["lat"], order["lon"], order["tier"],
                 [f for f in order["focus_areas"].split(",") if f], pdf_path,
-                time_known=time_known, gender=order.get("gender", "unspecified"))
+                time_known=time_known, gender=order.get("gender", "unspecified"),
+                primary_focus=order.get("primary_focus"))
         if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
             raise RuntimeError("report generator did not create a PDF")
     except Exception as exc:

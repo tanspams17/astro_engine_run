@@ -102,10 +102,15 @@ def _format_expiry(expires_at_iso: str) -> str:
     return when.strftime("%-I:%M %p, %-d %B %Y (UTC)")
 
 
+def _claim_link(discount_code: str, primary_focus: str | None) -> str:
+    focus = f"&focus={primary_focus}" if primary_focus else ""
+    return f"{BASE_URL}/?coupon={discount_code}&tier=mixed{focus}#order"
+
+
 def _lead_text(name: str, token: str, discount_code: str, discount_pct: int,
-               expires_at: str) -> str:
+               expires_at: str, primary_focus: str | None = None) -> str:
     link = f"{BASE_URL}/download/lead/{token}"
-    claim_link = f"{BASE_URL}/?coupon={discount_code}&tier=mixed#order"
+    claim_link = _claim_link(discount_code, primary_focus)
     expiry = _format_expiry(expires_at)
     return f"""Hi {name},
 
@@ -131,10 +136,10 @@ P.S. Your code is reserved for you specifically — it can only be used once, by
 
 
 def _lead_html(name: str, token: str, discount_code: str, discount_pct: int,
-              expires_at: str) -> str:
+              expires_at: str, primary_focus: str | None = None) -> str:
     safe_name = html.escape(name)
     link = f"{BASE_URL}/download/lead/{token}"
-    claim_link = f"{BASE_URL}/?coupon={discount_code}&tier=mixed#order"
+    claim_link = _claim_link(discount_code, primary_focus)
     expiry = _format_expiry(expires_at)
     return f"""<!DOCTYPE html>
 <html><body style="margin:0;padding:32px 20px;background:#191735;
@@ -244,13 +249,15 @@ def send_report_email(to_email: str, name: str, tier_name: str,
 
 def send_lead_teaser_email(to_email: str, name: str, token: str,
                            discount_code: str, discount_pct: int,
-                           expires_at: str) -> bool:
+                           expires_at: str, primary_focus: str | None = None) -> bool:
     subject = f"Your free birth chart preview + {discount_pct}% off (48h only)"
-    text = _lead_text(name, token, discount_code, discount_pct, expires_at)
+    text = _lead_text(name, token, discount_code, discount_pct, expires_at,
+                      primary_focus)
 
     if os.environ.get("RESEND_API_KEY"):
         _send_via_resend(to_email, subject,
-                         _lead_html(name, token, discount_code, discount_pct, expires_at),
+                         _lead_html(name, token, discount_code, discount_pct, expires_at,
+                                    primary_focus),
                          text)
     elif os.environ.get("SMTP_HOST"):
         _send_via_smtp(to_email, subject, text)

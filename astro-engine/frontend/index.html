@@ -177,6 +177,31 @@
   .hero-actions { display:flex; flex-direction:column; align-items:flex-start; gap:12px; }
   .hero-note { font-size:13px; color:var(--lavender); letter-spacing:.02em; }
   .hero-note::before { content:"✦ "; color:var(--gold); }
+  .hero-secondary { font-family:var(--sans); font-size:14px; font-weight:600; color:var(--gold-light);
+    text-decoration:underline; text-underline-offset:3px; }
+  .hero-secondary:hover { color:var(--cream); }
+
+  /* ---------- WHY PAY ---------- */
+  .why-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; max-width:920px; margin:0 auto; }
+  .why-grid .card { padding:26px 24px; }
+  .why-grid .why-no { font-family:var(--sans); font-size:12px; font-weight:700; letter-spacing:.12em;
+    color:var(--gold); margin-bottom:8px; }
+  .why-grid h3 { font-size:20px; font-weight:400; margin-bottom:8px; }
+  .why-grid p { font-size:14.5px; color:var(--lavender); }
+  .why-cta { text-align:center; margin-top:30px; }
+
+  /* ---------- FOCUS PICKER ---------- */
+  .focus-picker { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+  .focus-picker label { cursor:pointer; display:inline-block; margin:0; position:relative; }
+  .label-like { display:block; font-size:13px; color:var(--lavender); margin-bottom:6px; letter-spacing:.01em; }
+  .label-like .opt { color:var(--gold); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-left:4px; }
+  .focus-picker input { position:absolute; opacity:0; pointer-events:none; }
+  .focus-picker span { display:inline-block; padding:9px 14px; border-radius:999px; font-family:var(--sans);
+    font-size:13.5px; border:1px solid var(--surface-border-strong); color:var(--lavender); }
+  .focus-picker input:checked + span { background:rgba(212,146,10,0.18); border-color:var(--gold); color:var(--cream); }
+  .focus-picker input:focus-visible + span { outline:3px solid var(--gold-light); outline-offset:2px; }
+  .india-card-note { color:#FDE047 !important; border:1px solid rgba(253,224,71,0.35);
+    border-radius:8px; padding:10px 12px; }
   .skip-link { position:absolute; left:16px; top:8px; z-index:200; padding:8px 12px;
     background:var(--cream); color:#241505; transform:translateY(-160%); }
   .skip-link:focus { transform:translateY(0); }
@@ -428,11 +453,14 @@
 
   /* ---------- RESPONSIVE ---------- */
   @media (max-width:900px) {
-    .hero-inner { grid-template-columns:1fr; grid-template-areas:"visual" "text"; gap:20px; }
+    .hero-inner { grid-template-columns:1fr; grid-template-areas:"text" "visual"; gap:8px; }
     .hero-text { text-align:left; }
-    .constellation-wrap { max-width:340px; }
+    .constellation-wrap { max-width:240px; }
     .included-grid { grid-template-columns:repeat(2,1fr); }
+    .why-grid { grid-template-columns:1fr; }
     .pricing-grid { grid-template-columns:1fr; }
+    /* phones: lead with the recommended report instead of making people scroll past two others */
+    .pricing-grid .price-card[data-tier="mixed"] { order:-1; }
     .order-layout { grid-template-columns:1fr; }
     .field-grid { grid-template-columns:1fr; }
     .summary-card { position:static; }
@@ -466,7 +494,7 @@
     <div class="navlinks">
       <a href="#included"><span class="nl-full">What's Included</span><span class="nl-short">Included</span></a>
       <a href="#pricing"><span class="nl-full">Individual Report</span><span class="nl-short">Individual</span></a>
-      <a href="#compatibility"><span class="nl-full">Compatibility Report</span><span class="nl-short">Compatibility</span></a>
+      <a href="#compatibility"><span class="nl-full">Kundli Matching</span><span class="nl-short">Matching</span></a>
       <a href="#order">Order</a>
     </div>
     <button class="nav-cta" onclick="scrollToOrder()">Get Your Report</button>
@@ -477,17 +505,18 @@
 <header class="hero" id="hero">
   <div class="wrap hero-inner">
     <div class="hero-text">
-      <span class="eyebrow">Sidereal · Lahiri Ayanamsa · Real Jyotish</span>
+      <span class="eyebrow">Personal Astrology Reports · Vedic &amp; Western</span>
       <h1>Your birth chart,<br>read <em>properly</em>.</h1>
-      <p class="hero-tagline">Deep-dive 30+ page analysis combining Western Psychology &amp;
-        Ancient Vedic Wisdom. Generated in 60 seconds.</p>
-      <p class="sub">Calculated from the Swiss Ephemeris, not a template. Your exact
-        <strong>nakshatra</strong>, <strong>dasha periods</strong> and houses, using the sidereal
-        zodiac and Lahiri ayanamsa. Prefer the tropical lens, or both compared side by side?
-        Choose Western, Vedic, or Mixed below.</p>
+      <p class="hero-tagline">Free apps hand you a chart. We tell you what it means and what
+        to do with it.</p>
+      <p class="sub">A 22 to 30+ page reading built from your exact birth time and place, starting
+        with what matters most to you: <strong>love and marriage</strong>, <strong>career</strong>
+        or <strong>personal growth</strong>. No scare stories and nothing extra to buy. Just
+        what's coming, what it means for you, and how to plan for it, month by month.</p>
       <div class="hero-actions">
-        <button class="btn-primary" onclick="scrollToOrder()">Get Your Report</button>
-        <div class="hero-note">One-time payment · No subscription.</div>
+        <button class="btn-primary" onclick="scrollToPricing()">Get Your Report</button>
+        <div class="hero-note">Ready in about a minute · One-time payment · No subscription</div>
+        <a href="#compatibility" class="hero-secondary" onclick="scrollToCompatibility(event)">Planning a marriage? See Kundli Matching</a>
       </div>
     </div>
     <div class="hero-visual">
@@ -508,6 +537,34 @@
   </div>
 </header>
 
+<section id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Why Arvelos</span>
+      <h2>Why pay when charts are free?</h2>
+      <p>A free chart gives you the symbols. A reading tells you what they mean for your life
+        and what to do next.</p>
+    </div>
+    <div class="why-grid">
+      <div class="card"><div class="why-no">01</div><h3>A chart isn't a reading</h3>
+        <p>Free tools stop at the symbols: signs, houses, planets. We explain what yours mean, in
+          plain English, for the way you actually live.</p></div>
+      <div class="card"><div class="why-no">02</div><h3>It starts with your question</h3>
+        <p>Tell us what's on your mind, whether that's love and marriage, career or personal
+          growth, and your report opens with it.</p></div>
+      <div class="card"><div class="why-no">03</div><h3>Informative, never fearful</h3>
+        <p>Difficult placements are explained as things to prepare for, with practical steps.
+          No doshas to "fix", no pujas or gemstones to buy.</p></div>
+      <div class="card"><div class="why-no">04</div><h3>Your next 12 months, mapped</h3>
+        <p>The life chapter you're in now, the one that comes next, and a month by month
+          guide so you can plan around the stars that work for you.</p></div>
+    </div>
+    <div class="why-cta">
+      <button class="btn-primary" onclick="scrollToPricing()">See the Reports</button>
+    </div>
+  </div>
+</section>
+
 <section id="included">
   <div class="wrap">
     <div class="sec-head">
@@ -518,9 +575,9 @@
     </div>
     <div class="included-grid">
       <div class="card"><div class="card-head"><div class="glyph">✦</div><h3>Real calculation</h3></div>
-        <p>Swiss Ephemeris precision, the same astronomical data professional astrologers use.</p></div>
+        <p>Swiss Ephemeris precision, the same astronomical data professional astrologers use. Vedic charts use the sidereal zodiac and Lahiri ayanamsa.</p></div>
       <div class="card"><div class="card-head"><div class="glyph">✦</div><h3>Every angle covered</h3></div>
-        <p>Personality, love, career and growth. Every report includes all four, no picking required.</p></div>
+        <p>Personality, love, career and growth are all included. The one you pick comes first.</p></div>
       <div class="card"><div class="card-head"><div class="glyph">✦</div><h3>Instant PDF</h3></div>
         <p>A beautifully typeset report, delivered to your inbox within minutes.</p></div>
       <div class="card"><div class="card-head"><div class="glyph">✦</div><h3>One payment</h3></div>
@@ -571,7 +628,7 @@
         <a href="#compatibility" class="compat-upsell" onclick="scrollToCompatibility(event)"><span class="heart">&#128149;</span> Add a Partner Compatibility Check</a>
       </div>
         <div class="card price-card" data-tier="mixed" role="button" tabindex="0" aria-pressed="false" onclick="chooseTier('mixed')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseTier('mixed')}">
-        <span class="badge">Most chosen</span>
+        <span class="badge">Best value</span>
         <h3>Mixed</h3>
         <div class="tagline">The Complete Synthesis</div>
         <div class="amount" data-amt>$29</div>
@@ -611,6 +668,13 @@
     <div class="order-layout" id="orderFormView">
       <div class="card order-card">
         <div class="field-grid">
+          <div class="full"><span class="label-like" id="focusLabel">What's On Your Mind Most? <span class="opt">your report opens with it</span></span>
+            <div class="focus-picker" role="radiogroup" aria-labelledby="focusLabel">
+              <label><input type="radio" name="focus" value="love"><span>Love &amp; Marriage</span></label>
+              <label><input type="radio" name="focus" value="career"><span>Career &amp; Purpose</span></label>
+              <label><input type="radio" name="focus" value="growth"><span>Personal Growth</span></label>
+              <label><input type="radio" name="focus" value="personality"><span>Who I Am</span></label>
+            </div></div>
           <div><label for="name">Your Beloved Name</label>
             <input type="text" id="name" placeholder="So the report can address you" maxlength="60"></div>
           <div><label for="email">Email <span class="opt">report delivered here</span></label>
@@ -678,9 +742,10 @@
           <p class="legal full" id="hostednote" style="display:none">You'll be taken to our
             payment provider's secure page to complete the payment, then brought straight back
             here for your report.</p>
-          <p class="legal full india-card-note" style="display:none">Paying with an Indian
-            card? Make sure international / online transactions are switched on in your bank
-            app, as the payment is processed by our UK company.</p>
+          <p class="legal full india-card-note" style="display:none"><strong>Paying from India?</strong>
+            Card payment only for now. Before you pay, switch on international / online
+            transactions for your card in your bank app, as the payment is processed by our UK
+            company.</p>
 
           <div class="full newsletter-box">
             <input type="checkbox" id="optin">
@@ -710,8 +775,7 @@
         <div class="trust-badges">
           <p class="trust-line">&#10003; One-Time Payment &bull; No Monthly Subscription &bull; Instant PDF Delivery</p>
           <div class="paypills" aria-label="Accepted payment methods">
-            <span class="pay-icon" title="Visa"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Visa"><rect width="48" height="20" rx="3" fill="#fff"/><text x="24" y="14.5" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#1A1F71">VISA</text></svg></span><span class="pay-icon" title="Mastercard"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Mastercard"><rect width="48" height="20" rx="3" fill="#fff"/><circle cx="20" cy="10" r="7" fill="#EB001B"/><circle cx="28" cy="10" r="7" fill="#F79E1B" style="mix-blend-mode:multiply"/></svg></span><span class="pay-icon" title="Apple Pay"><svg viewBox="0 0 56 20" width="48" height="18" role="img" aria-label="Apple Pay"><rect width="56" height="20" rx="3" fill="#fff"/><ellipse cx="16" cy="11" rx="5.4" ry="5.7" fill="#000"/><circle cx="21" cy="7.5" r="3.2" fill="#fff"/><path d="M16.3 5.6c0-1.5 1.1-2.7 2.6-2.7 0 1.5-1.2 2.7-2.6 2.7z" fill="#000"/><text x="28" y="14.5" font-family="Arial, sans-serif" font-weight="600" font-size="11" fill="#000">Pay</text></svg></span><span class="pay-icon" title="Google Pay"><svg viewBox="0 0 58 20" width="50" height="18" role="img" aria-label="Google Pay"><rect width="58" height="20" rx="3" fill="#fff"/><text x="6" y="14.5" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="#4285F4">G</text><text x="16" y="14.5" font-family="Arial, sans-serif" font-weight="500" font-size="11" fill="#3C4043">Pay</text></svg></span><span class="pay-icon" title="PayPal"><svg viewBox="0 0 54 20" width="48" height="18" role="img" aria-label="PayPal"><rect width="54" height="20" rx="3" fill="#fff"/><text x="4" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#003087">Pay</text><text x="24" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#009cde">Pal</text></svg></span>
-          </div>
+            <span class="pay-icon" title="Visa"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Visa"><rect width="48" height="20" rx="3" fill="#fff"/><text x="24" y="14.5" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#1A1F71">VISA</text></svg></span><span class="pay-icon" title="Mastercard"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Mastercard"><rect width="48" height="20" rx="3" fill="#fff"/><circle cx="20" cy="10" r="7" fill="#EB001B"/><circle cx="28" cy="10" r="7" fill="#F79E1B" style="mix-blend-mode:multiply"/></svg></span><span class="pay-icon" title="Apple Pay"><svg viewBox="0 0 56 20" width="48" height="18" role="img" aria-label="Apple Pay"><rect width="56" height="20" rx="3" fill="#fff"/><ellipse cx="16" cy="11" rx="5.4" ry="5.7" fill="#000"/><circle cx="21" cy="7.5" r="3.2" fill="#fff"/><path d="M16.3 5.6c0-1.5 1.1-2.7 2.6-2.7 0 1.5-1.2 2.7-2.6 2.7z" fill="#000"/><text x="28" y="14.5" font-family="Arial, sans-serif" font-weight="600" font-size="11" fill="#000">Pay</text></svg></span><span class="pay-icon" title="Google Pay"><svg viewBox="0 0 58 20" width="50" height="18" role="img" aria-label="Google Pay"><rect width="58" height="20" rx="3" fill="#fff"/><text x="6" y="14.5" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="#4285F4">G</text><text x="16" y="14.5" font-family="Arial, sans-serif" font-weight="500" font-size="11" fill="#3C4043">Pay</text></svg></span>          </div>
         </div>
         <div class="err" id="e1" role="alert" aria-live="polite"></div>
       </aside>
@@ -747,10 +811,11 @@
 <section id="compatibility">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Two charts, compared</span>
-      <h2>Compatibility Reports</h2>
-      <p>See how your chart and someone else's actually compare: numerology and zodiac
-        compatibility, or the classical Vedic Guna Milan match score, or both.</p>
+      <span class="eyebrow">For Couples &amp; Families</span>
+      <h2>Kundli Matching &amp; Compatibility</h2>
+      <p>Thinking about marriage, or just curious how two charts fit? Get the classical Vedic
+        Guna Milan match score out of 36, a numerology and zodiac comparison, or both, with
+        plain-English notes on where you naturally fit and where it takes more effort.</p>
     </div>
     <div class="pricing-grid" id="compatPricingGrid">
       <div class="card price-card" data-tier="zodiac_compat" role="button" tabindex="0" aria-pressed="false" onclick="chooseCompatTier('zodiac_compat')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseCompatTier('zodiac_compat')}">
@@ -778,7 +843,7 @@
         <div class="choose">Choose Vedic</div>
       </div>
       <div class="card price-card" data-tier="mixed_compat" role="button" tabindex="0" aria-pressed="false" onclick="chooseCompatTier('mixed_compat')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseCompatTier('mixed_compat')}">
-        <span class="badge">Most chosen</span>
+        <span class="badge">Best value</span>
         <h3>Combined</h3>
         <div class="tagline">Zodiac + Vedic, fully compared</div>
         <div class="amount" data-amt>$39</div>
@@ -880,9 +945,10 @@
           <p class="legal full" id="compatHostednote" style="display:none">You'll be taken to our
             payment provider's secure page to complete the payment, then brought straight back
             here for your report.</p>
-          <p class="legal full india-card-note" style="display:none">Paying with an Indian
-            card? Make sure international / online transactions are switched on in your bank
-            app, as the payment is processed by our UK company.</p>
+          <p class="legal full india-card-note" style="display:none"><strong>Paying from India?</strong>
+            Card payment only for now. Before you pay, switch on international / online
+            transactions for your card in your bank app, as the payment is processed by our UK
+            company.</p>
           <p class="legal full">One-time payment. No subscription or recurring charge of any kind.
             By purchasing you agree to the <a href="/terms.html" target="_blank">Terms &amp; Refund
             Policy</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. Your and your
@@ -899,8 +965,7 @@
         <div class="trust-badges">
           <p class="trust-line">&#10003; One-Time Payment &bull; No Monthly Subscription &bull; Instant PDF Delivery</p>
           <div class="paypills" aria-label="Accepted payment methods">
-            <span class="pay-icon" title="Visa"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Visa"><rect width="48" height="20" rx="3" fill="#fff"/><text x="24" y="14.5" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#1A1F71">VISA</text></svg></span><span class="pay-icon" title="Mastercard"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Mastercard"><rect width="48" height="20" rx="3" fill="#fff"/><circle cx="20" cy="10" r="7" fill="#EB001B"/><circle cx="28" cy="10" r="7" fill="#F79E1B" style="mix-blend-mode:multiply"/></svg></span><span class="pay-icon" title="Apple Pay"><svg viewBox="0 0 56 20" width="48" height="18" role="img" aria-label="Apple Pay"><rect width="56" height="20" rx="3" fill="#fff"/><ellipse cx="16" cy="11" rx="5.4" ry="5.7" fill="#000"/><circle cx="21" cy="7.5" r="3.2" fill="#fff"/><path d="M16.3 5.6c0-1.5 1.1-2.7 2.6-2.7 0 1.5-1.2 2.7-2.6 2.7z" fill="#000"/><text x="28" y="14.5" font-family="Arial, sans-serif" font-weight="600" font-size="11" fill="#000">Pay</text></svg></span><span class="pay-icon" title="Google Pay"><svg viewBox="0 0 58 20" width="50" height="18" role="img" aria-label="Google Pay"><rect width="58" height="20" rx="3" fill="#fff"/><text x="6" y="14.5" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="#4285F4">G</text><text x="16" y="14.5" font-family="Arial, sans-serif" font-weight="500" font-size="11" fill="#3C4043">Pay</text></svg></span><span class="pay-icon" title="PayPal"><svg viewBox="0 0 54 20" width="48" height="18" role="img" aria-label="PayPal"><rect width="54" height="20" rx="3" fill="#fff"/><text x="4" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#003087">Pay</text><text x="24" y="14.5" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#009cde">Pal</text></svg></span>
-          </div>
+            <span class="pay-icon" title="Visa"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Visa"><rect width="48" height="20" rx="3" fill="#fff"/><text x="24" y="14.5" text-anchor="middle" font-family="Arial, sans-serif" font-style="italic" font-weight="700" font-size="11" fill="#1A1F71">VISA</text></svg></span><span class="pay-icon" title="Mastercard"><svg viewBox="0 0 48 20" width="42" height="18" role="img" aria-label="Mastercard"><rect width="48" height="20" rx="3" fill="#fff"/><circle cx="20" cy="10" r="7" fill="#EB001B"/><circle cx="28" cy="10" r="7" fill="#F79E1B" style="mix-blend-mode:multiply"/></svg></span><span class="pay-icon" title="Apple Pay"><svg viewBox="0 0 56 20" width="48" height="18" role="img" aria-label="Apple Pay"><rect width="56" height="20" rx="3" fill="#fff"/><ellipse cx="16" cy="11" rx="5.4" ry="5.7" fill="#000"/><circle cx="21" cy="7.5" r="3.2" fill="#fff"/><path d="M16.3 5.6c0-1.5 1.1-2.7 2.6-2.7 0 1.5-1.2 2.7-2.6 2.7z" fill="#000"/><text x="28" y="14.5" font-family="Arial, sans-serif" font-weight="600" font-size="11" fill="#000">Pay</text></svg></span><span class="pay-icon" title="Google Pay"><svg viewBox="0 0 58 20" width="50" height="18" role="img" aria-label="Google Pay"><rect width="58" height="20" rx="3" fill="#fff"/><text x="6" y="14.5" font-family="Arial, sans-serif" font-weight="700" font-size="11" fill="#4285F4">G</text><text x="16" y="14.5" font-family="Arial, sans-serif" font-weight="500" font-size="11" fill="#3C4043">Pay</text></svg></span>          </div>
         </div>
         <div class="err" id="compatErr" role="alert" aria-live="polite"></div>
       </aside>
@@ -983,6 +1048,13 @@
             <input type="text" id="leadName" placeholder="So we can address you" maxlength="60"></div>
           <div><label for="leadEmail">Email</label>
             <input type="email" id="leadEmail" placeholder="you@example.com"></div>
+          <div class="full"><span class="label-like" id="leadFocusLabel">What's On Your Mind Most?</span>
+            <div class="focus-picker" role="radiogroup" aria-labelledby="leadFocusLabel">
+              <label><input type="radio" name="leadFocus" value="love"><span>Love &amp; Marriage</span></label>
+              <label><input type="radio" name="leadFocus" value="career"><span>Career &amp; Purpose</span></label>
+              <label><input type="radio" name="leadFocus" value="growth"><span>Personal Growth</span></label>
+              <label><input type="radio" name="leadFocus" value="personality"><span>Who I Am</span></label>
+            </div></div>
           <div><label for="leadDate">Date of Birth</label><input type="date" id="leadDate"></div>
           <div><label for="leadTime_h">Time of Birth</label>
             <div class="time-ampm-row">
@@ -1107,14 +1179,18 @@
 
     g.appendChild(glow); g.appendChild(core);
     g.style.cursor = 'pointer';
-    g.addEventListener('mouseenter', () => {
+    const showTip = () => {
       tipMain.textContent = st.s; tipSub.textContent = st.n;
       const wr = wrapEl.getBoundingClientRect();
       const pt = { x: (st.x/500)*wr.width, y: (st.y/460)*wr.height };
       tip.style.left = pt.x + 'px'; tip.style.top = pt.y + 'px';
       tip.classList.add('show');
-    });
+    };
+    g.addEventListener('mouseenter', showTip);
     g.addEventListener('mouseleave', () => tip.classList.remove('show'));
+    // phones have no hover: a tap shows the name instead of doing nothing
+    g.addEventListener('click', () => { showTip(); clearTimeout(tip._t);
+      tip._t = setTimeout(() => tip.classList.remove('show'), 2200); });
     starsG.appendChild(g);
     requestAnimationFrame(() => requestAnimationFrame(() => g.style.opacity = '1'));
   });
@@ -1132,6 +1208,7 @@ addEventListener('scroll', () => {
 });
 
 function scrollToOrder(){ document.getElementById('order').scrollIntoView({behavior:'smooth'}); }
+function scrollToPricing(){ document.getElementById('pricing').scrollIntoView({behavior:'smooth'}); }
 function scrollToCompatibility(ev){
   if (ev) ev.stopPropagation();  // don't also trigger the pricing card's own onclick
   document.getElementById('compatibility').scrollIntoView({behavior:'smooth'});
@@ -1192,6 +1269,7 @@ document.addEventListener('keydown', e => {
 
 /* ---- free 2-page preview / lead magnet modal ---- */
 function openLeadModal(){
+  loadCities();
   document.getElementById('leadForm').style.display = '';
   document.getElementById('leadSuccess').style.display = 'none';
   document.getElementById('leadError').style.display = 'none';
@@ -1205,6 +1283,7 @@ function closeLeadModal(){
 }
 
 async function submitLead(){
+  await loadCities();
   const err = document.getElementById('leadErr');
   err.textContent = '';
   const name = document.getElementById('leadName').value.trim();
@@ -1226,7 +1305,8 @@ async function submitLead(){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         name, email, birth_date: d, birth_time: noTime ? null : t,
-        birth_place: place.n, lat: place.a, lon: place.o, tz: place.z})});
+        birth_place: place.n, lat: place.a, lon: place.o, tz: place.z,
+        primary_focus: chosenFocus("leadFocus"), quiz_session_id: quizSession})});
     if (!r.ok) throw new Error((await r.json()).detail || 'Could not send your preview');
     document.getElementById('leadForm').style.display = 'none';
     document.getElementById('leadSuccess').style.display = 'block';
@@ -1355,7 +1435,8 @@ function combinedPhone() {
 
 function utmParams() {
   const q = new URLSearchParams(location.search), out = {};
-  for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"])
+  for (const k of ["utm_source","utm_medium","utm_campaign","utm_content","utm_term",
+                   "gclid","gbraid","wbraid"])
     if (q.get(k)) out[k] = q.get(k);
   return out;
 }
@@ -1381,23 +1462,43 @@ function norm(s) {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
-fetch("/cities.json").then(r=>r.json()).then(d=>{
-  // pre-tokenize once at load instead of re-splitting ~150k names on every
-  // keystroke — this is what makes search over a dataset this size fast
-  for (const c of d) {
-    c._nn = norm(c.n);
-    c._w = c._nn.split(/[\s,]+/).filter(Boolean);
-    for (const w of c._w) {
-      let bucket = WORD_INDEX.get(w.length);
-      if (!bucket) WORD_INDEX.set(w.length, bucket = []);
-      bucket.push([w, c]);
+// The city list is ~2.4 MB gzipped / 12 MB parsed, so it's only fetched once
+// a visitor shows intent to order, not on every page view (most visitors
+// never reach a birth-place field, and parsing it froze cheap phones).
+const PLACE_INPUTS = ["bplace", "bplaceA", "bplaceB", "leadPlace"];
+let citiesPromise = null;
+function loadCities() {
+  if (citiesPromise) return citiesPromise;
+  citiesPromise = fetch("/cities.json").then(r=>r.json()).then(d=>{
+    // pre-tokenize once at load instead of re-splitting ~150k names on every
+    // keystroke — this is what makes search over a dataset this size fast
+    for (const c of d) {
+      c._nn = norm(c.n);
+      c._w = c._nn.split(/[\s,]+/).filter(Boolean);
+      for (const w of c._w) {
+        let bucket = WORD_INDEX.get(w.length);
+        if (!bucket) WORD_INDEX.set(w.length, bucket = []);
+        bucket.push([w, c]);
+      }
     }
-  }
-  CITIES = d; citiesLoading = false;
-  const v = document.getElementById("bplace").value.trim();
-  if (document.activeElement === document.getElementById("bplace") && v.length >= 2 && !chosenPlace)
-    searchAndRender(v.toLowerCase());
-}).catch(()=>{citiesLoading=false;});
+    CITIES = d; citiesLoading = false;
+    // whoever was typing while it loaded gets their results now
+    const a = document.activeElement;
+    if (a && PLACE_INPUTS.includes(a.id)) a.dispatchEvent(new Event("focus"));
+  }).catch(()=>{ citiesLoading = false; citiesPromise = null; });
+  return citiesPromise;
+}
+document.addEventListener("focusin", e => {
+  if (PLACE_INPUTS.includes(e.target.id)) loadCities();
+});
+if ("IntersectionObserver" in window) {
+  const io = new IntersectionObserver(entries => {
+    if (entries.some(en => en.isIntersecting)) { loadCities(); io.disconnect(); }
+  }, {rootMargin: "600px 0px"});
+  const watchOrder = () => io.observe(document.getElementById("order"));
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchOrder);
+  else watchOrder();
+}
 
 // older/colonial-era and common alternate names still widely used, mapped to the
 // name actually present in cities.json
@@ -1721,6 +1822,10 @@ const compatPlaceB = makeCityAutocomplete("bplaceB", "citySuggestionsB", "cityHi
 const leadPlace = makeCityAutocomplete("leadPlace", "leadCitySuggestions", "leadCityHint");
 
 const ALL_FOCUS_AREAS = ["personality","love","career","growth"];
+function chosenFocus(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : null;
+}
 
 /* ---- pricing (currency set by the server, see /api/prices) ---- */
 let PRICES = {western:[19,"$"], vedic:[19,"$"], mixed:[29,"$"],
@@ -1779,6 +1884,12 @@ fetch(API+"/api/prices").then(r=>r.json()).then(data=>{
 // yourself" — the single biggest drop-off point in any coupon funnel.
 function applyDeepLinkCoupon(){
   const params = new URLSearchParams(location.search);
+  const focus = params.get("focus");
+  if (focus && ALL_FOCUS_AREAS.includes(focus)) {
+    document.querySelectorAll(`input[name="focus"][value="${focus}"], input[name="leadFocus"][value="${focus}"]`)
+      .forEach(el => { el.checked = true; });
+  }
+  if (params.get("preview") === "1") { openLeadModal(); return; }
   const code = params.get("coupon");
   if (!code) return;
   const wantTier = params.get("tier");
@@ -1808,6 +1919,7 @@ function paintPricing() {
 }
 
 function chooseTier(t, fromSelect) {
+  loadCities();
   tier = t;
   track("select_item", {item_list_id: "individual", currency, items: [gaItem(t)]});
   document.querySelectorAll("#pricingGrid .price-card").forEach(el =>
@@ -1889,6 +2001,7 @@ document.getElementById("coupon").addEventListener("input", () => {
 let compatTier = null, compatAppliedCoupon = null;
 
 function chooseCompatTier(t) {
+  loadCities();
   compatTier = t;
   track("select_item", {item_list_id: "compatibility", currency, items: [gaItem(t)]});
   document.querySelectorAll("#compatPricingGrid .price-card").forEach(el =>
@@ -1955,6 +2068,7 @@ document.getElementById("cCoupon").addEventListener("input", () => {
 });
 
 async function payCompat() {
+  await loadCities();
   const err = document.getElementById("compatErr");
   err.textContent = "";
   const name = document.getElementById("cName").value.trim();
@@ -2025,6 +2139,7 @@ async function payCompat() {
 
 /* ================= checkout ================= */
 async function pay() {
+  await loadCities();
   const err = document.getElementById("e1");
   err.textContent = "";
   const name = document.getElementById("name").value.trim();
@@ -2071,7 +2186,8 @@ async function pay() {
         birth_date: d, birth_time: noTime ? null : t,
         gender: document.getElementById("gender").value,
         birth_place: chosenPlace.n, lat: chosenPlace.a, lon: chosenPlace.o, tz: chosenPlace.z,
-        focus_areas: ALL_FOCUS_AREAS, marketing_opt_in: document.getElementById("optin").checked,
+        focus_areas: ALL_FOCUS_AREAS, primary_focus: chosenFocus("focus"),
+        marketing_opt_in: document.getElementById("optin").checked,
         zodiac_insights_opt_in: document.getElementById("zodiacoptin").checked,
         coupon_code: coupon || null })});
     if (!or.ok) throw new Error((await or.json()).detail || "order failed");

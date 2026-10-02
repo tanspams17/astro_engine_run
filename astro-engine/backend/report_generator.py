@@ -133,6 +133,10 @@ def _aspect_sections(chart: Chart) -> list[dict]:
     return out
 
 
+FOCUS_LABELS = {"personality": "Who You Are", "love": "Love & Marriage",
+                "career": "Career & Purpose", "growth": "Personal Growth"}
+
+
 def _focus_sections(charts: dict[str, Chart], focus_areas: list[str]) -> list[dict]:
     chart = charts.get("western") or charts.get("vedic")
     out = []
@@ -493,7 +497,8 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
                          tz_name: str, place_label: str, lat: float,
                          lon: float, tier: str, focus_areas: list[str],
                          time_known: bool = True,
-                         gender: str = "unspecified") -> dict:
+                         gender: str = "unspecified",
+                         primary_focus: str | None = None) -> dict:
     try:
         from .numerology import compute_numerology
     except ImportError:
@@ -553,6 +558,13 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
     if time_known and primary.ascendant:
         kv.insert(4, ("Rising sign", primary.ascendant.sign))
     sections.append({"kv": kv, "title": ""})
+
+    if primary_focus not in cl.FOCUS_INTROS:
+        primary_focus = None
+    if primary_focus:
+        sections.append(h1(f"You Asked About {FOCUS_LABELS[primary_focus]}",
+                           "Your chosen focus, read first"))
+        sections += _focus_sections(charts, [primary_focus])
 
     # 03+ charts
     if "western" in charts:
@@ -638,10 +650,11 @@ def build_report_context(name: str, birth_dt_local: dt.datetime,
                                 "transits, month by month"})
     sections += monthly
 
-    if focus_areas:
+    remaining = [f for f in focus_areas if f != primary_focus]
+    if remaining:
         sections.append(h1("Your Focus Areas",
                            "The sections you asked us to go deeper on"))
-        sections += _focus_sections(charts, focus_areas)
+        sections += _focus_sections(charts, remaining)
 
     return {
         "tier": tier, "tier_name": TIER_NAMES[tier], "name": name,
@@ -691,10 +704,11 @@ def render_pdf(context: dict, out_path: str) -> str:
 
 def generate_report(name, birth_dt_local, tz_name, place_label, lat, lon,
                     tier, focus_areas, out_path, time_known=True,
-                    gender="unspecified") -> str:
+                    gender="unspecified", primary_focus=None) -> str:
     ctx = build_report_context(name, birth_dt_local, tz_name, place_label,
                                lat, lon, tier, focus_areas,
-                               time_known=time_known, gender=gender)
+                               time_known=time_known, gender=gender,
+                               primary_focus=primary_focus)
     return render_pdf(ctx, out_path)
 
 
@@ -714,7 +728,8 @@ def build_lead_teaser_context(name: str, birth_dt_local: dt.datetime,
                               tz_name: str, place_label: str, lat: float,
                               lon: float, time_known: bool, gender: str,
                               currency: str, discount_code: str,
-                              discount_pct: int, expires_at: str) -> dict:
+                              discount_pct: int, expires_at: str,
+                              primary_focus: str | None = None) -> dict:
     try:
         from .numerology import compute_numerology
     except ImportError:
@@ -763,7 +778,8 @@ def build_lead_teaser_context(name: str, birth_dt_local: dt.datetime,
         "price_before": fmt(mixed_price),
         "price_after": fmt(discounted),
         "expiry_display": expiry_dt.strftime("%-I:%M %p, %-d %B %Y (UTC)"),
-        "claim_url": f"https://astro.arvelos.cloud/?coupon={discount_code}&tier=mixed#order",
+        "claim_url": (f"https://astro.arvelos.cloud/?coupon={discount_code}&tier=mixed"
+                      + (f"&focus={primary_focus}" if primary_focus else "") + "#order"),
     }
     if time_known:
         asc = western.ascendant
@@ -789,10 +805,12 @@ def render_lead_teaser_pdf(context: dict, out_path: str) -> str:
 
 def generate_lead_teaser(name, birth_dt_local, tz_name, place_label, lat, lon,
                          out_path, time_known, gender, currency,
-                         discount_code, discount_pct, expires_at) -> str:
+                         discount_code, discount_pct, expires_at,
+                         primary_focus=None) -> str:
     ctx = build_lead_teaser_context(
         name, birth_dt_local, tz_name, place_label, lat, lon, time_known,
-        gender, currency, discount_code, discount_pct, expires_at)
+        gender, currency, discount_code, discount_pct, expires_at,
+        primary_focus=primary_focus)
     return render_lead_teaser_pdf(ctx, out_path)
 
 
