@@ -159,33 +159,34 @@ def _conn():
     return c
 
 
+def _add_column(c, table: str, column: str, ddl: str = "TEXT"):
+    # Every uvicorn worker runs init_db() at startup, so two can race to add
+    # the same column; losing that race is harmless, not a startup failure.
+    if column in {row[1] for row in c.execute(f"PRAGMA table_info({table})")}:
+        return
+    try:
+        c.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+    except sqlite3.OperationalError as e:
+        if "duplicate column" not in str(e):
+            raise
+
+
 def init_db():
     with _conn() as c:
         c.executescript(SCHEMA)
-        columns = {row[1] for row in c.execute("PRAGMA table_info(orders)")}
         for column in ("fulfilment_error", "email_error", "phone",
                        "partner_name", "partner_birth_date", "partner_birth_time",
                        "partner_birth_place", "partner_tz", "partner_gender",
                        "discount_code", "primary_focus"):
-            if column not in columns:
-                c.execute(f"ALTER TABLE orders ADD COLUMN {column} TEXT")
-        lead_cols = {row[1] for row in c.execute("PRAGMA table_info(leads)")}
+            _add_column(c, "orders", column)
+        _add_column(c, "orders", "zodiac_insights_opt_in", "INTEGER NOT NULL DEFAULT 0")
+        _add_column(c, "orders", "product_type", "TEXT NOT NULL DEFAULT 'individual'")
+        _add_column(c, "orders", "partner_lat", "REAL")
+        _add_column(c, "orders", "partner_lon", "REAL")
         for column in ("primary_focus", "quiz_session_id"):
-            if column not in lead_cols:
-                c.execute(f"ALTER TABLE leads ADD COLUMN {column} TEXT")
-        quiz_cols = {row[1] for row in c.execute("PRAGMA table_info(quiz_sessions)")}
+            _add_column(c, "leads", column)
         for column in ("gclid", "gbraid", "wbraid"):
-            if column not in quiz_cols:
-                c.execute(f"ALTER TABLE quiz_sessions ADD COLUMN {column} TEXT")
-        if "zodiac_insights_opt_in" not in columns:
-            c.execute("ALTER TABLE orders ADD COLUMN zodiac_insights_opt_in"
-                      " INTEGER NOT NULL DEFAULT 0")
-        if "product_type" not in columns:
-            c.execute("ALTER TABLE orders ADD COLUMN product_type TEXT NOT NULL DEFAULT 'individual'")
-        if "partner_lat" not in columns:
-            c.execute("ALTER TABLE orders ADD COLUMN partner_lat REAL")
-        if "partner_lon" not in columns:
-            c.execute("ALTER TABLE orders ADD COLUMN partner_lon REAL")
+            _add_column(c, "quiz_sessions", column)
 
 
 def _now() -> str:
