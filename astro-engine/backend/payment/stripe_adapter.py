@@ -99,6 +99,12 @@ class StripeAdapter(PaymentAdapter):
         obj = event["data"]["object"].to_dict()
         stripe_type = event["type"]
         mapped = _EVENT_MAP.get(stripe_type)
+        # Delayed-confirmation methods (e.g. UPI) can complete Checkout with
+        # payment_status "unpaid"; the money is only confirmed later by
+        # checkout.session.async_payment_succeeded, so don't fulfil yet.
+        if (stripe_type == "checkout.session.completed"
+                and obj.get("payment_status") not in ("paid", "no_payment_required")):
+            mapped = None
         order_id = (obj.get("metadata") or {}).get("order_id")
         return WebhookEvent(
             valid=True, event_type=mapped, order_session_id=obj.get("id"),
