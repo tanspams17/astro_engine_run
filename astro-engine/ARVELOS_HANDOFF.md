@@ -106,7 +106,7 @@ password-capable step from Raj (or root Deploy API access).
   VO + rendered visuals), CAMPAIGN.md with UTM links, workflow_diagram.png.
 
 ## Pricing decided
-Western $19 / Vedic $19 / Mixed $29 (₹999/₹999/₹1,499). Launch low, raise
+Western $19 / Vedic $19 / Mixed $29 (₹499/₹499/₹1,299 as of 2026-10-03). Launch low, raise
 after reviews. Target: diaspora women 25–40 (US/UK/CA), then US/UK wellness,
 then India domestic. Lead with Mixed at $29.
 
