@@ -20,12 +20,14 @@ PRICES = {  # minor units, fixed at order creation — never recomputed mid-chec
     # (own currency per market, not converted from USD). Western/Vedic
     # and Zodiac/Vedic Compatibility each share one price per currency,
     # in all three currencies now — no longer just GBP/INR.
+    # 2026-10-03: INR compatibility cut to 999/999/1499 (was 1499/1499/1999)
+    # to sit under the Rs 1,000 line for Indian buyers; USD/GBP unchanged.
     "western": {"USD": 999, "INR": 99900, "GBP": 799},
     "vedic": {"USD": 999, "INR": 99900, "GBP": 799},
     "mixed": {"USD": 1499, "INR": 129900, "GBP": 1199},
-    "zodiac_compat": {"USD": 1899, "INR": 149900, "GBP": 1499},
-    "vedic_compat": {"USD": 1899, "INR": 149900, "GBP": 1499},
-    "mixed_compat": {"USD": 2499, "INR": 199900, "GBP": 1999},
+    "zodiac_compat": {"USD": 1899, "INR": 99900, "GBP": 1499},
+    "vedic_compat": {"USD": 1899, "INR": 99900, "GBP": 1499},
+    "mixed_compat": {"USD": 2499, "INR": 149900, "GBP": 1999},
 }
 
 VALID_STATES = {"pending", "paid", "delivered", "fulfilment_failed", "failed", "refunded"}
