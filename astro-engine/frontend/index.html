@@ -201,8 +201,6 @@
   .focus-picker input:checked + span { background:rgba(212,146,10,0.18); border-color:var(--gold); color:var(--cream); }
   .focus-picker input:focus-visible + span { outline:3px solid var(--gold-light); outline-offset:2px; }
   .upi-line { text-align:center; font-family:var(--sans); font-size:12.5px; font-weight:600; color:#FDE047; margin:10px 0 0; }
-  .india-card-note { color:#FDE047 !important; border:1px solid rgba(253,224,71,0.35);
-    border-radius:8px; padding:10px 12px; }
   .skip-link { position:absolute; left:16px; top:8px; z-index:200; padding:8px 12px;
     background:var(--cream); color:#241505; transform:translateY(-160%); }
   .skip-link:focus { transform:translateY(0); }
@@ -743,10 +741,6 @@
           <p class="legal full" id="hostednote" style="display:none">You'll be taken to our
             payment provider's secure page to complete the payment, then brought straight back
             here for your report.</p>
-          <p class="legal full india-card-note" style="display:none"><strong>Paying from India?</strong>
-            Pay with UPI (Google Pay, PhonePe, Paytm or any UPI app) on the next screen. Paying by
-            card instead? Switch on international / online transactions for your card in your bank
-            app first, as the payment is processed by our UK company.</p>
 
           <div class="full newsletter-box">
             <input type="checkbox" id="optin">
@@ -947,10 +941,6 @@
           <p class="legal full" id="compatHostednote" style="display:none">You'll be taken to our
             payment provider's secure page to complete the payment, then brought straight back
             here for your report.</p>
-          <p class="legal full india-card-note" style="display:none"><strong>Paying from India?</strong>
-            Pay with UPI (Google Pay, PhonePe, Paytm or any UPI app) on the next screen. Paying by
-            card instead? Switch on international / online transactions for your card in your bank
-            app first, as the payment is processed by our UK company.</p>
           <p class="legal full">One-time payment. No subscription or recurring charge of any kind.
             By purchasing you agree to the <a href="/terms.html" target="_blank">Terms &amp; Refund
             Policy</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>. Your and your
@@ -1875,8 +1865,6 @@ fetch(API+"/api/prices").then(r=>r.json()).then(data=>{
   currency = data.currency;
   for (const [name, minor] of Object.entries(data.prices))
     PRICES[name] = [minor / 100, data.symbol];
-  document.querySelectorAll(".india-card-note").forEach(el =>
-    el.style.display = currency === "INR" ? "block" : "none");
   // UPI only exists for INR checkouts, so only Indian visitors see its badge
   document.querySelectorAll(".upi-icon").forEach(el =>
     el.style.display = currency === "INR" ? "inline-flex" : "none");
