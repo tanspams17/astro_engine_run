@@ -1311,6 +1311,7 @@ async function submitLead(){
     document.getElementById('leadForm').style.display = 'none';
     document.getElementById('leadSuccess').style.display = 'block';
     track('generate_lead', {currency, value: 0, item_id: 'lead_magnet'});
+    track('qualify_lead');
   } catch (e) {
     document.getElementById('leadForm').style.display = 'none';
     document.getElementById('leadErrorMsg').textContent = e.message || 'Something went wrong. Please try again.';
