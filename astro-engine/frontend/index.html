@@ -718,6 +718,14 @@
               spelling, or try just the city name without the country.</p>
           </div>
 
+          <div class="full"><label for="reportLang">Report language / रिपोर्ट की भाषा</label>
+            <select id="reportLang" onchange="refreshLang()">
+              <option value="en" selected>English</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+            </select>
+            <p class="hint" id="langHint" style="display:none"></p>
+          </div>
+
           <div><label for="gender">Gender <span class="opt">optional</span></label>
             <select id="gender">
               <option value="unspecified">Prefer not to say</option>
@@ -929,6 +937,14 @@
             </div>
             <p class="hint" id="cityHintB" style="display:none">No matching city found. Check the
               spelling, or try just the city name without the country.</p>
+          </div>
+
+          <div class="full"><label for="reportLangC">Report language / रिपोर्ट की भाषा</label>
+            <select id="reportLangC" onchange="refreshLang()">
+              <option value="en" selected>English</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+            </select>
+            <p class="hint" id="langHintC" style="display:none"></p>
           </div>
           <div class="full"><label for="pGender">Gender <span class="opt">optional</span></label>
             <select id="pGender">
@@ -1949,9 +1965,29 @@ function paintPricing() {
   applyProviderUI();
 }
 
+/* ---- report language (English default). Hindi only for tiers that have a
+   Hindi report; the server enforces the same list. ---- */
+const HINDI_TIERS = ["vedic_compat"];
+function langOf(id) { const el = document.getElementById(id); return el && el.value === "hi" ? "hi" : "en"; }
+function refreshLang() {
+  const rows = [["reportLang", "langHint", () => tier,
+                 "Hindi reports for Western, Vedic and Mixed are coming soon. Choose English, or see Kundli Matching below."],
+                ["reportLangC", "langHintC", () => compatTier,
+                 "Hindi is available for Kundli Matching (Vedic) only. Choose Kundli Matching above, or keep English."]];
+  rows.forEach(([sid, hid, getTier, msg]) => {
+    const hint = document.getElementById(hid);
+    if (!hint) return;
+    const bad = langOf(sid) === "hi" && getTier() && !HINDI_TIERS.includes(getTier());
+    hint.textContent = bad ? msg : "";
+    hint.style.display = bad ? "block" : "none";
+  });
+}
+function langBlocked(sid, t) { return langOf(sid) === "hi" && !HINDI_TIERS.includes(t); }
+
 function chooseTier(t, fromSelect) {
   loadCities();
   tier = t;
+  refreshLang();
   track("select_item", {item_list_id: "individual", currency, items: [gaItem(t)]});
   document.querySelectorAll("#pricingGrid .price-card").forEach(el =>
     (el.classList.toggle("sel", el.dataset.tier === t),
@@ -2034,6 +2070,7 @@ let compatTier = null, compatAppliedCoupon = null;
 function chooseCompatTier(t) {
   loadCities();
   compatTier = t;
+  refreshLang();
   track("select_item", {item_list_id: "compatibility", currency, items: [gaItem(t)]});
   document.querySelectorAll("#compatPricingGrid .price-card").forEach(el =>
     (el.classList.toggle("sel", el.dataset.tier === t),
@@ -2115,6 +2152,7 @@ async function payCompat() {
   const coupon = document.getElementById("cCoupon").value.trim();
 
   if (!compatTier) { err.textContent = "Please choose Zodiac, Vedic, or Combined above."; return; }
+  if (langBlocked("reportLangC", compatTier)) { err.textContent = "Hindi is available for Kundli Matching (Vedic) only. Please choose that report, or switch to English."; return; }
   if (!name || !d || (!t && !noTime) || !document.getElementById("bplaceA").value.trim()) {
     err.textContent = "Please fill in your name, date of birth, place of birth, and either a birth time or tick that you don't know it.";
     return;
@@ -2143,7 +2181,7 @@ async function payCompat() {
         gender: document.getElementById("cGender").value,
         birth_place: placeA.n, lat: placeA.a, lon: placeA.o, tz: placeA.z,
         focus_areas: [], marketing_opt_in: false, zodiac_insights_opt_in: false,
-        coupon_code: coupon || null,
+        coupon_code: coupon || null, language: langOf("reportLangC"),
         partner_name: pName, partner_birth_date: pD, partner_birth_time: pNoTime ? null : pT,
         partner_birth_place: placeB.n, partner_lat: placeB.a, partner_lon: placeB.o, partner_tz: placeB.z,
         partner_gender: document.getElementById("pGender").value })});
@@ -2183,6 +2221,7 @@ async function pay() {
   const coupon = document.getElementById("coupon").value.trim();
 
   if (!tier) { err.textContent = "Please choose a report: Western, Vedic or Mixed."; scrollIntoView1("pricing"); return; }
+  if (langBlocked("reportLang", tier)) { err.textContent = "Hindi is not available for this report yet. Please choose English."; return; }
   if (!name || !d || (!t && !noTime) || !p) {
     err.textContent = "Please fill in name, date of birth, place of birth, and either a birth time or tick that you don't know it.";
     return;
@@ -2220,6 +2259,7 @@ async function pay() {
         focus_areas: ALL_FOCUS_AREAS, primary_focus: chosenFocus("focus"),
         marketing_opt_in: document.getElementById("optin").checked,
         zodiac_insights_opt_in: document.getElementById("zodiacoptin").checked,
+        language: langOf("reportLang"),
         coupon_code: coupon || null })});
     if (!or.ok) throw new Error((await or.json()).detail || "order failed");
     const order = await or.json();

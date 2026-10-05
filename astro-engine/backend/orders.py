@@ -185,6 +185,7 @@ def init_db():
         _add_column(c, "orders", "product_type", "TEXT NOT NULL DEFAULT 'individual'")
         _add_column(c, "orders", "partner_lat", "REAL")
         _add_column(c, "orders", "partner_lon", "REAL")
+        _add_column(c, "orders", "language", "TEXT NOT NULL DEFAULT 'en'")
         for column in ("primary_focus", "quiz_session_id"):
             _add_column(c, "leads", column)
         for column in ("gclid", "gbraid", "wbraid"):
@@ -242,7 +243,8 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
                  partner_tz: str | None = None,
                  partner_gender: str | None = None,
                  discount_code: str | None = None,
-                 primary_focus: str | None = None) -> dict:
+                 primary_focus: str | None = None,
+                 language: str = "en") -> dict:
     if tier not in PRICES:
         raise ValueError(f"unknown tier {tier}")
     if currency not in PRICES[tier]:
@@ -259,15 +261,15 @@ def create_order(quiz_session_id: str | None, email: str, name: str,
             " marketing_opt_in, zodiac_insights_opt_in, product_type,"
             " partner_name, partner_birth_date, partner_birth_time,"
             " partner_birth_place, partner_lat, partner_lon, partner_tz,"
-            " partner_gender, discount_code, primary_focus)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " partner_gender, discount_code, primary_focus, language)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (oid, quiz_session_id, _now(), email, name, phone, tier, currency,
              amount, birth_date, birth_time, gender, birth_place, lat, lon,
              tz, ",".join(focus_areas), int(marketing_opt_in),
              int(zodiac_insights_opt_in), product_type,
              partner_name, partner_birth_date, partner_birth_time,
              partner_birth_place, partner_lat, partner_lon, partner_tz,
-             partner_gender, discount_code, primary_focus))
+             partner_gender, discount_code, primary_focus, language))
         _upsert_customer(c, email, name, phone, marketing_opt_in,
                          zodiac_insights_opt_in)
     return get_order(oid)

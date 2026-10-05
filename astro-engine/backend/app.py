@@ -149,6 +149,8 @@ FOCUS_PATTERN = "^(personality|love|career|growth)$"
 
 COMPAT_TIERS = {"zodiac_compat", "vedic_compat", "mixed_compat"}
 ALL_TIERS_PATTERN = "^(western|vedic|mixed|zodiac_compat|vedic_compat|mixed_compat)$"
+# Tiers that have a Hindi report. The server, not the form, decides.
+HINDI_TIERS = {"vedic_compat"}
 
 
 class OrderIn(BaseModel):
@@ -176,6 +178,7 @@ class OrderIn(BaseModel):
     primary_focus: str | None = Field(default=None, pattern=FOCUS_PATTERN)
     marketing_opt_in: bool = False   # MUST default False (GDPR/PECR)
     zodiac_insights_opt_in: bool = False   # separate consent, MUST default False
+    language: str = Field(default="en", pattern="^(en|hi)$")
 
     # Compatibility-report tiers only — "Your Partner's details". Optional
     # here at the field level; the validator below enforces presence/
@@ -190,6 +193,12 @@ class OrderIn(BaseModel):
     partner_tz: str | None = Field(default=None, max_length=64)
     partner_gender: str | None = Field(default="unspecified",
                                        pattern="^(male|female|unspecified)$")
+
+    @model_validator(mode="after")
+    def _language_available_for_tier(self):
+        if self.language == "hi" and self.tier not in HINDI_TIERS:
+            raise ValueError("Hindi is not available for this report")
+        return self
 
     @model_validator(mode="after")
     def _partner_fields_match_tier(self):
@@ -356,7 +365,7 @@ def create_order(o: OrderIn, request: Request):
         partner_birth_time=o.partner_birth_time, partner_birth_place=o.partner_birth_place,
         partner_lat=o.partner_lat, partner_lon=o.partner_lon, partner_tz=o.partner_tz,
         partner_gender=o.partner_gender, discount_code=discount_code,
-        primary_focus=o.primary_focus)
+        primary_focus=o.primary_focus, language=o.language)
     session = None
     if amount_minor > 0:
         adapter = get_adapter()
