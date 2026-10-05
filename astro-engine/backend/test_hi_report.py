@@ -90,7 +90,10 @@ def test_pdf_page_count_if_weasyprint_available():
     except Exception:
         print("  (skipped: WeasyPrint unavailable here)")
         return
-    import os, subprocess, tempfile
+    import os, shutil, subprocess, tempfile
+    if not shutil.which("pdfinfo"):
+        print("  (skipped: pdfinfo not installed here)")
+        return
     out = os.path.join(tempfile.mkdtemp(), "hi.pdf")
     hr.generate(_order(), out)
     info = subprocess.run(["pdfinfo", out], capture_output=True, text=True).stdout
