@@ -977,6 +977,12 @@ def build_compatibility_report_context(order: dict) -> dict:
 
 
 def generate_compatibility_report(order: dict, out_path: str) -> str:
+    if order.get("language") == "hi":
+        try:
+            from .hi_report import generate as generate_hi
+        except ImportError:
+            from hi_report import generate as generate_hi
+        return generate_hi(order, out_path)
     ctx = build_compatibility_report_context(order)
     from weasyprint import HTML
     # Same autoescape=True reasoning as render_pdf() above: `name` and

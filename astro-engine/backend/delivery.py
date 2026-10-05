@@ -96,6 +96,54 @@ style="width:40px;height:40px;border-radius:50%;"><br>
 </div></body></html>"""
 
 
+def _email_text_hi(name: str, token: str) -> str:
+    link = f"{BASE_URL}/download/{token}"
+    return f"""नमस्ते {name},
+
+आपकी अरवेलोस कुंडली मिलान रिपोर्ट (हिन्दी) तैयार है।
+
+इसे यहाँ से डाउनलोड करें (यह लिंक केवल आपके लिए है, कृपया इसे सुरक्षित रखें):
+{link}
+
+कुछ बातें:
+- रिपोर्ट आपके दिए गए सटीक जन्म विवरण से व्यक्तिगत रूप से तैयार की गई है।
+- यह एक बार का भुगतान था। कोई सदस्यता नहीं, कोई नवीनीकरण नहीं, रद्द करने के लिए कुछ नहीं।
+- यदि कुछ गलत दिखे (जन्म विवरण में त्रुटि या लिंक न खुले), तो इस ईमेल का उत्तर दें और हम ठीक कर देंगे: {SUPPORT_EMAIL}
+
+सादर,
+अरवेलोस
+"""
+
+
+def _email_html_hi(name: str, token: str) -> str:
+    safe_name = html.escape(name)
+    link = f"{BASE_URL}/download/{token}"
+    return f"""<!DOCTYPE html>
+<html lang="hi"><body style="margin:0;padding:32px 20px;background:#191735;
+font-family:Georgia,serif;color:#e9e4f5;">
+<div style="max-width:480px;margin:0 auto;">
+<p style="color:#d4920a;font-size:13px;letter-spacing:.08em;
+text-transform:uppercase;margin:0 0 20px;">Arvelos</p>
+<p style="font-size:16px;">नमस्ते {safe_name},</p>
+<p style="font-size:16px;">आपकी अरवेलोस <strong>कुंडली मिलान रिपोर्ट (हिन्दी)</strong> तैयार है।</p>
+<p style="margin:28px 0;">
+<a href="{link}" style="background:#d4920a;color:#191735;text-decoration:none;
+padding:14px 28px;border-radius:8px;font-weight:bold;display:inline-block;">
+अपनी रिपोर्ट डाउनलोड करें (PDF)</a></p>
+<p style="font-size:13px;color:#a9a3c9;">यह लिंक केवल आपके लिए है, कृपया इसे सुरक्षित रखें।</p>
+<hr style="border:none;border-top:1px solid #35325a;margin:28px 0;">
+<p style="font-size:13px;color:#a9a3c9;">
+रिपोर्ट आपके सटीक जन्म विवरण से व्यक्तिगत रूप से तैयार की गई है।
+यह एक बार का भुगतान था। कोई सदस्यता नहीं, कोई नवीनीकरण नहीं।<br><br>
+यदि कुछ गलत दिखे, तो इस ईमेल का उत्तर दें: {SUPPORT_EMAIL}</p>
+<p style="font-size:13px;color:#a9a3c9;">सादर,<br>अरवेलोस</p>
+<p style="text-align:center;margin:20px 0 0;">
+<img src="{BASE_URL}/email-logo.png" alt="Arvelos" width="40" height="40"
+style="width:40px;height:40px;border-radius:50%;"><br>
+<span style="font-size:10.5px;color:#5d5885;">© 2026 Arvelos</span></p>
+</div></body></html>"""
+
+
 def _format_expiry(expires_at_iso: str) -> str:
     import datetime as _dt
     when = _dt.datetime.fromisoformat(expires_at_iso)
@@ -234,12 +282,16 @@ def _write_to_outbox(to_email: str, subject: str, text: str, token: str):
 
 
 def send_report_email(to_email: str, name: str, tier_name: str,
-                      token: str) -> bool:
-    subject = f"Your Arvelos {tier_name} is ready"
-    text = _email_text(name, tier_name, token)
+                      token: str, language: str = "en") -> bool:
+    if language == "hi":
+        subject = "आपकी अरवेलोस कुंडली मिलान रिपोर्ट तैयार है"
+        text, body_html = _email_text_hi(name, token), _email_html_hi(name, token)
+    else:
+        subject = f"Your Arvelos {tier_name} is ready"
+        text, body_html = _email_text(name, tier_name, token), _email_html(name, tier_name, token)
 
     if os.environ.get("RESEND_API_KEY"):
-        _send_via_resend(to_email, subject, _email_html(name, tier_name, token), text)
+        _send_via_resend(to_email, subject, body_html, text)
     elif os.environ.get("SMTP_HOST"):
         _send_via_smtp(to_email, subject, text)
     else:  # dev mode: write to outbox instead of sending

@@ -507,7 +507,8 @@ def _fulfil(order_id: str):
         tier_name = (COMPAT_TIER_NAMES[order["tier"]]
                     if order.get("product_type") == "compatibility"
                     else TIER_NAMES[order["tier"]])
-        send_report_email(order["email"], order["name"], tier_name, token)
+        send_report_email(order["email"], order["name"], tier_name, token,
+                          language=order.get("language") or "en")
     except Exception as exc:
         logger.exception("Report email delivery failed for order %s", order_id)
         with orders._conn() as connection:
