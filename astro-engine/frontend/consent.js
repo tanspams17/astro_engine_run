@@ -1,6 +1,6 @@
 /*
  * Cookie consent banner for the Google Ads tag (Consent Mode v2) and
- * Microsoft Clarity (loaded only after Accept, see each page's <head>).
+ * the Meta Pixel and Microsoft Clarity (loaded only after Accept, see each page's <head>).
  *
  * Each page's <head> sets every consent type to "denied" (or to the stored
  * choice) before gtag.js loads, so no ad cookies are set until the visitor
@@ -26,8 +26,12 @@
     }
     if (choice === 'granted') {
       if (typeof window.arvelosLoadClarity === 'function') window.arvelosLoadClarity();
-    } else if (typeof window.clarity === 'function') {
-      window.clarity('consent', false);   // withdrawn: Clarity stops and clears its cookies
+      if (typeof window.arvelosLoadMeta === 'function') window.arvelosLoadMeta();
+    } else {
+      if (typeof window.clarity === 'function') {
+        window.clarity('consent', false);   // withdrawn: Clarity stops and clears its cookies
+      }
+      if (typeof window.fbq === 'function') window.fbq('consent', 'revoke');   // Meta Pixel stops
     }
     close();
   }
@@ -75,7 +79,7 @@
       '<p class="arv-cat-desc">Keeps the site working: remembers this choice, your currency, and your checkout session. Cannot be turned off.</p>' +
       '<div class="arv-cat">' +
       '<span class="arv-cat-name">Analytics &amp; Marketing</span></div>' +
-      '<p class="arv-cat-desc">Google Ads, Google Analytics and Microsoft Clarity. Only runs if you accept below.</p>' +
+      '<p class="arv-cat-desc">Google Ads, Google Analytics, Meta (Facebook and Instagram) and Microsoft Clarity. Only runs if you accept below.</p>' +
       '<div class="arv-btns">' +
       '<button type="button" class="arv-reject">Reject</button>' +
       '<button type="button" class="arv-accept">Accept</button></div>');

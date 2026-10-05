@@ -26,9 +26,22 @@
     window.clarity('consent');
   };
   try { if (localStorage.getItem('arvelos_consent') === 'granted') window.arvelosLoadClarity(); } catch (e) {}
+
+  // Meta Pixel: same rule as Clarity, never loaded until the visitor accepts.
+  window.arvelosLoadMeta = function () {
+    if (window.fbq) { window.fbq('consent', 'grant'); return; }
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    window.fbq('init', '1238772911780674');
+    window.fbq('track', 'PageView');
+  };
+  try { if (localStorage.getItem('arvelos_consent') === 'granted') window.arvelosLoadMeta(); } catch (e) {}
 </script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18468656072"></script>
-<script defer src="/consent.js?v=4"></script>
+<script defer src="/consent.js?v=5"></script>
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1833,6 +1846,27 @@ const TIER_LABEL = {western:"Western", vedic:"Vedic", mixed:"Mixed",
    emails or birth details. ---- */
 function track(name, params) {
   try { if (typeof gtag === "function") gtag("event", name, params || {}); } catch (e) {}
+  metaTrack(name, params);
+}
+// Mirrors the GA4 events to the Meta Pixel (only present after consent).
+// Same rule: report types, prices and the order reference, never personal data.
+const META_EVENTS = {view_item_list: "ViewContent", select_item: "ViewContent",
+  begin_checkout: "InitiateCheckout", purchase: "Purchase", generate_lead: "Lead"};
+function metaTrack(name, params) {
+  try {
+    const ev = META_EVENTS[name];
+    if (!ev || typeof fbq !== "function") return;
+    const p = params || {}, d = {};
+    if (p.currency) d.currency = p.currency;
+    if (p.value !== undefined) d.value = p.value;
+    if (p.items && p.items.length) {
+      d.content_type = "product";
+      d.content_ids = p.items.map(i => i.item_id);
+      d.contents = p.items.map(i => ({id: i.item_id, quantity: 1, item_price: i.price}));
+    }
+    const opts = (name === "purchase" && p.transaction_id) ? {eventID: String(p.transaction_id)} : undefined;
+    fbq("track", ev, d, opts);
+  } catch (e) {}
 }
 function gaItem(t) {
   return {item_id: t, item_name: TIER_LABEL[t] + " Report", price: PRICES[t][0],
