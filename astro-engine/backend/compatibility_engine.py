@@ -122,18 +122,13 @@ def zodiac_compare(name_a: str, num_a: dict, sun_sign_a: str,
 
 # ---------------------------------------------------------------- Guna Milan
 #
-# The classical 8-koota Ashtakoota marriage-matching system, scored out of
-# 36. Implemented from the standard published tables (cross-checked against
-# available references during design — see the design spec's accuracy
-# caveat, carried into this session's report to the user: this should be
-# spot-checked against a couple of known reference charts before being
-# trusted commercially).
-#
-# Several classical rules (Varna, Gana, Vashya) are traditionally
-# direction-dependent (scored differently for "groom" vs "bride"). This
-# product has no gendered framing, so each such koota is scored using the
-# more favorable of the two directions — a documented simplification, not
-# an oversight.
+# The classical 8-koota Ashtakoota system, scored out of 36, using the
+# widely published tables. Varna, Vashya, Gana and Yoni are directional, so
+# the caller says who is the groom (var) and who the bride (kanya); see
+# assign_roles(). Conventions where published sources differ: Vashya uses the
+# Astroyogi table, Gana the Saravali matrix, Graha Maitri the 5/4/3/1/0.5/0
+# scheme. Cross-checked against an independent open-source implementation
+# (see test_compatibility_engine.py).
 
 VARNA = {  # rashi -> varna rank, 4=Brahmin (highest) .. 1=Shudra
     "Cancer": 4, "Scorpio": 4, "Pisces": 4,
@@ -141,22 +136,35 @@ VARNA = {  # rashi -> varna rank, 4=Brahmin (highest) .. 1=Shudra
     "Taurus": 2, "Virgo": 2, "Capricorn": 2,
     "Gemini": 1, "Libra": 1, "Aquarius": 1,
 }
+VARNA_NAME = {4: "Brahmin", 3: "Kshatriya", 2: "Vaishya", 1: "Shudra"}
 
-VASHYA_GROUP = {  # rashi -> vashya group
-    "Aries": "chatushpada", "Taurus": "chatushpada", "Leo": "chatushpada",
-    "Gemini": "manava", "Virgo": "manava", "Libra": "manava", "Aquarius": "manava",
-    "Cancer": "jalachara", "Pisces": "jalachara",
-    "Sagittarius": "manava", "Capricorn": "jalachara",
-    "Scorpio": "keeta",
-}
-# group-pair -> points out of 2 (symmetric)
-VASHYA_SCORE = {
-    frozenset({"manava"}): 2, frozenset({"chatushpada"}): 2,
-    frozenset({"jalachara"}): 2, frozenset({"keeta"}): 2,
-    frozenset({"manava", "chatushpada"}): 1, frozenset({"manava", "jalachara"}): 1,
-    frozenset({"chatushpada", "jalachara"}): 0.5, frozenset({"keeta", "manava"}): 1,
-    frozenset({"keeta", "chatushpada"}): 0, frozenset({"keeta", "jalachara"}): 0.5,
-}
+VASHYA_ORDER = ["Chatushpada", "Manava", "Jalachara", "Vanachara", "Keeta"]
+# rows: bride's group, columns: groom's group, in VASHYA_ORDER
+VASHYA_MATRIX = [
+    [2, 1, 1, 1.5, 1],
+    [1, 2, 1.5, 0, 1],
+    [1, 1.5, 2, 1, 1],
+    [0, 0, 0, 2, 0],
+    [1, 1, 1, 0, 2],
+]
+
+
+def _vashya_group(sign: str, sign_degree: float | None) -> str:
+    deg = sign_degree or 0.0
+    if sign in ("Aries", "Taurus"):
+        return "Chatushpada"
+    if sign in ("Gemini", "Virgo", "Libra", "Aquarius"):
+        return "Manava"
+    if sign in ("Cancer", "Pisces"):
+        return "Jalachara"
+    if sign == "Leo":
+        return "Vanachara"
+    if sign == "Scorpio":
+        return "Keeta"
+    if sign == "Sagittarius":
+        return "Manava" if deg < 15 else "Chatushpada"
+    return "Chatushpada" if deg < 15 else "Jalachara"  # Capricorn
+
 
 GANA = {  # nakshatra -> temperament
     "Ashwini": "Deva", "Mrigashira": "Deva", "Punarvasu": "Deva", "Pushya": "Deva",
@@ -169,24 +177,9 @@ GANA = {  # nakshatra -> temperament
     "Chitra": "Rakshasa", "Vishakha": "Rakshasa", "Jyeshtha": "Rakshasa",
     "Mula": "Rakshasa", "Dhanishta": "Rakshasa", "Shatabhisha": "Rakshasa",
 }
-GANA_SCORE = {
-    frozenset({"Deva"}): 6, frozenset({"Manushya"}): 6, frozenset({"Rakshasa"}): 6,
-    frozenset({"Deva", "Manushya"}): 5,
-    frozenset({"Manushya", "Rakshasa"}): 1,
-    frozenset({"Deva", "Rakshasa"}): 0,
-}
-
-NADI = {  # nakshatra -> constitution group; same group = 0 (Nadi dosha)
-    "Ashwini": "Vata", "Ardra": "Vata", "Punarvasu": "Vata", "Uttara Phalguni": "Vata",
-    "Hasta": "Vata", "Jyeshtha": "Vata", "Mula": "Vata", "Shatabhisha": "Vata",
-    "Purva Bhadrapada": "Vata",
-    "Bharani": "Pitta", "Krittika": "Pitta", "Pushya": "Pitta", "Purva Phalguni": "Pitta",
-    "Chitra": "Pitta", "Anuradha": "Pitta", "Purva Ashadha": "Pitta", "Dhanishta": "Pitta",
-    "Uttara Bhadrapada": "Pitta",
-    "Rohini": "Kapha", "Mrigashira": "Kapha", "Ashlesha": "Kapha", "Magha": "Kapha",
-    "Swati": "Kapha", "Vishakha": "Kapha", "Uttara Ashadha": "Kapha", "Shravana": "Kapha",
-    "Revati": "Kapha",
-}
+GANA_ORDER = ["Deva", "Manushya", "Rakshasa"]
+# rows: bride's gana, columns: groom's gana
+GANA_MATRIX = [[6, 6, 0], [5, 6, 0], [1, 0, 6]]
 
 YONI = {  # nakshatra -> animal (14 yonis across 27 nakshatras)
     "Ashwini": "Horse", "Shatabhisha": "Horse",
@@ -204,112 +197,158 @@ YONI = {  # nakshatra -> animal (14 yonis across 27 nakshatras)
     "Uttara Ashadha": "Mongoose",
     "Dhanishta": "Lion", "Purva Bhadrapada": "Lion",
 }
-YONI_ENEMIES = {  # classical natural-enemy yoni pairs -> score 0
-    frozenset({"Cow", "Tiger"}), frozenset({"Elephant", "Lion"}),
-    frozenset({"Horse", "Buffalo"}), frozenset({"Dog", "Deer"}),
-    frozenset({"Sheep", "Monkey"}), frozenset({"Serpent", "Mongoose"}),
-    frozenset({"Rat", "Cat"}),
-}
+YONI_ORDER = ["Horse", "Elephant", "Sheep", "Serpent", "Dog", "Cat", "Rat",
+              "Cow", "Buffalo", "Tiger", "Deer", "Monkey", "Mongoose", "Lion"]
+# Symmetric 14x14: 4 same, 3 friendly, 2 neutral, 1 unfriendly, 0 sworn enemies.
+YONI_MATRIX = [
+    [4, 2, 2, 3, 2, 2, 2, 1, 0, 1, 1, 3, 2, 1],
+    [2, 4, 3, 3, 2, 2, 2, 2, 3, 1, 2, 3, 2, 0],
+    [2, 3, 4, 2, 1, 2, 1, 3, 3, 1, 2, 0, 3, 1],
+    [3, 3, 2, 4, 2, 1, 1, 1, 1, 2, 2, 2, 0, 2],
+    [2, 2, 1, 2, 4, 2, 1, 2, 2, 1, 0, 2, 1, 1],
+    [2, 2, 2, 1, 2, 4, 0, 2, 2, 1, 3, 3, 2, 1],
+    [2, 2, 1, 1, 1, 0, 4, 2, 2, 2, 2, 2, 1, 2],
+    [1, 2, 3, 1, 2, 2, 2, 4, 3, 0, 3, 2, 2, 1],
+    [0, 3, 3, 1, 2, 2, 2, 3, 4, 1, 2, 2, 2, 1],
+    [1, 1, 1, 2, 1, 1, 2, 0, 1, 4, 1, 1, 2, 1],
+    [1, 2, 2, 2, 0, 3, 2, 3, 2, 1, 4, 2, 2, 1],
+    [3, 3, 0, 2, 2, 3, 2, 2, 2, 1, 2, 4, 3, 2],
+    [2, 2, 3, 0, 1, 2, 1, 2, 2, 2, 2, 3, 4, 2],
+    [1, 0, 1, 2, 1, 1, 2, 1, 1, 1, 1, 2, 2, 4],
+]
 
-# Classical planetary friendship (natural, not situational) — Sun/Moon/
-# Mars/Jupiter are mutually friendly, Mercury is neutral to most,
-# Venus-Saturn are friendly to each other but not to the Sun/Moon axis.
-PLANET_FRIENDS = {
-    "Sun": {"Moon", "Mars", "Jupiter"}, "Moon": {"Sun", "Mercury"},
-    "Mars": {"Sun", "Moon", "Jupiter"}, "Mercury": {"Sun", "Venus"},
-    "Jupiter": {"Sun", "Moon", "Mars"}, "Venus": {"Mercury", "Saturn"},
-    "Saturn": {"Mercury", "Venus"},
-}
-PLANET_ENEMIES = {
-    "Sun": {"Venus", "Saturn"}, "Moon": set(), "Mars": {"Mercury"},
-    "Mercury": {"Moon", "Mars"}, "Jupiter": {"Mercury", "Venus"},
-    "Venus": {"Sun", "Moon"}, "Saturn": {"Sun", "Moon", "Mars"},
-}
+MAITRI_ORDER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
+# Symmetric: 5 same/mutual friends, 4 friend+neutral, 3 neutral, 1 friend+enemy,
+# 0.5 neutral+enemy, 0 mutual enemies.
+MAITRI_MATRIX = [
+    [5, 5, 5, 4, 5, 0, 0],
+    [5, 5, 4, 1, 4, 0.5, 0.5],
+    [5, 4, 5, 0.5, 5, 3, 0.5],
+    [4, 1, 0.5, 5, 0.5, 5, 4],
+    [5, 4, 5, 0.5, 5, 0.5, 3],
+    [0, 0.5, 3, 5, 0.5, 5, 5],
+    [0, 0.5, 0.5, 4, 3, 5, 5],
+]
 
-
-def _varna_score(sign_a: str, sign_b: str) -> tuple[float, str]:
-    va, vb = VARNA[sign_a], VARNA[sign_b]
-    diff = abs(va - vb)
-    if diff == 0:
-        return 1, "Same varna."
-    if diff == 1:
-        return 0.5, "Adjacent varna: a mild difference in temperament rather than a real mismatch."
-    return 0, "A significant varna difference, traditionally the widest caste-temperament gap."
-
-
-def _vashya_score(sign_a: str, sign_b: str) -> tuple[float, str]:
-    ga, gb = VASHYA_GROUP[sign_a], VASHYA_GROUP[sign_b]
-    score = VASHYA_SCORE[frozenset({ga, gb})]
-    return score, f"{ga.title()} / {gb.title()} vashya groups."
+NADI_NAME = ["Adi (Vata)", "Madhya (Pitta)", "Antya (Kapha)"]
 
 
-def _tara_score(nak_a: str, nak_b: str) -> tuple[float, str]:
-    ia, ib = NAKSHATRAS.index(nak_a), NAKSHATRAS.index(nak_b)
-    # Tara category = ((count from one nakshatra to the other, inclusive) - 1) % 9 + 1,
-    # simplifies to (index difference % 9) + 1 since 9 divides 27 evenly.
-    # Categories 3, 5, 7 (Vipat, Pratyak, Vadha) are the classically inauspicious taras.
-    bad = {3, 5, 7}
-    d1 = ((ib - ia) % 9) + 1
-    d2 = ((ia - ib) % 9) + 1
-    good = sum(1 for d in (d1, d2) if d not in bad)
-    return (3 if good == 2 else 1.5 if good == 1 else 0), "Based on birth-star distance, both directions."
+def _nadi_index(nakshatra: str) -> int:
+    # Nadi runs Adi, Madhya, Antya, Antya, Madhya, Adi and repeats every 6 stars.
+    return [0, 1, 2, 2, 1, 0][NAKSHATRAS.index(nakshatra) % 6]
 
 
-def _yoni_score(nak_a: str, nak_b: str) -> tuple[float, str]:
-    ya, yb = YONI[nak_a], YONI[nak_b]
-    if ya == yb:
-        return 4, f"Same yoni ({ya})."
-    if frozenset({ya, yb}) in YONI_ENEMIES:
-        return 0, f"{ya}/{yb} are classically opposed yonis."
-    return 2, f"{ya}/{yb}: neutral yoni pairing."
+def assign_roles(gender_a: str | None, gender_b: str | None) -> tuple[bool, str]:
+    """(a_is_groom, basis). Gender decides when it distinguishes the two
+    people; otherwise the first person entered is the groom."""
+    ga, gb = gender_a or "unspecified", gender_b or "unspecified"
+    if ga == "male" and gb != "male":
+        return True, "gender"
+    if ga == "female" and gb != "female":
+        return False, "gender"
+    if gb == "male" and ga != "male":
+        return False, "gender"
+    if gb == "female" and ga != "female":
+        return True, "gender"
+    return True, "order"
 
 
-def _graha_maitri_score(sign_a: str, sign_b: str) -> tuple[float, str]:
-    lord_a, lord_b = VEDIC_SIGN_LORDS[sign_a], VEDIC_SIGN_LORDS[sign_b]
-    if lord_a == lord_b:
-        return 5, f"Same rashi lord ({lord_a})."
-    a_friend = lord_b in PLANET_FRIENDS.get(lord_a, set())
-    b_friend = lord_a in PLANET_FRIENDS.get(lord_b, set())
-    a_enemy = lord_b in PLANET_ENEMIES.get(lord_a, set())
-    b_enemy = lord_a in PLANET_ENEMIES.get(lord_b, set())
-    if a_friend or b_friend:
-        return 5, f"Rashi lords {lord_a}/{lord_b} are natural friends."
-    if a_enemy and b_enemy:
-        return 0, f"Rashi lords {lord_a}/{lord_b} are natural enemies."
-    return 3, f"Rashi lords {lord_a}/{lord_b} are neutral."
+def _varna(groom_sign, bride_sign):
+    vg, vb = VARNA[groom_sign], VARNA[bride_sign]
+    score = 1 if vg >= vb else 0
+    return score, VARNA_NAME[vg], VARNA_NAME[vb]
 
 
-def _gana_score(nak_a: str, nak_b: str) -> tuple[float, str]:
-    ga, gb = GANA[nak_a], GANA[nak_b]
-    return GANA_SCORE[frozenset({ga, gb})], f"{ga}/{gb} gana."
+def _vashya(groom_sign, groom_deg, bride_sign, bride_deg):
+    gg, gb = _vashya_group(groom_sign, groom_deg), _vashya_group(bride_sign, bride_deg)
+    return VASHYA_MATRIX[VASHYA_ORDER.index(gb)][VASHYA_ORDER.index(gg)], gg, gb
 
 
-def _bhakoot_score(sign_a: str, sign_b: str) -> tuple[float, str]:
-    ia, ib = SIGNS.index(sign_a), SIGNS.index(sign_b)
-    dist = ((ib - ia) % 12) + 1
-    dosha_distances = {2, 12, 6, 8, 5, 9}
-    ok = dist not in dosha_distances
-    return (7 if ok else 0), f"{dist}th-sign relationship."
+def _tara(groom_nak, bride_nak):
+    ig, ib = NAKSHATRAS.index(groom_nak), NAKSHATRAS.index(bride_nak)
+    d_bride_to_groom = ((ig - ib) % 9) + 1
+    d_groom_to_bride = ((ib - ig) % 9) + 1
+    bad = {3, 5, 7}  # Vipat, Pratyak, Vadha
+    good = sum(1 for d in (d_bride_to_groom, d_groom_to_bride) if d not in bad)
+    return (3 if good == 2 else 1.5 if good == 1 else 0), d_groom_to_bride, d_bride_to_groom
 
 
-def _nadi_score(nak_a: str, nak_b: str) -> tuple[float, str]:
-    if NADI[nak_a] == NADI[nak_b]:
-        return 0, f"Same nadi ({NADI[nak_a]}), the one koota Vedic tradition weighs most heavily."
-    return 8, f"Different nadi ({NADI[nak_a]}/{NADI[nak_b]})."
+def _yoni(groom_nak, bride_nak):
+    yg, yb = YONI[groom_nak], YONI[bride_nak]
+    return YONI_MATRIX[YONI_ORDER.index(yb)][YONI_ORDER.index(yg)], yg, yb
+
+
+def _graha_maitri(groom_sign, bride_sign):
+    lg, lb = VEDIC_SIGN_LORDS[groom_sign], VEDIC_SIGN_LORDS[bride_sign]
+    return MAITRI_MATRIX[MAITRI_ORDER.index(lb)][MAITRI_ORDER.index(lg)], lg, lb
+
+
+def _gana(groom_nak, bride_nak):
+    gg, gb = GANA[groom_nak], GANA[bride_nak]
+    return GANA_MATRIX[GANA_ORDER.index(gb)][GANA_ORDER.index(gg)], gg, gb
+
+
+def _bhakoot(groom_sign, bride_sign):
+    ig, ib = SIGNS.index(groom_sign), SIGNS.index(bride_sign)
+    dist = ((ib - ig) % 12) + 1
+    # 2/12, 5/9 and 6/8 relationships are the classical Bhakoot dosha.
+    return (0 if dist in (2, 12, 5, 9, 6, 8) else 7), dist, ((ig - ib) % 12) + 1
+
+
+def _nadi(groom_nak, bride_nak):
+    ng, nb = _nadi_index(groom_nak), _nadi_index(bride_nak)
+    return (0 if ng == nb else 8), NADI_NAME[ng], NADI_NAME[nb]
 
 
 def guna_milan(moon_sign_a: str, nakshatra_a: str,
-               moon_sign_b: str, nakshatra_b: str) -> dict:
-    checks = [
-        ("Varna", 1, _varna_score(moon_sign_a, moon_sign_b)),
-        ("Vashya", 2, _vashya_score(moon_sign_a, moon_sign_b)),
-        ("Tara", 3, _tara_score(nakshatra_a, nakshatra_b)),
-        ("Yoni", 4, _yoni_score(nakshatra_a, nakshatra_b)),
-        ("Graha Maitri", 5, _graha_maitri_score(moon_sign_a, moon_sign_b)),
-        ("Gana", 6, _gana_score(nakshatra_a, nakshatra_b)),
-        ("Bhakoot", 7, _bhakoot_score(moon_sign_a, moon_sign_b)),
-        ("Nadi", 8, _nadi_score(nakshatra_a, nakshatra_b)),
+               moon_sign_b: str, nakshatra_b: str,
+               moon_deg_a: float | None = None, moon_deg_b: float | None = None,
+               a_is_groom: bool = True) -> dict:
+    """Ashtakoota score for two people. a/b are the two people as entered;
+    a_is_groom says which of them takes the groom (var) side."""
+    if a_is_groom:
+        gs, gn, gd, bs, bn, bd = moon_sign_a, nakshatra_a, moon_deg_a, moon_sign_b, nakshatra_b, moon_deg_b
+    else:
+        gs, gn, gd, bs, bn, bd = moon_sign_b, nakshatra_b, moon_deg_b, moon_sign_a, nakshatra_a, moon_deg_a
+    varna, vg, vb = _varna(gs, bs)
+    vashya, ag, ab = _vashya(gs, gd, bs, bd)
+    tara, t_gb, t_bg = _tara(gn, bn)
+    yoni, yg, yb = _yoni(gn, bn)
+    maitri, lg, lb = _graha_maitri(gs, bs)
+    gana, nag, nab = _gana(gn, bn)
+    bhakoot, d_gb, d_bg = _bhakoot(gs, bs)
+    nadi, ng, nb = _nadi(gn, bn)
+    rows = [
+        ("Varna", 1, varna, vg, vb, f"Groom {vg}, bride {vb}."),
+        ("Vashya", 2, vashya, ag, ab, f"Groom {ag}, bride {ab} vashya group."),
+        ("Tara", 3, tara, str(t_gb), str(t_bg), "Based on birth-star distance, counted both ways."),
+        ("Yoni", 4, yoni, yg, yb, f"Groom {yg}, bride {yb}."),
+        ("Graha Maitri", 5, maitri, lg, lb, f"Moon-sign lords: groom {lg}, bride {lb}."),
+        ("Gana", 6, gana, nag, nab, f"Groom {nag}, bride {nab} gana."),
+        ("Bhakoot", 7, bhakoot, str(d_gb), str(d_bg), f"Moon signs are in a {d_gb}/{d_bg} relationship."),
+        ("Nadi", 8, nadi, ng, nb, f"Groom {ng}, bride {nb} nadi."),
     ]
-    kootas = [{"name": name, "max": max_pts, "score": score, "note": note}
-             for name, max_pts, (score, note) in checks]
-    return {"total": sum(k["score"] for k in kootas), "max_total": 36, "kootas": kootas}
+    kootas = [{"name": n, "max": m, "score": sc, "groom": g, "bride": b, "note": note}
+              for n, m, sc, g, b, note in rows]
+    return {"total": sum(k["score"] for k in kootas), "max_total": 36, "kootas": kootas,
+            "a_is_groom": a_is_groom,
+            "bhakoot_dosha": bhakoot == 0, "nadi_dosha": nadi == 0}
+
+
+MANGLIK_HOUSES = {1, 2, 4, 7, 8, 12}
+
+
+def mangal_dosha(mars_sign: str, lagna_sign: str | None, moon_sign: str) -> dict:
+    """Standard rule: Mars in the 1st, 2nd, 4th, 7th, 8th or 12th house counted
+    from the Lagna (when birth time is known) or from the Moon sign."""
+    im = SIGNS.index(mars_sign)
+    out = {}
+    for label, ref in (("lagna", lagna_sign), ("moon", moon_sign)):
+        if ref is None:
+            out[label] = None
+            continue
+        out[label] = ((im - SIGNS.index(ref)) % 12) + 1
+    present_l = out["lagna"] in MANGLIK_HOUSES if out["lagna"] else False
+    present_m = out["moon"] in MANGLIK_HOUSES
+    return {"present": present_l or present_m, "from_lagna": out["lagna"],
+            "from_moon": out["moon"], "by_lagna": present_l, "by_moon": present_m}

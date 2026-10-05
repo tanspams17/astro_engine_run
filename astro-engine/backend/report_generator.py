@@ -866,10 +866,10 @@ def cn_essence(n):
 def build_compatibility_report_context(order: dict) -> dict:
     try:
         from .numerology import compute_numerology
-        from .compatibility_engine import zodiac_compare, guna_milan
+        from .compatibility_engine import zodiac_compare, guna_milan, assign_roles
     except ImportError:
         from numerology import compute_numerology
-        from compatibility_engine import zodiac_compare, guna_milan
+        from compatibility_engine import zodiac_compare, guna_milan, assign_roles
 
     tier = order["tier"]
     time_known_a = bool(order["birth_time"])
@@ -936,13 +936,26 @@ def build_compatibility_report_context(order: dict) -> dict:
     guna = None
     if needs_vedic:
         vc_a, vc_b = a_charts["vedic"], b_charts["vedic"]
+        a_groom, role_basis = assign_roles(order.get("gender"), order.get("partner_gender"))
         guna = guna_milan(vc_a.get("Moon").sign, vc_a.moon_nakshatra,
-                          vc_b.get("Moon").sign, vc_b.moon_nakshatra)
+                          vc_b.get("Moon").sign, vc_b.moon_nakshatra,
+                          moon_deg_a=vc_a.get("Moon").sign_degree,
+                          moon_deg_b=vc_b.get("Moon").sign_degree,
+                          a_is_groom=a_groom)
+        groom_name, bride_name = ((order["name"], order["partner_name"]) if a_groom
+                                  else (order["partner_name"], order["name"]))
         guna_score = {"total": guna["total"], "max": guna["max_total"],
                      "rows": [{"label": k["name"], "value": f"{k['score']}/{k['max']}",
                               "note": k["note"]} for k in guna["kootas"]]}
         sections.append({"score_card": guna_score,
                          "title": "Vedic Guna Milan (Ashtakoota Matching)"})
+        basis_text = ("from the gender given for each person" if role_basis == "gender"
+                      else "by the order the names were entered, since gender did not distinguish the two")
+        sections.append({"title": "How this score was calculated",
+                         "body": (f"Several Ashtakoota rules (Varna, Vashya, Gana and Yoni) are scored from the groom's side "
+                                  f"and the bride's side. Here {groom_name} is taken as the groom (var) side and "
+                                  f"{bride_name} as the bride (kanya) side, {basis_text}. The score uses the standard "
+                                  f"published Ashtakoota tables.")})
 
     # 03/04 brief individual profiles
     sections.append(h1(f"Brief Profile: {order['name']}",
