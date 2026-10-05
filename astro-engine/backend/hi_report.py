@@ -185,6 +185,7 @@ def build_context(order: dict) -> dict:
         "mangal_intro": ht.MANGAL_INTRO, "mangal": mangal, "mangal_text": mangal_text,
         "mangal_note": ht.MANGAL_NOTE, "time_notes": time_notes,
         "dasha_intro": ht.DASHA_INTRO, "dasha_text": dasha_text,
+        "toc": ht.TOC, "closing_quote": ht.CLOSING_QUOTE,
         "faq": faq, "glossary": ht.GLOSSARY, "closing": ht.CLOSING, "disclaimer": ht.DISCLAIMER,
         "bands": [("31 से 36", "अति उत्तम"), ("21 से 30", "उत्तम"), ("17 से 20", "साधारण"), ("0 से 16", "अल्प मेल")],
     }
