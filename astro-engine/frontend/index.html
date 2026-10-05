@@ -1967,11 +1967,11 @@ function paintPricing() {
 
 /* ---- report language (English default). Hindi only for tiers that have a
    Hindi report; the server enforces the same list. ---- */
-const HINDI_TIERS = ["vedic_compat"];
+const HINDI_TIERS = ["vedic", "vedic_compat"];
 function langOf(id) { const el = document.getElementById(id); return el && el.value === "hi" ? "hi" : "en"; }
 function refreshLang() {
   const rows = [["reportLang", "langHint", () => tier,
-                 "Hindi reports for Western, Vedic and Mixed are coming soon. Choose English, or see Kundli Matching below."],
+                 "Hindi is available for the Vedic report only. Choose Vedic above, or keep English."],
                 ["reportLangC", "langHintC", () => compatTier,
                  "Hindi is available for Kundli Matching (Vedic) only. Choose Kundli Matching above, or keep English."]];
   rows.forEach(([sid, hid, getTier, msg]) => {
@@ -2221,7 +2221,7 @@ async function pay() {
   const coupon = document.getElementById("coupon").value.trim();
 
   if (!tier) { err.textContent = "Please choose a report: Western, Vedic or Mixed."; scrollIntoView1("pricing"); return; }
-  if (langBlocked("reportLang", tier)) { err.textContent = "Hindi is not available for this report yet. Please choose English."; return; }
+  if (langBlocked("reportLang", tier)) { err.textContent = "Hindi is available for the Vedic report only. Please choose Vedic, or switch to English."; return; }
   if (!name || !d || (!t && !noTime) || !p) {
     err.textContent = "Please fill in name, date of birth, place of birth, and either a birth time or tick that you don't know it.";
     return;

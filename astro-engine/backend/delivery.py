@@ -96,11 +96,11 @@ style="width:40px;height:40px;border-radius:50%;"><br>
 </div></body></html>"""
 
 
-def _email_text_hi(name: str, token: str) -> str:
+def _email_text_hi(name: str, token: str, report: str = "कुंडली मिलान रिपोर्ट") -> str:
     link = f"{BASE_URL}/download/{token}"
     return f"""नमस्ते {name},
 
-आपकी अरवेलोस कुंडली मिलान रिपोर्ट (हिन्दी) तैयार है।
+आपकी अरवेलोस {report} (हिन्दी) तैयार है।
 
 इसे यहाँ से डाउनलोड करें (यह लिंक केवल आपके लिए है, कृपया इसे सुरक्षित रखें):
 {link}
@@ -115,7 +115,7 @@ def _email_text_hi(name: str, token: str) -> str:
 """
 
 
-def _email_html_hi(name: str, token: str) -> str:
+def _email_html_hi(name: str, token: str, report: str = "कुंडली मिलान रिपोर्ट") -> str:
     safe_name = html.escape(name)
     link = f"{BASE_URL}/download/{token}"
     return f"""<!DOCTYPE html>
@@ -125,7 +125,7 @@ font-family:Georgia,serif;color:#e9e4f5;">
 <p style="color:#d4920a;font-size:13px;letter-spacing:.08em;
 text-transform:uppercase;margin:0 0 20px;">Arvelos</p>
 <p style="font-size:16px;">नमस्ते {safe_name},</p>
-<p style="font-size:16px;">आपकी अरवेलोस <strong>कुंडली मिलान रिपोर्ट (हिन्दी)</strong> तैयार है।</p>
+<p style="font-size:16px;">आपकी अरवेलोस <strong>{html.escape(report)} (हिन्दी)</strong> तैयार है।</p>
 <p style="margin:28px 0;">
 <a href="{link}" style="background:#d4920a;color:#191735;text-decoration:none;
 padding:14px 28px;border-radius:8px;font-weight:bold;display:inline-block;">
@@ -284,8 +284,9 @@ def _write_to_outbox(to_email: str, subject: str, text: str, token: str):
 def send_report_email(to_email: str, name: str, tier_name: str,
                       token: str, language: str = "en") -> bool:
     if language == "hi":
-        subject = "आपकी अरवेलोस कुंडली मिलान रिपोर्ट तैयार है"
-        text, body_html = _email_text_hi(name, token), _email_html_hi(name, token)
+        report = "कुंडली मिलान रिपोर्ट" if "Compat" in tier_name else "जन्म कुंडली रिपोर्ट"
+        subject = f"आपकी अरवेलोस {report} तैयार है"
+        text, body_html = _email_text_hi(name, token, report), _email_html_hi(name, token, report)
     else:
         subject = f"Your Arvelos {tier_name} is ready"
         text, body_html = _email_text(name, tier_name, token), _email_html(name, tier_name, token)

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: 'ArvSerif'; src: url('fonts/NotoSerifDevanagari-Regular.ttf'); font-weight: normal; }
+  @font-face { font-family: 'ArvSerif'; src: url('fonts/NotoSerifDevanagari-Bold.ttf'); font-weight: bold; }
+
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    background: #fbf9f4;
+    @bottom-center {
+      content: "✦  अरवेलोस · arvelos.cloud · पृष्ठ " counter(page) "  ✦";
+      font-family: 'ArvSerif', Georgia, serif; font-size: 8.5pt; color: #8b84a8;
+    }
+  }
+  @page cover { margin: 0; background: #130a40; @bottom-center { content: none; } }
+  @page toc   { background: #fbf9f4; }
+
+  body { font-family: 'ArvSerif', Georgia, serif; color: #2b2440;
+         font-size: 11.5pt; line-height: 1.8; }
+
+  /* ------------------------------------------------ cover */
+  .cover { page: cover; width: 210mm; height: 297mm; position: relative;
+           background: radial-gradient(ellipse at 50% 34%, #241a5e 0%, #1a1150 45%, #130a40 100%);
+           color: #f3eefe; }
+  .cover-frame { position: absolute; top: 8mm; left: 8mm; right: 8mm; bottom: 8mm;
+                 border: 2px solid #c9b458; }
+  .cover-frame2 { position: absolute; top: 11mm; left: 11mm; right: 11mm; bottom: 11mm;
+                  border: 0.7px solid #c9b458; }
+  .cover-inner { position: absolute; top: 20mm; left: 0; right: 0; text-align: center; }
+  .cover .brand { font-family: Georgia, serif; font-size: 12pt; letter-spacing: 8px; color: #c9b458; }
+  .cover .om { font-size: 10pt; color: #9d90c4; margin-top: 4mm; letter-spacing: 2px;}
+  .cover h1 { font-size: 30pt; font-weight: normal; color: #f8f5ff;
+              margin: 10mm 0 2mm; line-height: 1.3; border-bottom: none; padding-bottom: 0; }
+  .cover .sub { font-size: 13pt; letter-spacing: 4px; color: #c9b458; }
+  .ring { display: block; margin: 2mm auto 1mm; width: 140mm; }
+  .plaque { display: inline-block; border: 1.6px solid #c9b458; border-radius: 20px;
+            padding: 4mm 16mm; margin-top: 2mm; }
+  .plaque .name { font-family: Georgia, serif; font-size: 17pt; color: #ffffff; }
+  .plaque .amp { color: #c9b458; font-size: 13pt; margin: 1mm 0; }
+  .cover .foot { position: absolute; bottom: 15mm; left: 0; right: 0;
+                 text-align: center; font-size: 9.5pt; color: #9d90c4; line-height: 1.7; }
+
+  /* ------------------------------------------------ toc */
+  .toc { page: toc; page-break-before: always; }
+  .toc h1 { text-align: center; }
+  .toc-row { display: flex; margin: 4.5mm 0; page-break-inside: avoid; }
+  .toc-num { font-family: Georgia, serif; font-size: 20pt; color: #c9b458; font-weight: bold; width: 16mm;
+             flex-shrink: 0; line-height: 1.4; }
+  .toc-body b { color: #2d1b52; font-size: 12.5pt; font-weight: normal; }
+  .toc-body span { display: block; font-size: 9.5pt; color: #8b84a8; line-height: 1.6; }
+
+  /* ------------------------------------------------ common */
+  h1 { font-size: 17.5pt; color: #43277a; font-weight: normal;
+       border-bottom: 2px solid #c9b458; padding-bottom: 2mm;
+       margin: 10mm 0 5mm; page-break-after: avoid; line-height: 1.5; }
+  h1 .no { font-family: Georgia, serif; color: #c9b458; font-weight: bold; margin-right: 3mm; }
+  h2 { font-size: 13.5pt; color: #2d1b52; margin: 8mm 0 2.5mm; font-weight: bold;
+       page-break-after: avoid; }
+  p { margin: 0 0 4mm; text-align: justify; }
+  .pg { page-break-before: always; }
+  .pg h1 { margin-top: 0; }
+  .section { page-break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; margin: 4mm 0 6mm;
+          font-size: 10pt; line-height: 1.65; }
+  th { background: #2d1b52; color: #f3eefe; text-align: left; padding: 2mm 2.5mm;
+       font-weight: normal; letter-spacing: 0.5px; }
+  td { padding: 2mm 2.5mm; border-bottom: 0.5pt solid #d9d2ea; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f5fc; }
+  td.k { color: #43277a; width: 34%; }
+  tr { page-break-inside: avoid; }
+  .lucky-card { background: linear-gradient(135deg, #2d1b52, #43277a); color: #f3eefe;
+                border-radius: 3mm; padding: 5mm 6mm; margin: 5mm 0;
+                page-break-inside: avoid; }
+  .lucky-card h2 { color: #c9b458; margin: 0 0 2mm; }
+  .lucky-card .total { text-align: center; font-family: Georgia, serif; font-size: 26pt;
+                        color: #c9b458; margin: 2mm 0 1mm; line-height: 1.3; }
+  .lucky-card .total .max { font-size: 12pt; color: #cfc4ec; }
+  .lucky-card .verdict { text-align: center; color: #f8f5ff; font-size: 13pt; margin-bottom: 3mm; }
+  .lucky-card table th { background: rgba(0,0,0,0.22); color: #c9b458; }
+  .lucky-card table td { color: #efe9fc; border-bottom: 0.5pt solid rgba(255,255,255,0.18); }
+  .lucky-card table tr:nth-child(even) td { background: rgba(255,255,255,0.06); }
+  .badge { display: inline-block; background: #2d1b52; color: #c9b458; border-radius: 3mm; padding: 0.5mm 5mm;
+           font-size: 11pt; margin-bottom: 1mm; }
+  .easy { border-left: 3px solid #c9b458; background: #f3eefb; padding: 2.5mm 4mm; margin: 5mm 0;
+          page-break-inside: avoid; }
+  .easy b { color: #43277a; }
+  .flag { color: #43277a; font-weight: bold; }
+  .closing { page-break-inside: avoid; background: #1a1333; color: #efe9fc; padding: 6mm 7mm; margin-top: 8mm;
+             border-radius: 2mm; }
+  .closing-quote { font-style: italic; text-align: center; color: #c9b458; margin: 5mm 0 0; }
+  .closing h2 { color: #c9b458; margin-top: 0; }
+  .closing p { text-align: left; }
+  .disclaimer { font-size: 9.5pt; color: #8b84a8; }
+  .small { font-size: 9.5pt; color: #8b84a8; }
+
+  .chartbox { text-align: center; margin: 4mm 0; page-break-inside: avoid; }
+  .nchart { position: relative; width: 70mm; height: 70mm; margin: 0 auto; }
+  .nchart svg { position: absolute; left: 0; top: 0; width: 70mm; height: 70mm; }
+  .hc { position: absolute; width: 20mm; text-align: center; font-size: 9pt; line-height: 1.25; color: #1a1333; }
+  .hc .sn { color: #c9b458; font-weight: bold; font-size: 8.5pt; }
+  .chartbox .cap { font-size: 9.5pt; color: #8b84a8; margin-top: 1mm; line-height: 1.6; }
+  .meta { font-size: 9.5pt; color: #8b84a8; margin: -1.5mm 0 2.5mm; line-height: 1.6; }
+  .cover .birth { font-size: 10.5pt; color: #cfc4ec; margin-top: 1.5mm; }
+  .cover .bigthree { margin-top: 7mm; font-size: 11.5pt; color: #c9b458; }
+  .plaque .name { font-size: 19pt; }
+  tr.now td { background: #ece4fb; color: #2d1b52; }
+  .block { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<div class="cover">
+  <div class="cover-frame"></div><div class="cover-frame2"></div>
+  <div class="cover-inner">
+    <div class="brand">A R V E L O S</div>
+    <div class="om">॥ आपका आकाश · आपकी कुंडली ॥</div>
+    <h1>जन्म कुंडली<br>रिपोर्ट</h1>
+    <div class="sub">वैदिक जन्म कुंडली</div>
+    <img class="ring" src="cover_emblem.png">
+    <div class="plaque">
+      <div class="name">{{ name }}</div>
+      <div class="birth">{{ birth_line }}</div>
+    </div>
+    <div class="bigthree">{{ bigthree }}</div>
+  </div>
+  <div class="foot">व्यक्तिगत गणना · तैयार: {{ generated }} · arvelos.cloud<br>
+  एक रिपोर्ट, एक भुगतान, कोई सदस्यता नहीं।</div>
+</div>
+
+<!-- ============================================================ TOC -->
+<div class="toc">
+  <h1>इस रिपोर्ट में क्या है</h1>
+  {% for t in toc %}
+  <div class="toc-row">
+    <div class="toc-num">{{ "%02d" % loop.index }}</div>
+    <div class="toc-body"><b>{{ t[0] }}</b><span>{{ t[1] }}</span></div>
+  </div>
+  {% endfor %}
+  <p class="disclaimer" style="margin-top:8mm">{{ disclaimer }}</p>
+</div>
+
+<!-- ============================================================ 01 INTRO -->
+<h1><span class="no">01</span>परिचय</h1>
+{% for t in intro %}<p>{{ t }}</p>{% endfor %}
+{% if time_note %}<div class="easy"><b>जन्म समय पर टिप्पणी:</b> {{ time_note }}</div>{% endif %}
+
+<!-- ============================================================ 02 DETAILS -->
+<h1 class="pg"><span class="no">02</span>जन्म विवरण और एक नज़र में</h1>
+<div class="section">
+  <table>
+    {% for k, v in kv %}<tr><td class="k">{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}
+  </table>
+</div>
+<p>आपकी कुंडली के तीन आधार-स्तंभ हैं: लग्न (आपका बाह्य व्यक्तित्व और जीवन की दिशा), चंद्र राशि (आपका मन और भावनाएँ) और जन्म नक्षत्र (आपके स्वभाव की सूक्ष्म परत)। आगे के सभी खंड इन्हीं पर आधारित हैं।</p>
+
+<!-- ============================================================ 03 CHARTS -->
+<h1 class="pg"><span class="no">03</span>आपकी कुंडली</h1>
+<div class="chartbox">{{ chart_main | safe }}<div class="cap"><b>{{ chart_main_title }}</b></div></div>
+<p class="small">{{ chart_help }}</p>
+<div class="chartbox">{{ chart_nav | safe }}<div class="cap"><b>नवांश कुंडली (D9)</b></div></div>
+<p class="small">{{ nav_note }}</p>
+<p class="small">{{ chart_abbr }}</p>
+<div class="easy"><b>सरल शब्दों में:</b> {{ chart_everyday }}</div>
+
+<!-- ============================================================ 04 TABLE -->
+<h1 class="pg"><span class="no">04</span>ग्रह स्थिति तालिका</h1>
+<table>
+  <tr><th>ग्रह</th><th>राशि</th><th>अंश</th><th>भाव</th><th>नक्षत्र (पद)</th><th>स्थिति</th></tr>
+  {% for r in table %}<tr><td class="k">{{ r.planet }}</td><td>{{ r.sign }}</td><td>{{ r.deg }}</td><td>{{ r.house }}</td><td>{{ r.nak }}</td><td>{{ r.status }}</td></tr>{% endfor %}
+</table>
+<p class="small">{{ table_note }}</p>
+
+<!-- ============================================================ 05 HOUSES -->
+<h1 class="pg"><span class="no">05</span>बारह भाव का फल</h1>
+{% for h in houses %}
+<div class="block">
+  <h2>{{ h.title }}</h2>
+  <div class="meta">{{ h.meta }}</div>
+  {% for t in h.paras %}<p>{{ t }}</p>{% endfor %}
+  <div class="easy"><b>सरल शब्दों में:</b> {{ h.easy }}</div>
+</div>
+{% endfor %}
+
+<!-- ============================================================ 06 PLANETS -->
+<h1 class="pg"><span class="no">06</span>नौ ग्रहों का फल</h1>
+{% for p in planets %}
+<div class="block">
+  <h2>{{ p.title }}</h2>
+  {% for t in p.paras %}<p>{{ t }}</p>{% endfor %}
+  <div class="easy"><b>सरल शब्दों में:</b> {{ p.easy }}</div>
+</div>
+{% endfor %}
+
+<!-- ============================================================ 07 DASHA -->
+<h1 class="pg"><span class="no">07</span>विंशोत्तरी महादशा</h1>
+<p>{{ dasha_intro }}</p>
+<div class="section">
+  <table>
+    <tr><th>महादशा</th><th>आरंभ</th><th>समाप्ति</th><th>अवधि (वर्ष)</th><th>आयु</th></tr>
+    {% for r in dasha_rows %}<tr class="{{ 'now' if r.current else '' }}"><td class="k">{{ r.lord }}{% if r.current %} ✦ वर्तमान{% endif %}</td><td>{{ r.start }}</td><td>{{ r.end }}</td><td>{{ r.years }}</td><td>{{ r.age }}</td></tr>{% endfor %}
+  </table>
+</div>
+<div class="easy"><b>सरल शब्दों में:</b> {{ dasha_everyday }}</div>
+{% if dasha_now %}
+<h2>वर्तमान महादशा</h2>
+{% for t in dasha_now %}<p>{{ t }}</p>{% endfor %}
+{% endif %}
+{% if dasha_next %}
+<h2>आगामी महादशा</h2>
+{% for t in dasha_next %}<p>{{ t }}</p>{% endfor %}
+{% endif %}
+
+<!-- ============================================================ 08 SPECIAL -->
+<h1 class="pg"><span class="no">08</span>विशेष विचार</h1>
+<div class="section">
+  <h2>मांगलिक स्थिति</h2>
+  <p class="small">{{ mangal_rule }}</p>
+  <p>{{ mangal_text }}</p>
+</div>
+<div class="section">
+  <h2>साढ़ेसाती और ढैया</h2>
+  <p>{{ sade_text }}</p>
+  <p>{{ sade_note }}</p>
+  <div class="easy"><b>सरल शब्दों में:</b> {{ sade_everyday }}</div>
+</div>
+
+<!-- ============================================================ 09 RASHI / NAKSHATRA -->
+<h1><span class="no">09</span>चंद्र राशि और नक्षत्र</h1>
+<div class="section">
+  <h2>चंद्र राशि: {{ rashi }}</h2>
+  <p>{{ rashi_text }}</p>
+</div>
+<div class="section">
+  <h2>जन्म नक्षत्र: {{ nak }} (पद {{ pada }})</h2>
+  <p>{{ nak_text }}</p>
+</div>
+
+<!-- ============================================================ 10 REMEDIES -->
+<h1 class="pg"><span class="no">10</span>सरल उपाय</h1>
+<div class="section">
+  <table>
+    <tr><th>कारण</th><th>ग्रह</th><th>मंत्र</th><th>दिन</th><th>दान</th><th>सरल अभ्यास</th></tr>
+    {% for r in remedies %}<tr><td class="k">{{ r.why }}</td><td>{{ r.planet }}</td><td>{{ r.mantra }}</td><td>{{ r.day }}</td><td>{{ r.dana }}</td><td>{{ r.practice }}</td></tr>{% endfor %}
+  </table>
+</div>
+<p>{{ remedy_note }}</p>
+
+<!-- ============================================================ 11 FAQ -->
+<h1 class="pg"><span class="no">11</span>प्रश्नोत्तर</h1>
+{% for q, ans in faq %}
+<div class="section"><h2>{{ q }}</h2><p>{{ ans }}</p></div>
+{% endfor %}
+
+<!-- ============================================================ 12 GLOSSARY -->
+<h1 class="pg"><span class="no">12</span>शब्दावली</h1>
+<table>
+  <tr><th>शब्द</th><th>अर्थ</th></tr>
+  {% for w, m in glossary %}<tr><td class="k">{{ w }}</td><td>{{ m }}</td></tr>{% endfor %}
+</table>
+
+<!-- ============================================================ CLOSING -->
+<div class="closing">
+  <h2>एक अंतिम बात</h2>
+  <p style="font-style:italic;">{{ closing }}</p>
+  <p class="closing-quote">&ldquo;{{ closing_quote }}&rdquo;</p>
+  <p style="margin-top:4mm; font-size:8pt; color:#b9aede;">
+    अरवेलोस (arvelos.cloud) द्वारा स्विस एफेमेरिस की गणनाओं और आपके सटीक जन्म विवरण से तैयार।
+    चिंतन और मनोरंजन के लिए: प्रवृत्तियाँ, निश्चितताएँ नहीं।</p>
+</div>
+
+</body>
+</html>

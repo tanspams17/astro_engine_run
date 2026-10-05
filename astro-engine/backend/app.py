@@ -150,7 +150,7 @@ FOCUS_PATTERN = "^(personality|love|career|growth)$"
 COMPAT_TIERS = {"zodiac_compat", "vedic_compat", "mixed_compat"}
 ALL_TIERS_PATTERN = "^(western|vedic|mixed|zodiac_compat|vedic_compat|mixed_compat)$"
 # Tiers that have a Hindi report. The server, not the form, decides.
-HINDI_TIERS = {"vedic_compat"}
+HINDI_TIERS = {"vedic", "vedic_compat"}
 
 
 class OrderIn(BaseModel):
@@ -484,7 +484,8 @@ def _fulfil(order_id: str):
                 order["lat"], order["lon"], order["tier"],
                 [f for f in order["focus_areas"].split(",") if f], pdf_path,
                 time_known=time_known, gender=order.get("gender", "unspecified"),
-                primary_focus=order.get("primary_focus"))
+                primary_focus=order.get("primary_focus"),
+                language=order.get("language") or "en")
         if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
             raise RuntimeError("report generator did not create a PDF")
     except Exception as exc:

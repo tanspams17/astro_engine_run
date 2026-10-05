@@ -704,7 +704,15 @@ def render_pdf(context: dict, out_path: str) -> str:
 
 def generate_report(name, birth_dt_local, tz_name, place_label, lat, lon,
                     tier, focus_areas, out_path, time_known=True,
-                    gender="unspecified", primary_focus=None) -> str:
+                    gender="unspecified", primary_focus=None,
+                    language="en") -> str:
+    if language == "hi":
+        try:
+            from .hi_vedic_report import generate as generate_hi
+        except ImportError:
+            from hi_vedic_report import generate as generate_hi
+        return generate_hi(name, birth_dt_local, tz_name, place_label, lat, lon,
+                           out_path, time_known=time_known)
     ctx = build_report_context(name, birth_dt_local, tz_name, place_label,
                                lat, lon, tier, focus_areas,
                                time_known=time_known, gender=gender,
